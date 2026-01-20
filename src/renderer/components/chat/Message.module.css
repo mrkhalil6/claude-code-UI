@@ -145,3 +145,64 @@
   background-color: rgba(241, 76, 76, 0.2);
   color: var(--text-error);
 }
+
+/* Enhanced tool styles */
+.tool {
+  flex-direction: column;
+  align-items: stretch;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-left: 3px solid var(--text-muted);
+}
+
+.toolCompleted {
+  border-left-color: var(--accent-success);
+  background-color: rgba(34, 197, 94, 0.1);
+}
+
+.toolError {
+  border-left-color: var(--accent-error);
+  background-color: rgba(239, 68, 68, 0.1);
+}
+
+.toolRunning {
+  border-left-color: var(--accent-warning);
+  background-color: rgba(234, 179, 8, 0.1);
+}
+
+.toolHeader {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.toolIcon {
+  font-size: var(--font-size-sm);
+}
+
+.toolDetails {
+  margin-top: var(--spacing-xs);
+}
+
+.toolDetails summary {
+  cursor: pointer;
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
+  user-select: none;
+}
+
+.toolDetails summary:hover {
+  color: var(--text-secondary);
+}
+
+.toolDetails pre {
+  margin: var(--spacing-xs) 0 0 0;
+  padding: var(--spacing-xs);
+  background-color: var(--bg-secondary);
+  border-radius: var(--border-radius-sm);
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+  overflow-x: auto;
+  max-height: 150px;
+  white-space: pre-wrap;
+  word-break: break-all;
+}

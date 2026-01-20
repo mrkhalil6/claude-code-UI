@@ -128,3 +128,100 @@
     opacity: 0;
   }
 }
+
+/* Tool Uses */
+.toolUses {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-md);
+}
+
+.toolUse {
+  padding: var(--spacing-sm) var(--spacing-md);
+  background-color: var(--bg-tertiary);
+  border-radius: var(--border-radius-md);
+  border-left: 3px solid var(--text-muted);
+  font-size: var(--font-size-sm);
+}
+
+.toolRunning {
+  border-left-color: var(--accent-warning);
+  background-color: rgba(234, 179, 8, 0.1);
+}
+
+.toolCompleted {
+  border-left-color: var(--accent-success);
+  background-color: rgba(34, 197, 94, 0.1);
+}
+
+.toolError {
+  border-left-color: var(--accent-error);
+  background-color: rgba(239, 68, 68, 0.1);
+}
+
+.toolHeader {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-xs);
+}
+
+.toolIcon {
+  font-size: var(--font-size-md);
+}
+
+.toolName {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.toolStatus {
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.toolInput {
+  margin-top: var(--spacing-xs);
+}
+
+.toolInput pre {
+  margin: 0;
+  padding: var(--spacing-xs);
+  background-color: var(--bg-secondary);
+  border-radius: var(--border-radius-sm);
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+  overflow-x: auto;
+  max-height: 100px;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.toolResult {
+  margin-top: var(--spacing-sm);
+  padding-top: var(--spacing-sm);
+  border-top: 1px solid var(--border-primary);
+}
+
+.toolResultHeader {
+  font-size: var(--font-size-xs);
+  font-weight: 500;
+  color: var(--text-muted);
+  margin-bottom: var(--spacing-xs);
+}
+
+.toolResult pre {
+  margin: 0;
+  padding: var(--spacing-xs);
+  background-color: var(--bg-secondary);
+  border-radius: var(--border-radius-sm);
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+  overflow-x: auto;
+  max-height: 150px;
+  white-space: pre-wrap;
+  word-break: break-all;
+}

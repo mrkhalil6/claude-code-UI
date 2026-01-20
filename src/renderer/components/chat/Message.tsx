@@ -59,11 +59,28 @@ export const Message: React.FC<MessageProps> = ({ message }) => {
         {message.toolUses && message.toolUses.length > 0 && (
           <div className={styles.tools}>
             {message.toolUses.map((tool) => (
-              <div key={tool.id} className={styles.tool}>
-                <span className={styles.toolName}>{tool.name}</span>
-                <span className={clsx(styles.toolStatus, styles[tool.status])}>
-                  {tool.status}
-                </span>
+              <div key={tool.id} className={clsx(styles.tool, styles[`tool${tool.status.charAt(0).toUpperCase() + tool.status.slice(1)}`])}>
+                <div className={styles.toolHeader}>
+                  <span className={styles.toolIcon}>
+                    {tool.status === 'completed' ? '✓' : tool.status === 'error' ? '✗' : '•'}
+                  </span>
+                  <span className={styles.toolName}>{tool.name}</span>
+                  <span className={clsx(styles.toolStatus, styles[tool.status])}>
+                    {tool.status}
+                  </span>
+                </div>
+                {tool.input && Object.keys(tool.input).length > 0 && (
+                  <details className={styles.toolDetails}>
+                    <summary>Input</summary>
+                    <pre>{JSON.stringify(tool.input, null, 2)}</pre>
+                  </details>
+                )}
+                {tool.result && (
+                  <details className={styles.toolDetails}>
+                    <summary>Result</summary>
+                    <pre>{tool.result}</pre>
+                  </details>
+                )}
               </div>
             ))}
           </div>

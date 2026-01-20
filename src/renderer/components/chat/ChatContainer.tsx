@@ -9,11 +9,11 @@ import styles from './ChatContainer.module.css';
 export const ChatContainer: React.FC = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [error, setError] = useState<string | null>(null);
-  const { messages, isStreaming, streamingContent, streamingThinking } = useChat();
+  const { messages, isStreaming, streamingContent, streamingThinking, toolsInProgress } = useChat();
   const { activeSessionId, currentCwd, cliSessionId } = useSession();
   const { isPlanMode } = useUI();
   const { pendingPermission } = usePermissions();
-  const { addMessage, setIsStreaming, appendStreamingContent, appendStreamingThinking, finalizeStreamingMessage, clearStreaming, setLastUserMessage } = useChatActions();
+  const { addMessage, setIsStreaming, appendStreamingContent, appendStreamingThinking, finalizeStreamingMessage, clearStreaming, setLastUserMessage, addToolInProgress, updateToolStatus } = useChatActions();
   const { setActiveSessionId, setCliSessionId, setCurrentCwd } = useSessionActions();
   const { setConnectionStatus } = useUIActions();
   const { setPendingPermission } = usePermissionActions();
@@ -76,17 +76,40 @@ export const ChatContainer: React.FC = () => {
       window.claudeUI.cli.onAssistant((data) => {
         console.log('Assistant event:', data);
 
-        // Extract the text content from the assistant message
+        // Extract content from the assistant message
         const event = data.event;
         if (event && event.message && event.message.content) {
-          const textContent = event.message.content
-            .filter((c: { type: string }) => c.type === 'text')
-            .map((c: { type: string; text: string }) => c.text)
-            .join('\n');
+          for (const block of event.message.content) {
+            if (block.type === 'text' && block.text) {
+              appendStreamingContent(block.text);
+            } else if (block.type === 'tool_use') {
+              // Add tool use to display
+              addToolInProgress({
+                id: block.id,
+                name: block.name,
+                input: block.input || {},
+                status: 'running'
+              });
+            }
+          }
+        }
+      })
+    );
 
-          if (textContent) {
-            // Set streaming content so finalizeStreamingMessage will pick it up
-            appendStreamingContent(textContent);
+    // Handle user events (tool results)
+    cleanups.push(
+      window.claudeUI.cli.onUser((data) => {
+        const event = data.event;
+        if (event && event.message && event.message.content) {
+          for (const block of event.message.content) {
+            if (block.type === 'tool_result') {
+              // Update tool status with result
+              const resultContent = typeof block.content === 'string'
+                ? block.content
+                : JSON.stringify(block.content);
+              const status = block.is_error ? 'error' : 'completed';
+              updateToolStatus(block.tool_use_id, status, resultContent.slice(0, 500));
+            }
           }
         }
       })
@@ -138,7 +161,7 @@ export const ChatContainer: React.FC = () => {
     return () => {
       cleanups.forEach(cleanup => cleanup());
     };
-  }, [setConnectionStatus, setIsStreaming, appendStreamingContent, appendStreamingThinking, finalizeStreamingMessage, clearStreaming, setPendingPermission]);
+  }, [setConnectionStatus, setIsStreaming, appendStreamingContent, appendStreamingThinking, finalizeStreamingMessage, clearStreaming, setPendingPermission, addToolInProgress, updateToolStatus]);
 
   const handleSendMessage = useCallback(async (content: string) => {
     if (!content.trim()) return;
@@ -249,6 +272,7 @@ export const ChatContainer: React.FC = () => {
           <StreamingMessage
             content={streamingContent}
             thinking={streamingThinking}
+            toolsInProgress={toolsInProgress}
           />
         )}
 
