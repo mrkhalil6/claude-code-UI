@@ -22,6 +22,7 @@ export interface SessionSlice {
   setIsLoadingSessions: (loading: boolean) => void;
   setIsLoadingSession: (loading: boolean) => void;
   addMessageToSession: (message: SessionMessage) => void;
+  clearSession: () => void;
 }
 
 export const createSessionSlice: StateCreator<SessionSlice, [], [], SessionSlice> = (set) => ({
@@ -65,5 +66,11 @@ export const createSessionSlice: StateCreator<SessionSlice, [], [], SessionSlice
         messages: [...state.activeSession.messages, message]
       }
     };
+  }),
+
+  clearSession: () => set({
+    activeSession: null,
+    activeSessionId: null,
+    cliSessionId: null
   })
 });

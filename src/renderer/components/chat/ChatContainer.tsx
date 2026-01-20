@@ -4,7 +4,8 @@ import { StreamingMessage } from './StreamingMessage';
 import { InputArea } from './InputArea';
 import { SessionPermissions } from './SessionPermissions';
 import { PermissionDialog } from '../permissions';
-import { useChat, useSession, useUI, useChatActions, useUIActions, useSessionActions, usePermissions, usePermissionActions } from '../../store';
+import { useStore, useChat, useSession, useUI, useChatActions, useUIActions, useSessionActions, usePermissions, usePermissionActions } from '../../store';
+import { SlashCommand, SLASH_COMMANDS } from '../../../shared/slash-commands';
 import styles from './ChatContainer.module.css';
 
 export const ChatContainer: React.FC = () => {
@@ -14,8 +15,9 @@ export const ChatContainer: React.FC = () => {
   const { activeSessionId, currentCwd, cliSessionId } = useSession();
   const { isPlanMode } = useUI();
   const { pendingPermission } = usePermissions();
+  const { setShowSettings } = useUIActions();
   const { addMessage, setIsStreaming, appendStreamingContent, appendStreamingThinking, finalizeStreamingMessage, clearStreaming, setLastUserMessage, addToolInProgress, updateToolStatus } = useChatActions();
-  const { setActiveSessionId, setCliSessionId, setCurrentCwd } = useSessionActions();
+  const { setActiveSessionId, setCliSessionId, setCurrentCwd, clearSession } = useSessionActions();
   const { setConnectionStatus } = useUIActions();
   const { setPendingPermission, setKnownTools } = usePermissionActions();
 
@@ -251,6 +253,209 @@ export const ChatContainer: React.FC = () => {
     }
   }, [activeSessionId, setIsStreaming, clearStreaming]);
 
+  // Handle slash commands
+  const handleSlashCommand = useCallback(async (command: SlashCommand, args: string) => {
+    console.log('Slash command:', command.name, args);
+
+    // Handle local commands
+    if (command.type === 'local') {
+      switch (command.name) {
+        case '/clear':
+          // Clear messages from the store
+          useChatActions.getState().clearMessages();
+          // Add a system message to indicate the clear
+          addMessage({
+            id: crypto.randomUUID(),
+            type: 'system',
+            content: 'Conversation cleared.',
+            timestamp: new Date().toISOString()
+          });
+          return;
+
+        case '/help':
+          // Show help message with available commands
+          const helpText = SLASH_COMMANDS.map(cmd =>
+            `**${cmd.name}** - ${cmd.description}${cmd.usage ? ` (Usage: ${cmd.usage})` : ''}`
+          ).join('\n');
+          addMessage({
+            id: crypto.randomUUID(),
+            type: 'system',
+            content: `## Available Commands\n\n${helpText}`,
+            timestamp: new Date().toISOString()
+          });
+          return;
+
+        case '/settings':
+          setShowSettings(true);
+          return;
+
+        case '/new':
+          // Clear messages and reset session
+          useChatActions.getState().clearMessages();
+          clearSession();
+          return;
+
+        default:
+          break;
+      }
+    }
+
+    // Handle CLI-local commands (we fetch info and display it)
+    if (command.type === 'cli-local') {
+      switch (command.name) {
+        case '/mcp': {
+          try {
+            // Get both global and project MCP servers
+            const globalServers = await window.claudeUI.mcp.getGlobalServers();
+            const projectServers = currentCwd
+              ? await window.claudeUI.mcp.getProjectServers(currentCwd)
+              : {};
+
+            const formatServer = (name: string, server: { type?: string; url?: string; command?: string; args?: string[] }) => {
+              if (server.type === 'sse' && server.url) {
+                return `- **${name}** (SSE): \`${server.url}\``;
+              } else if (server.type === 'http' && server.url) {
+                return `- **${name}** (HTTP): \`${server.url}\``;
+              } else {
+                return `- **${name}** (stdio): \`${server.command}${server.args ? ' ' + server.args.join(' ') : ''}\``;
+              }
+            };
+
+            const globalNames = Object.keys(globalServers);
+            const projectNames = Object.keys(projectServers);
+
+            let content = '## MCP Servers\n\n';
+
+            if (globalNames.length === 0 && projectNames.length === 0) {
+              content += 'No MCP servers configured.\n\n';
+              content += '- **Global servers**: Go to *Settings > MCP Servers*\n';
+              content += '- **Project servers**: Click the lock icon and select *MCP Servers* tab';
+            } else {
+              if (globalNames.length > 0) {
+                content += '### Global (all projects)\n';
+                content += globalNames.map(name => formatServer(name, globalServers[name])).join('\n');
+                content += '\n\n';
+              }
+
+              if (projectNames.length > 0) {
+                content += '### Project-specific\n';
+                content += projectNames.map(name => formatServer(name, projectServers[name])).join('\n');
+                content += '\n\n';
+              }
+
+              content += '*Manage global servers in Settings > MCP Servers*\n';
+              content += '*Manage project servers via lock icon > MCP Servers tab*';
+            }
+
+            addMessage({
+              id: crypto.randomUUID(),
+              type: 'system',
+              content,
+              timestamp: new Date().toISOString()
+            });
+          } catch (err) {
+            addMessage({
+              id: crypto.randomUUID(),
+              type: 'system',
+              content: '## MCP Servers\n\nFailed to load MCP servers.',
+              timestamp: new Date().toISOString()
+            });
+          }
+          return;
+        }
+
+        case '/status': {
+          const statusInfo = [
+            `**Session ID:** ${activeSessionId || 'None'}`,
+            `**CLI Session:** ${cliSessionId || 'None'}`,
+            `**Working Directory:** ${currentCwd || 'Not set'}`,
+            `**Plan Mode:** ${isPlanMode ? 'Enabled' : 'Disabled'}`,
+            `**Messages:** ${messages.length}`
+          ].join('\n');
+          addMessage({
+            id: crypto.randomUUID(),
+            type: 'system',
+            content: `## Session Status\n\n${statusInfo}`,
+            timestamp: new Date().toISOString()
+          });
+          return;
+        }
+
+        case '/model': {
+          addMessage({
+            id: crypto.randomUUID(),
+            type: 'system',
+            content: '## Current Model\n\nModel selection is determined by your Claude CLI configuration.\nUse `claude config` in terminal to change the model.',
+            timestamp: new Date().toISOString()
+          });
+          return;
+        }
+
+        case '/cost': {
+          addMessage({
+            id: crypto.randomUUID(),
+            type: 'system',
+            content: '## Cost Information\n\nToken usage and cost tracking is available in the Claude CLI.\nRun `claude` in terminal to see detailed usage stats.',
+            timestamp: new Date().toISOString()
+          });
+          return;
+        }
+
+        case '/permissions': {
+          try {
+            const globalPerms = await window.claudeUI.permissions.getGlobal();
+            const sessionTools = useStore.getState().sessionAllowedTools;
+
+            const globalList = globalPerms.length > 0
+              ? globalPerms.map(p => `- **${p.tool}**: ${p.allowed ? 'Allowed' : 'Denied'} (${p.scope})`).join('\n')
+              : 'No global permissions set';
+
+            const sessionList = sessionTools.length > 0
+              ? sessionTools.map(t => `- ${t}`).join('\n')
+              : 'No session-specific tools allowed';
+
+            addMessage({
+              id: crypto.randomUUID(),
+              type: 'system',
+              content: `## Permissions\n\n### Global Permissions\n${globalList}\n\n### Session Allowed Tools\n${sessionList}\n\n*Go to Settings > Permissions to manage*`,
+              timestamp: new Date().toISOString()
+            });
+          } catch (err) {
+            addMessage({
+              id: crypto.randomUUID(),
+              type: 'system',
+              content: '## Permissions\n\nFailed to load permissions.',
+              timestamp: new Date().toISOString()
+            });
+          }
+          return;
+        }
+
+        default:
+          break;
+      }
+    }
+
+    // Handle CLI passthrough commands - send as a prompt to Claude
+    if (command.type === 'cli-passthrough') {
+      // Convert command to a natural language prompt
+      let prompt = '';
+      switch (command.name) {
+        case '/compact':
+          prompt = 'Please provide a brief summary of our conversation so far.';
+          break;
+        case '/review':
+          prompt = 'Please review our conversation and highlight key points, decisions made, and any pending items.';
+          break;
+        default:
+          prompt = `${command.name.slice(1)} ${args}`.trim();
+      }
+
+      // Send as regular message
+      handleSendMessage(prompt);
+    }
+  }, [activeSessionId, cliSessionId, currentCwd, isPlanMode, messages.length, addMessage, setShowSettings, clearSession, handleSendMessage]);
+
   return (
     <div className={styles.container}>
       <div className={styles.messages}>
@@ -298,6 +503,7 @@ export const ChatContainer: React.FC = () => {
         </div>
         <InputArea
           onSend={handleSendMessage}
+          onSlashCommand={handleSlashCommand}
           disabled={isStreaming || !!pendingPermission}
           placeholder={isPlanMode ? 'Describe what you want to plan...' : 'Ask Claude anything...'}
         />

@@ -5,6 +5,7 @@ import { ClaudeCliService } from './services/claude-cli.service';
 import { SessionLoaderService } from './services/session-loader.service';
 import { CredentialsService } from './services/credentials.service';
 import { PermissionsService } from './services/permissions.service';
+import { McpService } from './services/mcp.service';
 
 class Application {
   private mainWindow: BrowserWindow | null = null;
@@ -12,12 +13,14 @@ class Application {
   private sessionLoader: SessionLoaderService;
   private credentialsService: CredentialsService;
   private permissionsService: PermissionsService;
+  private mcpService: McpService;
 
   constructor() {
     this.cliService = new ClaudeCliService();
     this.sessionLoader = new SessionLoaderService();
     this.credentialsService = new CredentialsService();
     this.permissionsService = new PermissionsService();
+    this.mcpService = new McpService();
   }
 
   async initialize(): Promise<void> {
@@ -36,12 +39,17 @@ class Application {
     await this.permissionsService.load();
     console.log('Permissions loaded');
 
+    // Load MCP config
+    await this.mcpService.load();
+    console.log('MCP config loaded');
+
     // Register IPC handlers before creating window
     registerIpcHandlers(
       this.cliService,
       this.sessionLoader,
       this.credentialsService,
-      this.permissionsService
+      this.permissionsService,
+      this.mcpService
     );
 
     // Create the main window

@@ -6,13 +6,15 @@ import { ClaudeCliService } from '../services/claude-cli.service';
 import { SessionLoaderService } from '../services/session-loader.service';
 import { CredentialsService } from '../services/credentials.service';
 import { PermissionsService, KNOWN_TOOLS } from '../services/permissions.service';
+import { McpService, McpServer } from '../services/mcp.service';
 import { StartSessionOptions } from '../../shared/types';
 
 export function registerIpcHandlers(
   cliService: ClaudeCliService,
   sessionLoader: SessionLoaderService,
   _credentialsService: CredentialsService,
-  permissionsService: PermissionsService
+  permissionsService: PermissionsService,
+  mcpService: McpService
 ): void {
   // ===== Session Management =====
 
@@ -130,6 +132,73 @@ export function registerIpcHandlers(
 
   ipcMain.handle(IPC_CHANNELS.PERMISSIONS_GET_KNOWN_TOOLS, async () => {
     return [...KNOWN_TOOLS];
+  });
+
+  // ===== MCP Servers (Global) =====
+
+  ipcMain.handle(IPC_CHANNELS.MCP_GET_GLOBAL_SERVERS, async () => {
+    await mcpService.loadGlobal();
+    return mcpService.getGlobalServers();
+  });
+
+  ipcMain.handle(IPC_CHANNELS.MCP_ADD_GLOBAL_SERVER, async (_, { name, server }: { name: string; server: McpServer }) => {
+    await mcpService.loadGlobal();
+    await mcpService.addGlobalServer(name, server);
+    return mcpService.getGlobalServers();
+  });
+
+  ipcMain.handle(IPC_CHANNELS.MCP_REMOVE_GLOBAL_SERVER, async (_, { name }: { name: string }) => {
+    await mcpService.loadGlobal();
+    await mcpService.removeGlobalServer(name);
+    return mcpService.getGlobalServers();
+  });
+
+  // ===== MCP Servers (Project) =====
+
+  ipcMain.handle(IPC_CHANNELS.MCP_GET_PROJECT_SERVERS, async (_, { projectPath }: { projectPath: string }) => {
+    await mcpService.loadProject(projectPath);
+    return mcpService.getProjectServers();
+  });
+
+  ipcMain.handle(IPC_CHANNELS.MCP_ADD_PROJECT_SERVER, async (_, { name, server, projectPath }: { name: string; server: McpServer; projectPath: string }) => {
+    mcpService.setCurrentProject(projectPath);
+    await mcpService.addProjectServer(name, server);
+    return mcpService.getProjectServers();
+  });
+
+  ipcMain.handle(IPC_CHANNELS.MCP_REMOVE_PROJECT_SERVER, async (_, { name, projectPath }: { name: string; projectPath: string }) => {
+    mcpService.setCurrentProject(projectPath);
+    await mcpService.removeProjectServer(name);
+    return mcpService.getProjectServers();
+  });
+
+  // ===== MCP Servers (Legacy - backward compatibility) =====
+
+  ipcMain.handle(IPC_CHANNELS.MCP_GET_SERVERS, async (_, { projectPath }: { projectPath?: string } = {}) => {
+    if (projectPath) {
+      await mcpService.loadProject(projectPath);
+    }
+    return mcpService.getServers();
+  });
+
+  ipcMain.handle(IPC_CHANNELS.MCP_GET_SERVER, async (_, { name }: { name: string }) => {
+    return mcpService.getServer(name);
+  });
+
+  ipcMain.handle(IPC_CHANNELS.MCP_ADD_SERVER, async (_, { name, server, projectPath }: { name: string; server: McpServer; projectPath?: string }) => {
+    if (projectPath) {
+      mcpService.setCurrentProject(projectPath);
+    }
+    await mcpService.addServer(name, server);
+    return mcpService.getServers();
+  });
+
+  ipcMain.handle(IPC_CHANNELS.MCP_REMOVE_SERVER, async (_, { name, projectPath }: { name: string; projectPath?: string }) => {
+    if (projectPath) {
+      mcpService.setCurrentProject(projectPath);
+    }
+    await mcpService.removeServer(name);
+    return mcpService.getServers();
   });
 
   // ===== Session File Watching =====

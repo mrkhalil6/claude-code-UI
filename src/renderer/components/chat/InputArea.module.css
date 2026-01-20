@@ -5,6 +5,7 @@
 }
 
 .inputWrapper {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: var(--spacing-sm);
@@ -63,4 +64,67 @@
   border-radius: var(--border-radius-sm);
   font-family: var(--font-family-mono);
   font-size: var(--font-size-xs);
+}
+
+/* Slash command suggestions */
+.suggestions {
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  right: 0;
+  margin-bottom: var(--spacing-xs);
+  max-height: 250px;
+  overflow-y: auto;
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--border-radius-md);
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.3);
+  z-index: 100;
+}
+
+.suggestion {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-md);
+  cursor: pointer;
+  transition: background-color var(--transition-fast);
+}
+
+.suggestion:hover,
+.suggestion.selected {
+  background-color: var(--bg-secondary);
+}
+
+.commandName {
+  font-family: var(--font-family-mono);
+  font-weight: 600;
+  color: var(--accent-primary);
+  min-width: 100px;
+}
+
+.commandDesc {
+  flex: 1;
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.commandType {
+  padding: 2px 6px;
+  border-radius: var(--border-radius-sm);
+  font-size: var(--font-size-xs);
+  font-weight: 500;
+}
+
+.localType {
+  background-color: rgba(59, 130, 246, 0.2);
+  color: #60a5fa;
+}
+
+.cliType {
+  background-color: rgba(249, 115, 22, 0.2);
+  color: #fb923c;
 }

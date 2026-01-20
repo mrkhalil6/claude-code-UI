@@ -10,6 +10,12 @@ import {
   CLIErrorEvent
 } from '../shared/types';
 
+// MCP Server types
+type McpServerStdio = { type?: 'stdio'; command: string; args?: string[]; env?: Record<string, string> };
+type McpServerSse = { type: 'sse'; url: string; headers?: Record<string, string> };
+type McpServerHttp = { type: 'http'; url: string; headers?: Record<string, string> };
+type McpServer = McpServerStdio | McpServerSse | McpServerHttp;
+
 // Type for cleanup function
 type CleanupFn = () => void;
 
@@ -137,6 +143,42 @@ const api = {
 
     getKnownTools: (): Promise<string[]> =>
       ipcRenderer.invoke(IPC_CHANNELS.PERMISSIONS_GET_KNOWN_TOOLS)
+  },
+
+  // ===== MCP Servers =====
+  mcp: {
+    // Global MCP servers (stored in ~/.claude/settings.json)
+    getGlobalServers: (): Promise<Record<string, McpServer>> =>
+      ipcRenderer.invoke(IPC_CHANNELS.MCP_GET_GLOBAL_SERVERS),
+
+    addGlobalServer: (name: string, server: McpServer): Promise<Record<string, McpServer>> =>
+      ipcRenderer.invoke(IPC_CHANNELS.MCP_ADD_GLOBAL_SERVER, { name, server }),
+
+    removeGlobalServer: (name: string): Promise<Record<string, McpServer>> =>
+      ipcRenderer.invoke(IPC_CHANNELS.MCP_REMOVE_GLOBAL_SERVER, { name }),
+
+    // Project MCP servers (stored in ~/.claude.json per project)
+    getProjectServers: (projectPath: string): Promise<Record<string, McpServer>> =>
+      ipcRenderer.invoke(IPC_CHANNELS.MCP_GET_PROJECT_SERVERS, { projectPath }),
+
+    addProjectServer: (name: string, server: McpServer, projectPath: string): Promise<Record<string, McpServer>> =>
+      ipcRenderer.invoke(IPC_CHANNELS.MCP_ADD_PROJECT_SERVER, { name, server, projectPath }),
+
+    removeProjectServer: (name: string, projectPath: string): Promise<Record<string, McpServer>> =>
+      ipcRenderer.invoke(IPC_CHANNELS.MCP_REMOVE_PROJECT_SERVER, { name, projectPath }),
+
+    // Legacy methods (backward compatibility)
+    getServers: (projectPath?: string): Promise<Record<string, McpServer>> =>
+      ipcRenderer.invoke(IPC_CHANNELS.MCP_GET_SERVERS, { projectPath }),
+
+    getServer: (name: string): Promise<McpServer | undefined> =>
+      ipcRenderer.invoke(IPC_CHANNELS.MCP_GET_SERVER, { name }),
+
+    addServer: (name: string, server: McpServer, projectPath?: string): Promise<Record<string, McpServer>> =>
+      ipcRenderer.invoke(IPC_CHANNELS.MCP_ADD_SERVER, { name, server, projectPath }),
+
+    removeServer: (name: string, projectPath?: string): Promise<Record<string, McpServer>> =>
+      ipcRenderer.invoke(IPC_CHANNELS.MCP_REMOVE_SERVER, { name, projectPath })
   }
 };
 

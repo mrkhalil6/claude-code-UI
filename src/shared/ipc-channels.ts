@@ -37,7 +37,23 @@ export const IPC_CHANNELS = {
   PERMISSIONS_SET_GLOBAL: 'permissions:setGlobal',
   PERMISSIONS_REMOVE_GLOBAL: 'permissions:removeGlobal',
   PERMISSIONS_GET_AUTO_ALLOWED: 'permissions:getAutoAllowed',
-  PERMISSIONS_GET_KNOWN_TOOLS: 'permissions:getKnownTools'
+  PERMISSIONS_GET_KNOWN_TOOLS: 'permissions:getKnownTools',
+
+  // MCP Servers (Global)
+  MCP_GET_GLOBAL_SERVERS: 'mcp:getGlobalServers',
+  MCP_ADD_GLOBAL_SERVER: 'mcp:addGlobalServer',
+  MCP_REMOVE_GLOBAL_SERVER: 'mcp:removeGlobalServer',
+
+  // MCP Servers (Project)
+  MCP_GET_PROJECT_SERVERS: 'mcp:getProjectServers',
+  MCP_ADD_PROJECT_SERVER: 'mcp:addProjectServer',
+  MCP_REMOVE_PROJECT_SERVER: 'mcp:removeProjectServer',
+
+  // MCP Servers (Legacy - for backward compatibility)
+  MCP_GET_SERVERS: 'mcp:getServers',
+  MCP_ADD_SERVER: 'mcp:addServer',
+  MCP_REMOVE_SERVER: 'mcp:removeServer',
+  MCP_GET_SERVER: 'mcp:getServer'
 } as const;
 
 export type IpcChannel = typeof IPC_CHANNELS[keyof typeof IPC_CHANNELS];

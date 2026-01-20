@@ -1,11 +1,15 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { PermissionsManager } from '../permissions';
+import { McpManager } from './McpManager';
 import { useUI, useUIActions } from '../../store';
 import styles from './SettingsPanel.module.css';
+
+type SettingsTab = 'permissions' | 'mcp' | 'about';
 
 export const SettingsPanel: React.FC = () => {
   const { showSettings } = useUI();
   const { setShowSettings } = useUIActions();
+  const [activeTab, setActiveTab] = useState<SettingsTab>('permissions');
 
   if (!showSettings) return null;
 
@@ -21,21 +25,66 @@ export const SettingsPanel: React.FC = () => {
           </button>
         </div>
 
-        <div className={styles.content}>
-          <section className={styles.section}>
-            <PermissionsManager type="global" />
-          </section>
+        <div className={styles.tabs}>
+          <button
+            className={`${styles.tab} ${activeTab === 'permissions' ? styles.activeTab : ''}`}
+            onClick={() => setActiveTab('permissions')}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+              <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+            </svg>
+            Permissions
+          </button>
+          <button
+            className={`${styles.tab} ${activeTab === 'mcp' ? styles.activeTab : ''}`}
+            onClick={() => setActiveTab('mcp')}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
+              <line x1="8" y1="21" x2="16" y2="21" />
+              <line x1="12" y1="17" x2="12" y2="21" />
+            </svg>
+            MCP Servers
+          </button>
+          <button
+            className={`${styles.tab} ${activeTab === 'about' ? styles.activeTab : ''}`}
+            onClick={() => setActiveTab('about')}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <circle cx="12" cy="12" r="10" />
+              <line x1="12" y1="16" x2="12" y2="12" />
+              <line x1="12" y1="8" x2="12.01" y2="8" />
+            </svg>
+            About
+          </button>
+        </div>
 
-          <section className={styles.section}>
-            <h3 className={styles.sectionTitle}>About</h3>
-            <div className={styles.aboutInfo}>
-              <p>Claude Code UI</p>
-              <p className={styles.version}>Version 1.0.0</p>
-              <p className={styles.description}>
-                A modern desktop GUI for Claude Code CLI
-              </p>
-            </div>
-          </section>
+        <div className={styles.content}>
+          {activeTab === 'permissions' && (
+            <section className={styles.section}>
+              <PermissionsManager type="global" />
+            </section>
+          )}
+
+          {activeTab === 'mcp' && (
+            <section className={styles.section}>
+              <McpManager />
+            </section>
+          )}
+
+          {activeTab === 'about' && (
+            <section className={styles.section}>
+              <h3 className={styles.sectionTitle}>About</h3>
+              <div className={styles.aboutInfo}>
+                <p>Claude Code UI</p>
+                <p className={styles.version}>Version 1.0.0</p>
+                <p className={styles.description}>
+                  A modern desktop GUI for Claude Code CLI
+                </p>
+              </div>
+            </section>
+          )}
         </div>
       </div>
     </div>

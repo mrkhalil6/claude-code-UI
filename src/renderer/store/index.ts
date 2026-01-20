@@ -74,7 +74,8 @@ export const useSessionActions = () => useStore((state) => ({
   setCurrentCwd: state.setCurrentCwd,
   setIsLoadingSessions: state.setIsLoadingSessions,
   setIsLoadingSession: state.setIsLoadingSession,
-  addMessageToSession: state.addMessageToSession
+  addMessageToSession: state.addMessageToSession,
+  clearSession: state.clearSession
 }));
 
 export const useChatActions = () => useStore((state) => ({
