@@ -49,6 +49,8 @@ export const Message: React.FC<MessageProps> = ({ message }) => {
         <div className={styles.orderedContent}>
           {message.contentBlocks.map((block, index) => {
             if (block.type === 'text') {
+              // Skip empty text blocks
+              if (!block.text.trim()) return null;
               return (
                 <div key={`text-${index}`} className={styles.textBlock}>
                   <MarkdownPreview content={block.text} />

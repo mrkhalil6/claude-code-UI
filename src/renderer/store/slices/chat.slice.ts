@@ -74,6 +74,9 @@ export const createChatSlice: StateCreator<ChatSlice, [], [], ChatSlice> = (set,
   setStreamingContent: (content) => set({ streamingContent: content }),
 
   appendStreamingContent: (content) => set((state) => {
+    // Skip empty content to avoid creating empty text blocks
+    if (!content) return state;
+
     // Also update streamingBlocks - append to last text block or create new one
     const blocks = [...state.streamingBlocks];
     const lastBlock = blocks[blocks.length - 1];
@@ -136,8 +139,16 @@ export const createChatSlice: StateCreator<ChatSlice, [], [], ChatSlice> = (set,
   finalizeStreamingMessage: () => {
     const state = get();
     if (state.streamingBlocks.length > 0 || state.streamingThinking) {
+      // Filter out empty text blocks
+      const filteredBlocks = state.streamingBlocks.filter(block => {
+        if (block.type === 'text') {
+          return block.text.trim().length > 0;
+        }
+        return true; // Keep tool blocks
+      });
+
       // Extract all tools from blocks for backwards compat
-      const toolUses = state.streamingBlocks
+      const toolUses = filteredBlocks
         .filter((b): b is { type: 'tool'; tool: ToolUseDisplay } => b.type === 'tool')
         .map(b => b.tool);
 
@@ -147,7 +158,7 @@ export const createChatSlice: StateCreator<ChatSlice, [], [], ChatSlice> = (set,
         content: state.streamingContent,
         timestamp: new Date().toISOString(),
         thinking: state.streamingThinking || undefined,
-        contentBlocks: state.streamingBlocks.length > 0 ? [...state.streamingBlocks] : undefined,
+        contentBlocks: filteredBlocks.length > 0 ? [...filteredBlocks] : undefined,
         toolUses: toolUses.length > 0 ? toolUses : undefined
       };
 
