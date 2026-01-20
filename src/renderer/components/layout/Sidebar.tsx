@@ -1,14 +1,14 @@
 import React, { useEffect } from 'react';
 import { SessionList } from '../sidebar/SessionList';
 import { Button } from '../common';
-import { useUI, useSession, useSessionActions } from '../../store';
+import { useUI, useSession, useSessionActions, useChatActions } from '../../store';
 import styles from './Sidebar.module.css';
 
 export const Sidebar: React.FC = () => {
   const { sidebarWidth, isSidebarCollapsed } = useUI();
   const { projects, isLoadingSessions } = useSession();
-  const { setProjects, setIsLoadingSessions } = useSessionActions();
-  const { setCurrentCwd } = useSessionActions();
+  const { setProjects, setIsLoadingSessions, setActiveSessionId, setCliSessionId, setCurrentCwd } = useSessionActions();
+  const { clearMessages, clearStreaming } = useChatActions();
 
   // Load sessions on mount
   useEffect(() => {
@@ -35,6 +35,13 @@ export const Sidebar: React.FC = () => {
   }, [setProjects, setIsLoadingSessions]);
 
   const handleNewChat = async () => {
+    // Clear current chat state
+    clearMessages();
+    clearStreaming();
+    setActiveSessionId(null);
+    setCliSessionId(null);
+
+    // Optionally select a new working directory
     const directory = await window.claudeUI.fs.selectDirectory();
     if (directory) {
       setCurrentCwd(directory);
