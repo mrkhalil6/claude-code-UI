@@ -53,7 +53,7 @@ export const SessionList: React.FC<SessionListProps> = ({
               <path d="M4.5 2l4 4-4 4" />
             </svg>
             <span className={styles.projectPath} title={project.path}>
-              {project.path.split(/[/\\]/).pop()}
+              {project.path}
             </span>
             <span className={styles.sessionCount}>
               {project.sessions.length}
