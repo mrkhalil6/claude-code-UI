@@ -21,6 +21,7 @@ interface ActiveSession {
   isPlanMode: boolean;
   isProcessing: boolean;
   allowedTools: Set<string>;  // Tools that have been granted permission
+  model: string | null;  // Model to use (opus, sonnet, haiku)
 }
 
 export class ClaudeCliService extends EventEmitter {
@@ -50,7 +51,8 @@ export class ClaudeCliService extends EventEmitter {
       cwd: options.cwd,
       isPlanMode: options.permissionMode === 'plan',
       isProcessing: false,
-      allowedTools: new Set<string>()
+      allowedTools: new Set<string>(),
+      model: null
     };
 
     if (options.resumeSessionId) {
@@ -77,7 +79,9 @@ export class ClaudeCliService extends EventEmitter {
     }
 
     session.isProcessing = true;
-    console.log(`Sending message to session ${sessionId}:`, message.slice(0, 100));
+    console.log(`[sendMessage] Session ${sessionId}`);
+    console.log(`[sendMessage] Session allowedTools: ${Array.from(session.allowedTools).join(', ') || 'none'}`);
+    console.log(`[sendMessage] Message: ${message.slice(0, 100)}`);
 
     // Build args array
     const args = this.buildArgs(session, message);
@@ -129,11 +133,19 @@ export class ClaudeCliService extends EventEmitter {
       args.push('--permission-mode', 'plan');
     }
 
+    // Add model if set
+    if (session.model) {
+      args.push('--model', session.model);
+      console.log(`[buildArgs] Using model: ${session.model}`);
+    }
+
     // Add allowed tools using = syntax to bind the value and prevent greedy parsing
     if (session.allowedTools.size > 0) {
       const toolsList = Array.from(session.allowedTools).join(',');
       args.push(`--allowedTools=${toolsList}`);
-      console.log(`Allowed tools: ${toolsList}`);
+      console.log(`[buildArgs] Adding allowed tools flag: --allowedTools=${toolsList}`);
+    } else {
+      console.log(`[buildArgs] No allowed tools for this session`);
     }
 
     // Add the message as the final positional argument
@@ -144,16 +156,39 @@ export class ClaudeCliService extends EventEmitter {
 
   /**
    * Grant permission for a tool (stores for future use)
+   * For tools that support command patterns (like Bash), we use wildcard (*) to allow all commands
    */
-  allowTool(sessionId: string, toolName: string): void {
+  allowTool(sessionId: string, toolName: string): boolean {
     const session = this.activeSessions.get(sessionId);
     if (!session) {
-      console.warn(`No session found for tool permission: ${sessionId}`);
-      return;
+      console.error(`[allowTool] No session found for tool permission: ${sessionId}`);
+      console.error(`[allowTool] Active sessions: ${Array.from(this.activeSessions.keys()).join(', ')}`);
+      return false;
     }
 
-    session.allowedTools.add(toolName);
-    console.log(`Tool '${toolName}' allowed for session ${sessionId}`);
+    // For Bash tool, use wildcard pattern to allow all commands
+    // CLI expects patterns like "Bash(git:*)" or "Bash(*)" for all
+    const toolPattern = toolName === 'Bash' ? 'Bash(*)' : toolName;
+
+    session.allowedTools.add(toolPattern);
+    console.log(`[allowTool] Tool '${toolName}' -> pattern '${toolPattern}' allowed for session ${sessionId}`);
+    console.log(`[allowTool] Session now has allowed tools: ${Array.from(session.allowedTools).join(', ')}`);
+    return true;
+  }
+
+  /**
+   * Set the model for a session
+   */
+  setModel(sessionId: string, model: string): boolean {
+    const session = this.activeSessions.get(sessionId);
+    if (!session) {
+      console.error(`[setModel] No session found: ${sessionId}`);
+      return false;
+    }
+
+    session.model = model;
+    console.log(`[setModel] Model set to '${model}' for session ${sessionId}`);
+    return true;
   }
 
   /**
@@ -323,7 +358,10 @@ export class ClaudeCliService extends EventEmitter {
         this.emit('cli:result', serviceEvent);
 
         if (event.permission_denials && event.permission_denials.length > 0) {
+          console.log(`[handleCliEvent] Permission denials found: ${event.permission_denials.length}`);
           for (const denial of event.permission_denials) {
+            console.log(`[handleCliEvent] Permission denial: tool_name="${denial.tool_name}", tool_use_id="${denial.tool_use_id}"`);
+            console.log(`[handleCliEvent] Tool input:`, JSON.stringify(denial.tool_input).slice(0, 200));
             const permissionEvent: CLIPermissionRequiredEvent = {
               sessionId,
               toolUseId: denial.tool_use_id,
@@ -422,6 +460,13 @@ export class ClaudeCliService extends EventEmitter {
    */
   isSessionActive(sessionId: string): boolean {
     return this.activeSessions.has(sessionId);
+  }
+
+  /**
+   * Get the Claude CLI executable path
+   */
+  getClaudePath(): string {
+    return this.claudePath;
   }
 
   /**

@@ -5,6 +5,7 @@ export interface PendingPermission {
   toolInput: Record<string, unknown>;
   description: string;
   timestamp: string;
+  retryMessage?: string;  // Message to retry after permission is granted
 }
 
 export type PermissionScope = 'once' | 'session' | 'always';

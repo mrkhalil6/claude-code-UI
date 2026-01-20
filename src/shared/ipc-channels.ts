@@ -13,6 +13,10 @@ export const IPC_CHANNELS = {
   CLI_KILL_SESSION: 'cli:killSession',
   CLI_SET_PLAN_MODE: 'cli:setPlanMode',
 
+  // CLI Models
+  CLI_GET_MODELS: 'cli:getModels',
+  CLI_SET_MODEL: 'cli:setModel',
+
   // CLI Events (Main -> Renderer)
   CLI_EVENT_SYSTEM: 'cli:event:system',
   CLI_EVENT_STREAM: 'cli:event:stream',
@@ -43,6 +47,10 @@ export const IPC_CHANNELS = {
   MCP_GET_GLOBAL_SERVERS: 'mcp:getGlobalServers',
   MCP_ADD_GLOBAL_SERVER: 'mcp:addGlobalServer',
   MCP_REMOVE_GLOBAL_SERVER: 'mcp:removeGlobalServer',
+
+  // MCP Server Status & Actions
+  MCP_GET_SERVER_STATUS: 'mcp:getServerStatus',
+  MCP_AUTHENTICATE_SERVER: 'mcp:authenticateServer',
 
   // MCP Servers (Project)
   MCP_GET_PROJECT_SERVERS: 'mcp:getProjectServers',

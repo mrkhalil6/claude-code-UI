@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import styles from './McpManager.module.css';
 
 // MCP Server types
@@ -9,20 +9,30 @@ type McpServer = McpServerStdio | McpServerSse | McpServerHttp;
 
 type TransportType = 'stdio' | 'sse' | 'http';
 
+interface ServerStatus {
+  status: string;
+  scope: string;
+  type: string;
+  url?: string;
+  command?: string;
+}
+
 interface McpManagerProps {
   onClose?: () => void;
 }
 
 /**
- * McpManager - Manages GLOBAL MCP servers (stored in ~/.claude/settings.json)
+ * McpManager - Manages GLOBAL MCP servers (stored in ~/.claude.json)
  * This component is used in the Settings panel for global MCP configuration.
  * For project-specific MCPs, see ProjectMcpManager.
  */
 export const McpManager: React.FC<McpManagerProps> = ({ onClose }) => {
   const [servers, setServers] = useState<Record<string, McpServer>>({});
+  const [serverStatuses, setServerStatuses] = useState<Record<string, ServerStatus>>({});
   const [loading, setLoading] = useState(true);
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingServer, setEditingServer] = useState<string | null>(null);
+  const [authenticating, setAuthenticating] = useState<string | null>(null);
 
   // Form state
   const [formName, setFormName] = useState('');
@@ -37,6 +47,24 @@ export const McpManager: React.FC<McpManagerProps> = ({ onClose }) => {
 
   const [formError, setFormError] = useState<string | null>(null);
 
+  // Load server status for a single server
+  const loadServerStatus = useCallback(async (name: string) => {
+    try {
+      const status = await window.claudeUI.mcp.getServerStatus(name);
+      setServerStatuses(prev => ({ ...prev, [name]: status }));
+    } catch (error) {
+      console.error(`Failed to load status for ${name}:`, error);
+      setServerStatuses(prev => ({ ...prev, [name]: { status: 'unknown', scope: 'unknown', type: 'unknown' } }));
+    }
+  }, []);
+
+  // Load all server statuses
+  const loadAllStatuses = useCallback(async (serverNames: string[]) => {
+    for (const name of serverNames) {
+      await loadServerStatus(name);
+    }
+  }, [loadServerStatus]);
+
   // Load global servers on mount
   useEffect(() => {
     const loadServers = async () => {
@@ -44,6 +72,8 @@ export const McpManager: React.FC<McpManagerProps> = ({ onClose }) => {
       try {
         const data = await window.claudeUI.mcp.getGlobalServers();
         setServers(data);
+        // Load statuses for all servers
+        await loadAllStatuses(Object.keys(data));
       } catch (error) {
         console.error('Failed to load global MCP servers:', error);
       } finally {
@@ -51,7 +81,7 @@ export const McpManager: React.FC<McpManagerProps> = ({ onClose }) => {
       }
     };
     loadServers();
-  }, []);
+  }, [loadAllStatuses]);
 
   const resetForm = () => {
     setFormName('');
@@ -195,9 +225,54 @@ export const McpManager: React.FC<McpManagerProps> = ({ onClose }) => {
     try {
       const updated = await window.claudeUI.mcp.removeGlobalServer(name);
       setServers(updated);
+      // Remove status for deleted server
+      setServerStatuses(prev => {
+        const newStatuses = { ...prev };
+        delete newStatuses[name];
+        return newStatuses;
+      });
     } catch (error) {
       console.error('Failed to remove global MCP server:', error);
     }
+  };
+
+  const handleAuthenticate = async (name: string) => {
+    setAuthenticating(name);
+    try {
+      const result = await window.claudeUI.mcp.authenticateServer(name);
+      if (result.success) {
+        // Terminal opened - show instructions to user
+        alert(
+          `A Claude terminal has been opened.\n\n` +
+          `To authenticate "${name}":\n` +
+          `1. Type /mcp and press Enter\n` +
+          `2. Select "${name}" from the list\n` +
+          `3. Choose "Authenticate"\n\n` +
+          `The status will update automatically when done.`
+        );
+        // Start polling for auth completion
+        const pollInterval = setInterval(async () => {
+          const newStatus = await window.claudeUI.mcp.getServerStatus(name);
+          if (newStatus.status === 'connected') {
+            clearInterval(pollInterval);
+            setServerStatuses(prev => ({ ...prev, [name]: newStatus }));
+          }
+        }, 3000);
+        // Stop polling after 5 minutes
+        setTimeout(() => clearInterval(pollInterval), 5 * 60 * 1000);
+      } else {
+        alert(`Failed to open terminal: ${result.error || 'Unknown error'}`);
+      }
+    } catch (error) {
+      console.error('Failed to authenticate server:', error);
+      alert('Failed to start authentication process');
+    } finally {
+      setAuthenticating(null);
+    }
+  };
+
+  const handleRefreshStatus = async (name: string) => {
+    await loadServerStatus(name);
   };
 
   const getServerDescription = (server: McpServer): string => {
@@ -214,6 +289,22 @@ export const McpManager: React.FC<McpManagerProps> = ({ onClose }) => {
       if (server.type === 'http') return 'HTTP';
     }
     return 'stdio';
+  };
+
+  const getStatusInfo = (status: ServerStatus | undefined): { label: string; className: string } => {
+    if (!status) {
+      return { label: 'Loading...', className: styles.statusLoading };
+    }
+    switch (status.status) {
+      case 'connected':
+        return { label: 'Connected', className: styles.statusConnected };
+      case 'needs_auth':
+        return { label: 'Needs Auth', className: styles.statusNeedsAuth };
+      case 'error':
+        return { label: 'Error', className: styles.statusError };
+      default:
+        return { label: status.status || 'Unknown', className: styles.statusUnknown };
+    }
   };
 
   if (loading) {
@@ -408,6 +499,11 @@ export const McpManager: React.FC<McpManagerProps> = ({ onClose }) => {
         ) : (
           serverNames.map(name => {
             const server = servers[name];
+            const status = serverStatuses[name];
+            const statusInfo = getStatusInfo(status);
+            const needsAuth = status?.status === 'needs_auth';
+            const isUrlServer = 'url' in server && (server.type === 'sse' || server.type === 'http');
+
             return (
               <div key={name} className={styles.serverItem}>
                 <div className={styles.serverInfo}>
@@ -420,12 +516,49 @@ export const McpManager: React.FC<McpManagerProps> = ({ onClose }) => {
                     }`}>
                       {getServerType(server)}
                     </span>
+                    <span className={`${styles.statusBadge} ${statusInfo.className}`}>
+                      {statusInfo.label}
+                    </span>
                   </div>
                   <span className={styles.serverCommand}>
                     {getServerDescription(server)}
                   </span>
                 </div>
                 <div className={styles.serverActions}>
+                  {/* Refresh status button */}
+                  <button
+                    className={styles.actionButton}
+                    onClick={() => handleRefreshStatus(name)}
+                    title="Refresh status"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <polyline points="23 4 23 10 17 10" />
+                      <polyline points="1 20 1 14 7 14" />
+                      <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+                    </svg>
+                  </button>
+                  {/* Authenticate button for SSE/HTTP servers that need auth */}
+                  {isUrlServer && needsAuth && (
+                    <button
+                      className={`${styles.actionButton} ${styles.authButton}`}
+                      onClick={() => handleAuthenticate(name)}
+                      disabled={authenticating === name}
+                      title="Authenticate"
+                    >
+                      {authenticating === name ? (
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={styles.spinning}>
+                          <circle cx="12" cy="12" r="10" />
+                          <path d="M12 6v6l4 2" />
+                        </svg>
+                      ) : (
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                          <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                        </svg>
+                      )}
+                      <span>Auth</span>
+                    </button>
+                  )}
                   <button
                     className={styles.editButton}
                     onClick={() => handleEditServer(name)}

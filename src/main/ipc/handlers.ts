@@ -1,6 +1,7 @@
-import { ipcMain, BrowserWindow, dialog, app } from 'electron';
+import { ipcMain, BrowserWindow, dialog, app, shell } from 'electron';
 import { readFile } from 'fs/promises';
 import { homedir } from 'os';
+import { spawn } from 'child_process';
 import { IPC_CHANNELS } from '../../shared/ipc-channels';
 import { ClaudeCliService } from '../services/claude-cli.service';
 import { SessionLoaderService } from '../services/session-loader.service';
@@ -53,7 +54,29 @@ export function registerIpcHandlers(
   });
 
   ipcMain.handle(IPC_CHANNELS.CLI_ALLOW_TOOL, async (_, { sessionId, toolName }: { sessionId: string; toolName: string }) => {
-    cliService.allowTool(sessionId, toolName);
+    console.log(`[IPC] CLI_ALLOW_TOOL called: session=${sessionId}, tool=${toolName}`);
+    const result = cliService.allowTool(sessionId, toolName);
+    console.log(`[IPC] CLI_ALLOW_TOOL result: ${result}`);
+    return result;
+  });
+
+  // ===== CLI Models =====
+
+  ipcMain.handle(IPC_CHANNELS.CLI_GET_MODELS, async (): Promise<{ id: string; name: string }[]> => {
+    // Return the available Claude models
+    // These are the standard models available via --model flag
+    return [
+      { id: 'opus', name: 'Opus 4.5' },
+      { id: 'sonnet', name: 'Sonnet 4.5' },
+      { id: 'haiku', name: 'Haiku 4.5' }
+    ];
+  });
+
+  ipcMain.handle(IPC_CHANNELS.CLI_SET_MODEL, async (_, { sessionId, model }: { sessionId: string; model: string }) => {
+    console.log(`[IPC] CLI_SET_MODEL called: session=${sessionId}, model=${model}`);
+    const result = cliService.setModel(sessionId, model);
+    console.log(`[IPC] CLI_SET_MODEL result: ${result}`);
+    return result;
   });
 
   // ===== File System =====
@@ -151,6 +174,131 @@ export function registerIpcHandlers(
     await mcpService.loadGlobal();
     await mcpService.removeGlobalServer(name);
     return mcpService.getGlobalServers();
+  });
+
+  // ===== MCP Server Status & Actions =====
+
+  ipcMain.handle(IPC_CHANNELS.MCP_GET_SERVER_STATUS, async (_, { name }: { name: string }): Promise<{ status: string; scope: string; type: string; url?: string; command?: string }> => {
+    return new Promise((resolve) => {
+      const claudePath = cliService.getClaudePath();
+      if (!claudePath) {
+        resolve({ status: 'error', scope: 'unknown', type: 'unknown' });
+        return;
+      }
+
+      const proc = spawn(claudePath, ['mcp', 'get', name], {
+        stdio: ['pipe', 'pipe', 'pipe']
+      });
+
+      let output = '';
+      proc.stdout.on('data', (data) => {
+        output += data.toString();
+      });
+
+      proc.on('close', () => {
+        // Parse the output
+        const statusMatch = output.match(/Status:\s*(.+)/);
+        const scopeMatch = output.match(/Scope:\s*(.+)/);
+        const typeMatch = output.match(/Type:\s*(\w+)/);
+        const urlMatch = output.match(/URL:\s*(.+)/);
+        const commandMatch = output.match(/Command:\s*(.+)/);
+
+        let status = 'unknown';
+        if (statusMatch) {
+          const statusText = statusMatch[1].trim();
+          if (statusText.includes('Needs authentication')) {
+            status = 'needs_auth';
+          } else if (statusText.includes('Failed') || statusText.includes('✗')) {
+            status = 'error';
+          } else if (statusText.includes('✓') || statusText.includes('Connected')) {
+            status = 'connected';
+          } else {
+            status = statusText;
+          }
+        }
+
+        resolve({
+          status,
+          scope: scopeMatch ? scopeMatch[1].trim() : 'unknown',
+          type: typeMatch ? typeMatch[1].trim() : 'unknown',
+          url: urlMatch ? urlMatch[1].trim() : undefined,
+          command: commandMatch ? commandMatch[1].trim() : undefined
+        });
+      });
+
+      proc.on('error', () => {
+        resolve({ status: 'error', scope: 'unknown', type: 'unknown' });
+      });
+    });
+  });
+
+  ipcMain.handle(IPC_CHANNELS.MCP_AUTHENTICATE_SERVER, async (_, { name }: { name: string }): Promise<{ success: boolean; error?: string }> => {
+    // Spawn an interactive terminal with Claude CLI to handle MCP authentication
+    // The CLI has built-in OAuth flow that we leverage instead of reimplementing
+    const claudePath = cliService.getClaudePath();
+    if (!claudePath) {
+      return { success: false, error: 'Claude CLI not found' };
+    }
+
+    try {
+      const platform = process.platform;
+
+      // Create a command that opens Claude and immediately runs /mcp
+      // User can then select the server and authenticate
+      if (platform === 'win32') {
+        // Windows: open new cmd window with claude
+        // start "" opens with empty title, then cmd /k keeps window open
+        const command = `start "" cmd /k "${claudePath}"`;
+        spawn(command, [], {
+          shell: true,
+          detached: true,
+          stdio: 'ignore'
+        });
+      } else if (platform === 'darwin') {
+        // macOS: open Terminal with claude
+        spawn('osascript', [
+          '-e', `tell application "Terminal" to do script "${claudePath}"`
+        ], {
+          detached: true,
+          stdio: 'ignore'
+        });
+      } else {
+        // Linux: try common terminal emulators
+        const terminals = ['gnome-terminal', 'konsole', 'xterm', 'x-terminal-emulator'];
+        let spawned = false;
+
+        for (const term of terminals) {
+          try {
+            if (term === 'gnome-terminal') {
+              spawn(term, ['--', claudePath], { detached: true, stdio: 'ignore' });
+            } else if (term === 'konsole') {
+              spawn(term, ['-e', claudePath], { detached: true, stdio: 'ignore' });
+            } else {
+              spawn(term, ['-e', claudePath], { detached: true, stdio: 'ignore' });
+            }
+            spawned = true;
+            break;
+          } catch {
+            continue;
+          }
+        }
+
+        if (!spawned) {
+          return { success: false, error: 'Could not find a terminal emulator' };
+        }
+      }
+
+      console.log(`Opened terminal for MCP authentication: ${name}`);
+      console.log('User should run /mcp command, select the server, and authenticate');
+
+      return { success: true };
+    } catch (error) {
+      console.error('Failed to open terminal for MCP auth:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to open terminal'
+      };
+    }
   });
 
   // ===== MCP Servers (Project) =====

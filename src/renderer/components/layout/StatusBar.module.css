@@ -60,3 +60,296 @@
     opacity: 0.3;
   }
 }
+
+.model {
+  font-weight: 600;
+  opacity: 1;
+}
+
+/* Model selector */
+.modelContainer {
+  position: relative;
+}
+
+.modelButton {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 6px;
+  background-color: rgba(255, 255, 255, 0.1);
+  border: none;
+  border-radius: 4px;
+  color: white;
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.modelButton:hover:not(:disabled) {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+.modelButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.modelName {
+  opacity: 1;
+}
+
+.modelDropdown {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 0;
+  min-width: 160px;
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--border-radius-md);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  z-index: 1000;
+  overflow: hidden;
+}
+
+.modelDropdownHeader {
+  padding: 8px 12px;
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  color: var(--text-secondary);
+  background-color: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-primary);
+}
+
+.modelOption {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 8px 12px;
+  background: none;
+  border: none;
+  color: var(--text-primary);
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+  transition: background-color 0.1s ease;
+}
+
+.modelOption:hover {
+  background-color: var(--bg-secondary);
+}
+
+.modelOptionActive {
+  background-color: rgba(59, 130, 246, 0.1);
+  color: #60a5fa;
+}
+
+.modelOptionActive:hover {
+  background-color: rgba(59, 130, 246, 0.15);
+}
+
+.modelOptionName {
+  font-weight: 500;
+}
+
+.modelLoading {
+  padding: 12px;
+  text-align: center;
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.cost {
+  font-weight: 500;
+  opacity: 0.9;
+}
+
+.context {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.contextBar {
+  width: 50px;
+  height: 4px;
+  background-color: rgba(255, 255, 255, 0.3);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.contextFill {
+  height: 100%;
+  background-color: rgba(255, 255, 255, 0.9);
+  border-radius: 2px;
+  transition: width 0.3s ease;
+}
+
+.contextFill.contextWarning {
+  background-color: #fbbf24;
+}
+
+.contextText {
+  font-size: 10px;
+  opacity: 0.9;
+}
+
+/* Todo indicator and popup */
+.todoContainer {
+  position: relative;
+}
+
+.todoIndicator {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 8px;
+  background-color: rgba(255, 255, 255, 0.15);
+  border: none;
+  border-radius: 4px;
+  color: white;
+  font-size: var(--font-size-xs);
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.todoIndicator:hover {
+  background-color: rgba(255, 255, 255, 0.25);
+}
+
+.todoProgress {
+  font-weight: 600;
+  padding: 1px 5px;
+  background-color: rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
+  font-size: 10px;
+}
+
+.todoSpinner {
+  width: 10px;
+  height: 10px;
+  border: 1.5px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+.todoText {
+  max-width: 250px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.todoPopup {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  min-width: 300px;
+  max-width: 400px;
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--border-radius-lg);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  z-index: 1000;
+  overflow: hidden;
+}
+
+.todoPopupHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-sm) var(--spacing-md);
+  background-color: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-primary);
+}
+
+.todoPopupTitle {
+  font-weight: 600;
+  color: var(--text-primary);
+  font-size: var(--font-size-sm);
+}
+
+.todoPopupCount {
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
+.todoPopupList {
+  max-height: 300px;
+  overflow-y: auto;
+  padding: var(--spacing-sm);
+}
+
+.todoPopupItem {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: var(--border-radius-sm);
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.todoPopupItem:hover {
+  background-color: var(--bg-secondary);
+}
+
+.todo_completed {
+  color: var(--text-muted);
+}
+
+.todo_completed .todoItemText {
+  text-decoration: line-through;
+}
+
+.todo_in_progress {
+  color: var(--text-primary);
+  background-color: rgba(59, 130, 246, 0.1);
+}
+
+.todo_pending {
+  color: var(--text-secondary);
+}
+
+.todoCheckbox {
+  width: 16px;
+  height: 16px;
+  min-width: 16px;
+  border: 1.5px solid var(--border-secondary);
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 1px;
+}
+
+.todo_completed .todoCheckbox {
+  background-color: var(--text-success);
+  border-color: var(--text-success);
+  color: white;
+}
+
+.todo_in_progress .todoCheckbox {
+  border-color: #60a5fa;
+}
+
+.todoCheckboxSpinner {
+  width: 10px;
+  height: 10px;
+  border: 1.5px solid rgba(96, 165, 250, 0.3);
+  border-top-color: #60a5fa;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+.todoItemText {
+  flex: 1;
+  line-height: 1.4;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}

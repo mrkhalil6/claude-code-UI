@@ -8,6 +8,13 @@ export interface ToolUseDisplay {
   result?: string;
 }
 
+// Todo item from Claude's TodoWrite tool
+export interface TodoItem {
+  content: string;
+  status: 'pending' | 'in_progress' | 'completed';
+  activeForm: string;  // Present tense description shown when in_progress
+}
+
 // Content block types for preserving order of text and tool calls
 export type ContentBlock =
   | { type: 'text'; text: string }
@@ -32,6 +39,7 @@ export interface ChatSlice {
   toolsInProgress: ToolUseDisplay[];
   streamingBlocks: ContentBlock[];  // Ordered blocks during streaming
   lastUserMessage: string | null;  // For retrying after permission grant
+  todos: TodoItem[];  // Current todo list from Claude's TodoWrite
 
   // Actions
   setMessages: (messages: ChatMessage[]) => void;
@@ -48,6 +56,8 @@ export interface ChatSlice {
   clearToolsInProgress: () => void;
   finalizeStreamingMessage: () => void;
   setLastUserMessage: (message: string | null) => void;
+  setTodos: (todos: TodoItem[]) => void;
+  clearTodos: () => void;
 }
 
 export const createChatSlice: StateCreator<ChatSlice, [], [], ChatSlice> = (set, get) => ({
@@ -59,6 +69,7 @@ export const createChatSlice: StateCreator<ChatSlice, [], [], ChatSlice> = (set,
   toolsInProgress: [],
   streamingBlocks: [],
   lastUserMessage: null,
+  todos: [],
 
   // Actions
   setMessages: (messages) => set({ messages }),
@@ -175,5 +186,9 @@ export const createChatSlice: StateCreator<ChatSlice, [], [], ChatSlice> = (set,
     }
   },
 
-  setLastUserMessage: (message) => set({ lastUserMessage: message })
+  setLastUserMessage: (message) => set({ lastUserMessage: message }),
+
+  setTodos: (todos) => set({ todos }),
+
+  clearTodos: () => set({ todos: [] })
 });

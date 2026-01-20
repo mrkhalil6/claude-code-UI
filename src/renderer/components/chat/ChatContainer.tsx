@@ -3,9 +3,11 @@ import { MessageList } from './MessageList';
 import { StreamingMessage } from './StreamingMessage';
 import { InputArea } from './InputArea';
 import { SessionPermissions } from './SessionPermissions';
+// TodoList moved to StatusBar
 import { PermissionDialog } from '../permissions';
 import { useStore, useChat, useSession, useUI, useChatActions, useUIActions, useSessionActions, usePermissions, usePermissionActions } from '../../store';
 import { SlashCommand, SLASH_COMMANDS } from '../../../shared/slash-commands';
+import { TodoItem } from '../../store/slices/chat.slice';
 import styles from './ChatContainer.module.css';
 
 export const ChatContainer: React.FC = () => {
@@ -16,9 +18,9 @@ export const ChatContainer: React.FC = () => {
   const { isPlanMode } = useUI();
   const { pendingPermission } = usePermissions();
   const { setShowSettings } = useUIActions();
-  const { addMessage, setIsStreaming, appendStreamingContent, appendStreamingThinking, finalizeStreamingMessage, clearStreaming, setLastUserMessage, addToolInProgress, updateToolStatus } = useChatActions();
+  const { addMessage, setIsStreaming, appendStreamingContent, appendStreamingThinking, finalizeStreamingMessage, clearStreaming, setLastUserMessage, addToolInProgress, updateToolStatus, setTodos } = useChatActions();
   const { setActiveSessionId, setCliSessionId, setCurrentCwd, clearSession } = useSessionActions();
-  const { setConnectionStatus } = useUIActions();
+  const { setConnectionStatus, setModelInfo, updateUsage } = useUIActions();
   const { setPendingPermission, setKnownTools } = usePermissionActions();
 
   // Auto-scroll to bottom when new messages arrive
@@ -48,6 +50,14 @@ export const ChatContainer: React.FC = () => {
         // Capture available tools from the CLI (includes MCP tools)
         if (data.event && data.event.tools && Array.isArray(data.event.tools)) {
           setKnownTools(data.event.tools);
+        }
+        // Capture model info and version
+        if (data.event) {
+          const evt = data.event as { model?: string; claude_code_version?: string };
+          if (evt.model) {
+            // Default context window values, will be updated from result event
+            setModelInfo(evt.model, 200000, 64000, evt.claude_code_version || '');
+          }
         }
       })
     );
@@ -90,6 +100,12 @@ export const ChatContainer: React.FC = () => {
             if (block.type === 'text' && block.text) {
               appendStreamingContent(block.text);
             } else if (block.type === 'tool_use') {
+              // Handle TodoWrite tool specially - update the todo list
+              if (block.name === 'TodoWrite' && block.input && Array.isArray(block.input.todos)) {
+                const todos = block.input.todos as TodoItem[];
+                setTodos(todos);
+              }
+
               // Add tool use to display
               addToolInProgress({
                 id: block.id,
@@ -127,6 +143,46 @@ export const ChatContainer: React.FC = () => {
         console.log('Result event:', data);
         finalizeStreamingMessage();
         setConnectionStatus('connected');
+
+        // Extract usage info from result event
+        const evt = data.event as {
+          total_cost_usd?: number;
+          usage?: {
+            input_tokens?: number;
+            output_tokens?: number;
+            cache_read_input_tokens?: number;
+            cache_creation_input_tokens?: number;
+          };
+          modelUsage?: Record<string, {
+            contextWindow?: number;
+            maxOutputTokens?: number;
+          }>;
+        };
+
+        if (evt.usage) {
+          const input = evt.usage.input_tokens || 0;
+          const output = evt.usage.output_tokens || 0;
+          const cacheRead = evt.usage.cache_read_input_tokens || 0;
+          const cacheCreation = evt.usage.cache_creation_input_tokens || 0;
+          const cost = evt.total_cost_usd || 0;
+          updateUsage(input, output, cacheRead, cacheCreation, cost);
+        }
+
+        // Update context window from modelUsage if available
+        if (evt.modelUsage) {
+          const models = Object.entries(evt.modelUsage);
+          if (models.length > 0) {
+            const [modelName, info] = models[0];
+            if (info.contextWindow) {
+              setModelInfo(
+                modelName,
+                info.contextWindow,
+                info.maxOutputTokens || 64000,
+                ''
+              );
+            }
+          }
+        }
       })
     );
 
@@ -154,13 +210,17 @@ export const ChatContainer: React.FC = () => {
     cleanups.push(
       window.claudeUI.cli.onPermissionRequired((data) => {
         console.log('Permission required:', data);
+        // Get the current lastUserMessage from store for retry after permission grant
+        const currentLastMessage = useStore.getState().lastUserMessage;
+        console.log('Permission required - storing lastUserMessage for retry:', currentLastMessage);
         setPendingPermission({
           sessionId: data.sessionId,
           toolUseId: data.toolUseId,
           toolName: data.toolName,
           toolInput: data.toolInput || {},
           description: `Claude wants to use ${data.toolName}`,
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
+          retryMessage: currentLastMessage || undefined
         });
       })
     );
@@ -168,7 +228,7 @@ export const ChatContainer: React.FC = () => {
     return () => {
       cleanups.forEach(cleanup => cleanup());
     };
-  }, [setConnectionStatus, setIsStreaming, appendStreamingContent, appendStreamingThinking, finalizeStreamingMessage, clearStreaming, setPendingPermission, addToolInProgress, updateToolStatus, setKnownTools, setCliSessionId, setCurrentCwd]);
+  }, [setConnectionStatus, setIsStreaming, appendStreamingContent, appendStreamingThinking, finalizeStreamingMessage, clearStreaming, setPendingPermission, addToolInProgress, updateToolStatus, setKnownTools, setCliSessionId, setCurrentCwd, setTodos, setModelInfo, updateUsage]);
 
   const handleSendMessage = useCallback(async (content: string) => {
     if (!content.trim()) return;
@@ -239,15 +299,23 @@ export const ChatContainer: React.FC = () => {
 
   // Handle retry after permission is granted - resend the message without adding to chat again
   const handleRetryAfterPermission = useCallback(async (message: string) => {
-    if (!activeSessionId) return;
+    console.log('[handleRetryAfterPermission] called with message:', message?.slice(0, 50));
+    console.log('[handleRetryAfterPermission] activeSessionId:', activeSessionId);
+
+    if (!activeSessionId) {
+      console.error('[handleRetryAfterPermission] No activeSessionId, cannot retry');
+      return;
+    }
 
     setIsStreaming(true);
     clearStreaming();
 
     try {
+      console.log('[handleRetryAfterPermission] Calling sendMessage...');
       await window.claudeUI.cli.sendMessage(activeSessionId, message);
+      console.log('[handleRetryAfterPermission] sendMessage completed');
     } catch (err) {
-      console.error('Failed to retry message:', err);
+      console.error('[handleRetryAfterPermission] Failed to retry message:', err);
       setError('Failed to retry message. Please try again.');
       setIsStreaming(false);
     }

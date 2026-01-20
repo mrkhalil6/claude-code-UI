@@ -56,8 +56,14 @@ const api = {
     setPlanMode: (sessionId: string, enabled: boolean): Promise<void> =>
       ipcRenderer.invoke(IPC_CHANNELS.CLI_SET_PLAN_MODE, { sessionId, enabled }),
 
-    allowTool: (sessionId: string, toolName: string): Promise<void> =>
+    allowTool: (sessionId: string, toolName: string): Promise<boolean> =>
       ipcRenderer.invoke(IPC_CHANNELS.CLI_ALLOW_TOOL, { sessionId, toolName }),
+
+    getModels: (): Promise<{ id: string; name: string }[]> =>
+      ipcRenderer.invoke(IPC_CHANNELS.CLI_GET_MODELS),
+
+    setModel: (sessionId: string, model: string): Promise<boolean> =>
+      ipcRenderer.invoke(IPC_CHANNELS.CLI_SET_MODEL, { sessionId, model }),
 
     // Event listeners
     onSystem: (callback: (data: CLIServiceEvent) => void): CleanupFn => {
@@ -166,6 +172,13 @@ const api = {
 
     removeProjectServer: (name: string, projectPath: string): Promise<Record<string, McpServer>> =>
       ipcRenderer.invoke(IPC_CHANNELS.MCP_REMOVE_PROJECT_SERVER, { name, projectPath }),
+
+    // Server status and authentication
+    getServerStatus: (name: string): Promise<{ status: string; scope: string; type: string; url?: string; command?: string }> =>
+      ipcRenderer.invoke(IPC_CHANNELS.MCP_GET_SERVER_STATUS, { name }),
+
+    authenticateServer: (name: string): Promise<{ success: boolean; error?: string }> =>
+      ipcRenderer.invoke(IPC_CHANNELS.MCP_AUTHENTICATE_SERVER, { name }),
 
     // Legacy methods (backward compatibility)
     getServers: (projectPath?: string): Promise<Record<string, McpServer>> =>

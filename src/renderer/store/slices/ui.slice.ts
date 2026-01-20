@@ -1,5 +1,17 @@
 import { StateCreator } from 'zustand';
 
+export interface UsageInfo {
+  modelName: string;
+  contextWindow: number;
+  maxOutputTokens: number;
+  inputTokens: number;
+  outputTokens: number;
+  cacheReadTokens: number;
+  cacheCreationTokens: number;
+  totalCost: number;
+  claudeCodeVersion: string;
+}
+
 export interface UISlice {
   // State
   isPlanMode: boolean;
@@ -10,6 +22,7 @@ export interface UISlice {
   showSettings: boolean;
   connectionStatus: 'disconnected' | 'connecting' | 'connected' | 'error';
   errorMessage: string | null;
+  usage: UsageInfo;
 
   // Actions
   setIsPlanMode: (planMode: boolean) => void;
@@ -22,7 +35,22 @@ export interface UISlice {
   setShowSettings: (show: boolean) => void;
   setConnectionStatus: (status: UISlice['connectionStatus']) => void;
   setErrorMessage: (message: string | null) => void;
+  setModelInfo: (modelName: string, contextWindow: number, maxOutputTokens: number, version: string) => void;
+  updateUsage: (input: number, output: number, cacheRead: number, cacheCreation: number, cost: number) => void;
+  resetUsage: () => void;
 }
+
+const initialUsage: UsageInfo = {
+  modelName: '',
+  contextWindow: 200000,
+  maxOutputTokens: 64000,
+  inputTokens: 0,
+  outputTokens: 0,
+  cacheReadTokens: 0,
+  cacheCreationTokens: 0,
+  totalCost: 0,
+  claudeCodeVersion: ''
+};
 
 export const createUISlice: StateCreator<UISlice, [], [], UISlice> = (set) => ({
   // Initial state
@@ -34,6 +62,7 @@ export const createUISlice: StateCreator<UISlice, [], [], UISlice> = (set) => ({
   showSettings: false,
   connectionStatus: 'disconnected',
   errorMessage: null,
+  usage: initialUsage,
 
   // Actions
   setIsPlanMode: (planMode) => set({ isPlanMode: planMode }),
@@ -54,5 +83,28 @@ export const createUISlice: StateCreator<UISlice, [], [], UISlice> = (set) => ({
 
   setConnectionStatus: (status) => set({ connectionStatus: status }),
 
-  setErrorMessage: (message) => set({ errorMessage: message })
+  setErrorMessage: (message) => set({ errorMessage: message }),
+
+  setModelInfo: (modelName, contextWindow, maxOutputTokens, version) => set((state) => ({
+    usage: {
+      ...state.usage,
+      modelName,
+      contextWindow,
+      maxOutputTokens,
+      claudeCodeVersion: version
+    }
+  })),
+
+  updateUsage: (input, output, cacheRead, cacheCreation, cost) => set((state) => ({
+    usage: {
+      ...state.usage,
+      inputTokens: state.usage.inputTokens + input,
+      outputTokens: state.usage.outputTokens + output,
+      cacheReadTokens: state.usage.cacheReadTokens + cacheRead,
+      cacheCreationTokens: state.usage.cacheCreationTokens + cacheCreation,
+      totalCost: state.usage.totalCost + cost
+    }
+  })),
+
+  resetUsage: () => set({ usage: initialUsage })
 });

@@ -41,7 +41,8 @@ export const useChat = () => useStore((state) => ({
   streamingThinking: state.streamingThinking,
   toolsInProgress: state.toolsInProgress,
   streamingBlocks: state.streamingBlocks,
-  lastUserMessage: state.lastUserMessage
+  lastUserMessage: state.lastUserMessage,
+  todos: state.todos
 }));
 
 export const usePermissions = () => useStore((state) => ({
@@ -61,7 +62,8 @@ export const useUI = () => useStore((state) => ({
   activeDiffId: state.activeDiffId,
   showSettings: state.showSettings,
   connectionStatus: state.connectionStatus,
-  errorMessage: state.errorMessage
+  errorMessage: state.errorMessage,
+  usage: state.usage
 }));
 
 // Actions hooks
@@ -92,7 +94,9 @@ export const useChatActions = () => useStore((state) => ({
   updateToolStatus: state.updateToolStatus,
   clearToolsInProgress: state.clearToolsInProgress,
   finalizeStreamingMessage: state.finalizeStreamingMessage,
-  setLastUserMessage: state.setLastUserMessage
+  setLastUserMessage: state.setLastUserMessage,
+  setTodos: state.setTodos,
+  clearTodos: state.clearTodos
 }));
 
 export const usePermissionActions = () => useStore((state) => ({
@@ -123,5 +127,8 @@ export const useUIActions = () => useStore((state) => ({
   setActiveDiffId: state.setActiveDiffId,
   setShowSettings: state.setShowSettings,
   setConnectionStatus: state.setConnectionStatus,
-  setErrorMessage: state.setErrorMessage
+  setErrorMessage: state.setErrorMessage,
+  setModelInfo: state.setModelInfo,
+  updateUsage: state.updateUsage,
+  resetUsage: state.resetUsage
 }));

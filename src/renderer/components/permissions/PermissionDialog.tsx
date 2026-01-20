@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Modal, Button } from '../common';
 import { PendingPermission, PermissionScope } from '../../../shared/types';
-import { usePermissionActions, useSession, useChat, useChatActions } from '../../store';
+import { usePermissionActions, useSession } from '../../store';
 import styles from './PermissionDialog.module.css';
 
 interface PermissionDialogProps {
@@ -13,27 +13,37 @@ export const PermissionDialog: React.FC<PermissionDialogProps> = ({ permission, 
   const [scope, setScope] = useState<PermissionScope>('session');
   const { setPendingPermission, addToPermissionHistory } = usePermissionActions();
   const { activeSessionId } = useSession();
-  const { lastUserMessage } = useChat();
-  const { setLastUserMessage } = useChatActions();
 
   const handleGrant = async () => {
-    if (!activeSessionId) return;
+    console.log('[PermissionDialog] handleGrant called');
+    console.log('[PermissionDialog] activeSessionId:', activeSessionId);
+    console.log('[PermissionDialog] permission.toolName:', permission.toolName);
+    console.log('[PermissionDialog] permission.retryMessage:', permission.retryMessage);
+    console.log('[PermissionDialog] onRetry defined:', !!onRetry);
+
+    if (!activeSessionId) {
+      console.error('[PermissionDialog] No activeSessionId, cannot grant permission');
+      return;
+    }
 
     try {
       // Register the tool as allowed for this session
-      await window.claudeUI.cli.allowTool(activeSessionId, permission.toolName);
+      console.log('[PermissionDialog] Calling allowTool...');
+      const result = await window.claudeUI.cli.allowTool(activeSessionId, permission.toolName);
+      console.log('[PermissionDialog] allowTool result:', result);
 
       addToPermissionHistory(permission);
       setPendingPermission(null);
 
-      // Automatically retry the last message if available
-      if (lastUserMessage && onRetry) {
-        console.log('Auto-retrying message after permission grant:', lastUserMessage);
-        onRetry(lastUserMessage);
-        setLastUserMessage(null);
+      // Automatically retry the message that triggered the permission request
+      if (permission.retryMessage && onRetry) {
+        console.log('[PermissionDialog] Auto-retrying message after permission grant:', permission.retryMessage);
+        onRetry(permission.retryMessage);
+      } else {
+        console.log('[PermissionDialog] Cannot auto-retry: retryMessage=', !!permission.retryMessage, 'onRetry=', !!onRetry);
       }
     } catch (error) {
-      console.error('Failed to grant permission:', error);
+      console.error('[PermissionDialog] Failed to grant permission:', error);
     }
   };
 
