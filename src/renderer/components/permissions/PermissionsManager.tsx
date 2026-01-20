@@ -12,6 +12,7 @@ export const PermissionsManager: React.FC<PermissionsManagerProps> = ({ type, on
   const { globalPermissions, knownTools, sessionAllowedTools } = usePermissions();
   const { setGlobalPermissions, setKnownTools, addSessionAllowedTool, removeSessionAllowedTool } = usePermissionActions();
   const [loading, setLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Load permissions on mount
   useEffect(() => {
@@ -63,6 +64,22 @@ export const PermissionsManager: React.FC<PermissionsManagerProps> = ({ type, on
     return globalPermissions.find(p => p.tool === tool);
   };
 
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    try {
+      // Get the default tools from main process
+      const defaultTools = await window.claudeUI.permissions.getKnownTools();
+
+      // Merge with any tools we've seen (keep MCP tools that were discovered)
+      const mergedTools = [...new Set([...defaultTools, ...knownTools])];
+      setKnownTools(mergedTools.sort());
+    } catch (error) {
+      console.error('Failed to refresh tools:', error);
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
   if (loading) {
     return <div className={styles.loading}>Loading permissions...</div>;
   }
@@ -70,9 +87,30 @@ export const PermissionsManager: React.FC<PermissionsManagerProps> = ({ type, on
   return (
     <div className={styles.container}>
       <div className={styles.header}>
-        <h3 className={styles.title}>
-          {type === 'global' ? 'Global Tool Permissions' : 'Session Permissions'}
-        </h3>
+        <div className={styles.headerLeft}>
+          <h3 className={styles.title}>
+            {type === 'global' ? 'Global Tool Permissions' : 'Session Permissions'}
+          </h3>
+          <button
+            className={styles.refreshButton}
+            onClick={handleRefresh}
+            disabled={isRefreshing}
+            title="Refresh tools list"
+          >
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              className={isRefreshing ? styles.spinning : ''}
+            >
+              <path d="M23 4v6h-6M1 20v-6h6" />
+              <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+            </svg>
+          </button>
+        </div>
         {onClose && (
           <button className={styles.closeButton} onClick={onClose}>
             &times;

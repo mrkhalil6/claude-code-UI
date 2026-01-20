@@ -13,7 +13,9 @@ export interface PermissionsConfig {
   updatedAt: string;
 }
 
-// List of all known tools
+// Default list of known tools (fallback before session starts)
+// The actual list is updated dynamically from the CLI's system event
+// which includes MCP tools and any new tools added to Claude Code
 export const KNOWN_TOOLS = [
   'Read',
   'Write',

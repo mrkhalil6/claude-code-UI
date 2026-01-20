@@ -1,12 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { usePermissions, usePermissionActions } from '../../store';
+import { usePermissions, usePermissionActions, useSession } from '../../store';
 import styles from './SessionPermissions.module.css';
 
 export const SessionPermissions: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const { sessionAllowedTools, knownTools } = usePermissions();
   const { addSessionAllowedTool, removeSessionAllowedTool, setKnownTools } = usePermissionActions();
+  const { activeSessionId } = useSession();
 
   // Load known tools on mount
   useEffect(() => {
@@ -46,6 +48,25 @@ export const SessionPermissions: React.FC = () => {
     }
   };
 
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    try {
+      // First, get the default tools from main process
+      const defaultTools = await window.claudeUI.permissions.getKnownTools();
+
+      // Merge with any tools we've seen (keep MCP tools that were discovered)
+      const mergedTools = [...new Set([...defaultTools, ...knownTools])];
+      setKnownTools(mergedTools.sort());
+
+      // Note: Full refresh with MCP tools requires restarting the session
+      // The tools will be fully updated when the next session starts
+    } catch (error) {
+      console.error('Failed to refresh tools:', error);
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
   return (
     <div className={styles.container} ref={dropdownRef}>
       <button
@@ -65,9 +86,32 @@ export const SessionPermissions: React.FC = () => {
       {isOpen && (
         <div className={styles.dropdown}>
           <div className={styles.dropdownHeader}>
-            <span className={styles.dropdownTitle}>Session Permissions</span>
+            <div className={styles.dropdownTitleRow}>
+              <span className={styles.dropdownTitle}>Session Permissions</span>
+              <button
+                className={styles.refreshButton}
+                onClick={handleRefresh}
+                disabled={isRefreshing}
+                title="Refresh tools list"
+              >
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  className={isRefreshing ? styles.spinning : ''}
+                >
+                  <path d="M23 4v6h-6M1 20v-6h6" />
+                  <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+                </svg>
+              </button>
+            </div>
             <span className={styles.dropdownHint}>
-              Tools allowed for this session only
+              {activeSessionId
+                ? 'Tools allowed for this session only'
+                : 'Start a chat to see all available tools (including MCP)'}
             </span>
           </div>
 
