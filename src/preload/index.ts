@@ -29,6 +29,9 @@ const api = {
     load: (projectPath: string, sessionId: string): Promise<Session> =>
       ipcRenderer.invoke(IPC_CHANNELS.SESSION_LOAD, { projectPath, sessionId }),
 
+    delete: (projectPath: string, sessionId: string): Promise<boolean> =>
+      ipcRenderer.invoke(IPC_CHANNELS.SESSION_DELETE, { projectPath, sessionId }),
+
     onChanged: (callback: (data: { event: string; path: string }) => void): CleanupFn => {
       const handler = (_: IpcRendererEvent, data: { event: string; path: string }) => callback(data);
       ipcRenderer.on(IPC_CHANNELS.SESSIONS_CHANGED, handler);

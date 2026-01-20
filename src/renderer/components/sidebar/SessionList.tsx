@@ -1,13 +1,24 @@
 import React, { useState } from 'react';
 import { SessionItem } from './SessionItem';
 import { ProjectWithSessions } from '../../../shared/types';
+import { SelectedSession } from '../layout/Sidebar';
 import styles from './SessionList.module.css';
 
 interface SessionListProps {
   projects: ProjectWithSessions[];
+  onRefresh?: () => void;
+  isSelectMode?: boolean;
+  selectedSessions?: SelectedSession[];
+  onToggleSelection?: (session: SelectedSession) => void;
 }
 
-export const SessionList: React.FC<SessionListProps> = ({ projects }) => {
+export const SessionList: React.FC<SessionListProps> = ({
+  projects,
+  onRefresh,
+  isSelectMode = false,
+  selectedSessions = [],
+  onToggleSelection
+}) => {
   const [expandedProjects, setExpandedProjects] = useState<Set<string>>(
     new Set(projects.slice(0, 3).map(p => p.encodedName))
   );
@@ -57,6 +68,10 @@ export const SessionList: React.FC<SessionListProps> = ({ projects }) => {
                   session={session}
                   projectPath={project.path}
                   projectEncodedName={project.encodedName}
+                  onDelete={onRefresh}
+                  isSelectMode={isSelectMode}
+                  isSelected={selectedSessions.some(s => s.sessionId === session.id)}
+                  onToggleSelection={onToggleSelection}
                 />
               ))}
             </div>

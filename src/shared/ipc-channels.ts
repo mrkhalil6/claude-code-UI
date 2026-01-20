@@ -2,6 +2,7 @@ export const IPC_CHANNELS = {
   // Session Management
   SESSIONS_GET_ALL: 'sessions:getAll',
   SESSION_LOAD: 'sessions:load',
+  SESSION_DELETE: 'sessions:delete',
   SESSIONS_CHANGED: 'sessions:changed',
 
   // CLI Control

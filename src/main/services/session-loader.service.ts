@@ -1,4 +1,4 @@
-import { readdir, readFile, stat } from 'fs/promises';
+import { readdir, readFile, stat, unlink } from 'fs/promises';
 import { join, basename } from 'path';
 import { watch, FSWatcher } from 'chokidar';
 import { getSessionsPath, decodeProjectPath } from '../utils/paths';
@@ -229,6 +229,22 @@ export class SessionLoaderService {
     if (this.watcher) {
       this.watcher.close();
       this.watcher = null;
+    }
+  }
+
+  /**
+   * Delete a session file
+   */
+  async deleteSession(projectPath: string, sessionId: string): Promise<boolean> {
+    const filePath = join(projectPath, `${sessionId}.jsonl`);
+
+    try {
+      await unlink(filePath);
+      console.log(`Deleted session: ${filePath}`);
+      return true;
+    } catch (error) {
+      console.error(`Failed to delete session ${sessionId}:`, error);
+      return false;
     }
   }
 }

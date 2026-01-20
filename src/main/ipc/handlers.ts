@@ -27,6 +27,10 @@ export function registerIpcHandlers(
     return sessionLoader.loadFullSession(projectPath, sessionId);
   });
 
+  ipcMain.handle(IPC_CHANNELS.SESSION_DELETE, async (_, { projectPath, sessionId }: { projectPath: string; sessionId: string }) => {
+    return sessionLoader.deleteSession(projectPath, sessionId);
+  });
+
   // ===== CLI Session Control =====
 
   ipcMain.handle(IPC_CHANNELS.CLI_START_SESSION, async (_, options: StartSessionOptions) => {
