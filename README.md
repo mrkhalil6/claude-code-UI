@@ -36,7 +36,7 @@ Before using Claude Code UI, you need:
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/your-username/claude-code-ui.git
+   git clone https://github.com/mrkhalil6/claude-code-ui.git
    cd claude-code-ui
    ```
 
