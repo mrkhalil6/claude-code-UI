@@ -7,7 +7,9 @@ import {
   CLIServiceEvent,
   CLIPermissionRequiredEvent,
   CLIExitEvent,
-  CLIErrorEvent
+  CLIErrorEvent,
+  GitStatusResult,
+  GitFileDiff
 } from '../shared/types';
 
 // MCP Server types
@@ -203,6 +205,15 @@ const api = {
 
     removeServer: (name: string, projectPath?: string): Promise<Record<string, McpServer>> =>
       ipcRenderer.invoke(IPC_CHANNELS.MCP_REMOVE_SERVER, { name, projectPath })
+  },
+
+  // ===== Git Operations =====
+  git: {
+    getStatus: (cwd: string): Promise<GitStatusResult> =>
+      ipcRenderer.invoke(IPC_CHANNELS.GIT_GET_STATUS, { cwd }),
+
+    getFileDiff: (cwd: string, filePath: string): Promise<GitFileDiff> =>
+      ipcRenderer.invoke(IPC_CHANNELS.GIT_GET_FILE_DIFF, { cwd, filePath })
   }
 };
 

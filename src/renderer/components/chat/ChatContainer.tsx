@@ -38,26 +38,26 @@ export const ChatContainer: React.FC = () => {
         setConnectionStatus('connected');
         setIsStreaming(true);
 
+        // Cast to any to access properties that may exist on system events
+        const evt = data.event as unknown as Record<string, unknown>;
+
         // Store CLI's session ID separately for sidebar highlighting
         // (Don't change activeSessionId as it's used for main process communication)
-        if (data.event && data.event.session_id) {
-          setCliSessionId(data.event.session_id);
+        if (evt && evt.session_id) {
+          setCliSessionId(evt.session_id as string);
         }
         // Also sync the cwd if available
-        if (data.event && data.event.cwd) {
-          setCurrentCwd(data.event.cwd);
+        if (evt && evt.cwd) {
+          setCurrentCwd(evt.cwd as string);
         }
         // Capture available tools from the CLI (includes MCP tools)
-        if (data.event && data.event.tools && Array.isArray(data.event.tools)) {
-          setKnownTools(data.event.tools);
+        if (evt && evt.tools && Array.isArray(evt.tools)) {
+          setKnownTools(evt.tools as string[]);
         }
         // Capture model info and version
-        if (data.event) {
-          const evt = data.event as { model?: string; claude_code_version?: string };
-          if (evt.model) {
-            // Default context window values, will be updated from result event
-            setModelInfo(evt.model, 200000, 64000, evt.claude_code_version || '');
-          }
+        if (evt && evt.model) {
+          // Default context window values, will be updated from result event
+          setModelInfo(evt.model as string, 200000, 64000, (evt.claude_code_version as string) || '');
         }
       })
     );
@@ -94,12 +94,12 @@ export const ChatContainer: React.FC = () => {
         console.log('Assistant event:', data);
 
         // Extract content from the assistant message
-        const event = data.event;
+        const event = data.event as { message?: { content?: Array<{ type: string; text?: string; id?: string; name?: string; input?: Record<string, unknown> }> } };
         if (event && event.message && event.message.content) {
           for (const block of event.message.content) {
             if (block.type === 'text' && block.text) {
               appendStreamingContent(block.text);
-            } else if (block.type === 'tool_use') {
+            } else if (block.type === 'tool_use' && block.id && block.name) {
               // Handle TodoWrite tool specially - update the todo list
               if (block.name === 'TodoWrite' && block.input && Array.isArray(block.input.todos)) {
                 const todos = block.input.todos as TodoItem[];
@@ -122,10 +122,10 @@ export const ChatContainer: React.FC = () => {
     // Handle user events (tool results)
     cleanups.push(
       window.claudeUI.cli.onUser((data) => {
-        const event = data.event;
+        const event = data.event as { message?: { content?: Array<{ type: string; tool_use_id?: string; content?: unknown; is_error?: boolean }> } };
         if (event && event.message && event.message.content) {
           for (const block of event.message.content) {
-            if (block.type === 'tool_result') {
+            if (block.type === 'tool_result' && block.tool_use_id) {
               // Update tool status with result
               const resultContent = typeof block.content === 'string'
                 ? block.content
@@ -336,7 +336,7 @@ export const ChatContainer: React.FC = () => {
       switch (command.name) {
         case '/clear':
           // Clear messages from the store
-          useChatActions.getState().clearMessages();
+          useStore.getState().clearMessages();
           // Add a system message to indicate the clear
           addMessage({
             id: crypto.randomUUID(),
@@ -365,7 +365,7 @@ export const ChatContainer: React.FC = () => {
 
         case '/new':
           // Clear messages and reset session
-          useChatActions.getState().clearMessages();
+          useStore.getState().clearMessages();
           clearSession();
           return;
 

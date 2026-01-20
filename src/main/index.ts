@@ -6,6 +6,7 @@ import { SessionLoaderService } from './services/session-loader.service';
 import { CredentialsService } from './services/credentials.service';
 import { PermissionsService } from './services/permissions.service';
 import { McpService } from './services/mcp.service';
+import { GitService } from './services/git.service';
 
 class Application {
   private mainWindow: BrowserWindow | null = null;
@@ -14,6 +15,7 @@ class Application {
   private credentialsService: CredentialsService;
   private permissionsService: PermissionsService;
   private mcpService: McpService;
+  private gitService: GitService;
 
   constructor() {
     this.cliService = new ClaudeCliService();
@@ -21,6 +23,7 @@ class Application {
     this.credentialsService = new CredentialsService();
     this.permissionsService = new PermissionsService();
     this.mcpService = new McpService();
+    this.gitService = new GitService();
   }
 
   async initialize(): Promise<void> {
@@ -49,7 +52,8 @@ class Application {
       this.sessionLoader,
       this.credentialsService,
       this.permissionsService,
-      this.mcpService
+      this.mcpService,
+      this.gitService
     );
 
     // Create the main window

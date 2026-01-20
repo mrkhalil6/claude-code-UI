@@ -22,7 +22,7 @@ export type ContentBlock =
 
 export interface ChatMessage {
   id: string;
-  type: 'user' | 'assistant';
+  type: 'user' | 'assistant' | 'system';
   content: string;  // Keep for backwards compat and user messages
   timestamp: string;
   thinking?: string;

@@ -5,7 +5,7 @@ import styles from './Header.module.css';
 
 export const Header: React.FC = () => {
   const { isPlanMode, connectionStatus } = useUI();
-  const { togglePlanMode, toggleSidebar, setShowSettings } = useUIActions();
+  const { togglePlanMode, toggleSidebar, setShowSettings, setShowGitDiff } = useUIActions();
   const { currentCwd, activeSessionId } = useSession();
 
   const getStatusColor = () => {
@@ -69,6 +69,18 @@ export const Header: React.FC = () => {
             size="sm"
           />
         </div>
+
+        <button
+          className={styles.gitButton}
+          onClick={() => setShowGitDiff(true)}
+          aria-label="Git Changes"
+          title="View Git Changes"
+          disabled={!currentCwd}
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M21.007 8.222A3.738 3.738 0 0 0 15.045 5.2a3.737 3.737 0 0 0-6.09 0 3.738 3.738 0 0 0-5.962 3.022 3.737 3.737 0 0 0 2.49 6.527h.008l-.003.254c0 2.068 1.679 3.747 3.747 3.747h5.536a3.747 3.747 0 0 0 3.747-3.747l-.003-.254h.008a3.737 3.737 0 0 0 2.484-6.527zM12 18.75H9.226a1.747 1.747 0 0 1-1.747-1.747v-.254H9.5v-2H5.527a1.737 1.737 0 0 1-.74-3.306l.658-.306-.082-.71a1.737 1.737 0 0 1 1.75-1.932 1.72 1.72 0 0 1 .983.306l.655.445.465-.645A1.738 1.738 0 0 1 12 8c.585 0 1.13.29 1.455.778l.465.645.655-.445a1.72 1.72 0 0 1 .983-.306 1.738 1.738 0 0 1 1.75 1.932l-.082.71.658.306a1.737 1.737 0 0 1-.74 3.306H14.5v2h2.021v.254A1.747 1.747 0 0 1 14.773 19L12 18.75z"/>
+          </svg>
+        </button>
 
         <button
           className={styles.settingsButton}

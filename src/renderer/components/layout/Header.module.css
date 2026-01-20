@@ -140,6 +140,30 @@
   align-items: center;
 }
 
+.gitButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--border-radius-md);
+  color: var(--text-secondary);
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.gitButton:hover:not(:disabled) {
+  background-color: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.gitButton:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
 .settingsButton {
   display: flex;
   align-items: center;

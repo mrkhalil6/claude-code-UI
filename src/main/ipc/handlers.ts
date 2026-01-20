@@ -1,4 +1,4 @@
-import { ipcMain, BrowserWindow, dialog, app, shell } from 'electron';
+import { ipcMain, BrowserWindow, dialog, app } from 'electron';
 import { readFile } from 'fs/promises';
 import { homedir } from 'os';
 import { spawn } from 'child_process';
@@ -8,6 +8,7 @@ import { SessionLoaderService } from '../services/session-loader.service';
 import { CredentialsService } from '../services/credentials.service';
 import { PermissionsService, KNOWN_TOOLS } from '../services/permissions.service';
 import { McpService, McpServer } from '../services/mcp.service';
+import { GitService } from '../services/git.service';
 import { StartSessionOptions } from '../../shared/types';
 
 export function registerIpcHandlers(
@@ -15,7 +16,8 @@ export function registerIpcHandlers(
   sessionLoader: SessionLoaderService,
   _credentialsService: CredentialsService,
   permissionsService: PermissionsService,
-  mcpService: McpService
+  mcpService: McpService,
+  gitService: GitService
 ): void {
   // ===== Session Management =====
 
@@ -386,6 +388,16 @@ export function registerIpcHandlers(
     }
     await mcpService.removeServer(name);
     return mcpService.getServers();
+  });
+
+  // ===== Git Operations =====
+
+  ipcMain.handle(IPC_CHANNELS.GIT_GET_STATUS, async (_, { cwd }: { cwd: string }) => {
+    return gitService.getStatus(cwd);
+  });
+
+  ipcMain.handle(IPC_CHANNELS.GIT_GET_FILE_DIFF, async (_, { cwd, filePath }: { cwd: string; filePath: string }) => {
+    return gitService.getFileDiff(cwd, filePath);
   });
 
   // ===== Session File Watching =====

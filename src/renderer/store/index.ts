@@ -61,6 +61,7 @@ export const useUI = () => useStore((state) => ({
   showDiffPanel: state.showDiffPanel,
   activeDiffId: state.activeDiffId,
   showSettings: state.showSettings,
+  showGitDiff: state.showGitDiff,
   connectionStatus: state.connectionStatus,
   errorMessage: state.errorMessage,
   usage: state.usage
@@ -126,6 +127,7 @@ export const useUIActions = () => useStore((state) => ({
   setShowDiffPanel: state.setShowDiffPanel,
   setActiveDiffId: state.setActiveDiffId,
   setShowSettings: state.setShowSettings,
+  setShowGitDiff: state.setShowGitDiff,
   setConnectionStatus: state.setConnectionStatus,
   setErrorMessage: state.setErrorMessage,
   setModelInfo: state.setModelInfo,

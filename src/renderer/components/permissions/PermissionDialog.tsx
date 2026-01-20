@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Modal, Button } from '../common';
 import { PendingPermission, PermissionScope } from '../../../shared/types';
-import { usePermissionActions, useSession } from '../../store';
+import { usePermissionActions, useSession, useChatActions } from '../../store';
 import styles from './PermissionDialog.module.css';
 
 interface PermissionDialogProps {
@@ -13,6 +13,7 @@ export const PermissionDialog: React.FC<PermissionDialogProps> = ({ permission, 
   const [scope, setScope] = useState<PermissionScope>('session');
   const { setPendingPermission, addToPermissionHistory } = usePermissionActions();
   const { activeSessionId } = useSession();
+  const { setLastUserMessage } = useChatActions();
 
   const handleGrant = async () => {
     console.log('[PermissionDialog] handleGrant called');

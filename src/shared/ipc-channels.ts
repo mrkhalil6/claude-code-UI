@@ -64,7 +64,11 @@ export const IPC_CHANNELS = {
   MCP_GET_SERVERS: 'mcp:getServers',
   MCP_ADD_SERVER: 'mcp:addServer',
   MCP_REMOVE_SERVER: 'mcp:removeServer',
-  MCP_GET_SERVER: 'mcp:getServer'
+  MCP_GET_SERVER: 'mcp:getServer',
+
+  // Git Operations
+  GIT_GET_STATUS: 'git:getStatus',
+  GIT_GET_FILE_DIFF: 'git:getFileDiff'
 } as const;
 
 export type IpcChannel = typeof IPC_CHANNELS[keyof typeof IPC_CHANNELS];

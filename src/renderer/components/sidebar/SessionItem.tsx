@@ -26,7 +26,7 @@ export const SessionItem: React.FC<SessionItemProps> = memo(({
   onToggleSelection
 }) => {
   const { cliSessionId } = useSession();
-  const { setActiveSession, setActiveSessionId, setCliSessionId, setActiveProjectPath, setCurrentCwd, setIsLoadingSession } = useSessionActions();
+  const { setActiveSessionId, setCliSessionId, setActiveProjectPath, setCurrentCwd, setIsLoadingSession } = useSessionActions();
   const { setMessages, clearMessages } = useChatActions();
   const { setConnectionStatus } = useUIActions();
   const [isDeleting, setIsDeleting] = useState(false);

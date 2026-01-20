@@ -20,6 +20,7 @@ export interface UISlice {
   showDiffPanel: boolean;
   activeDiffId: string | null;
   showSettings: boolean;
+  showGitDiff: boolean;
   connectionStatus: 'disconnected' | 'connecting' | 'connected' | 'error';
   errorMessage: string | null;
   usage: UsageInfo;
@@ -33,6 +34,7 @@ export interface UISlice {
   setShowDiffPanel: (show: boolean) => void;
   setActiveDiffId: (id: string | null) => void;
   setShowSettings: (show: boolean) => void;
+  setShowGitDiff: (show: boolean) => void;
   setConnectionStatus: (status: UISlice['connectionStatus']) => void;
   setErrorMessage: (message: string | null) => void;
   setModelInfo: (modelName: string, contextWindow: number, maxOutputTokens: number, version: string) => void;
@@ -60,6 +62,7 @@ export const createUISlice: StateCreator<UISlice, [], [], UISlice> = (set) => ({
   showDiffPanel: false,
   activeDiffId: null,
   showSettings: false,
+  showGitDiff: false,
   connectionStatus: 'disconnected',
   errorMessage: null,
   usage: initialUsage,
@@ -80,6 +83,8 @@ export const createUISlice: StateCreator<UISlice, [], [], UISlice> = (set) => ({
   setActiveDiffId: (id) => set({ activeDiffId: id }),
 
   setShowSettings: (show) => set({ showSettings: show }),
+
+  setShowGitDiff: (show) => set({ showGitDiff: show }),
 
   setConnectionStatus: (status) => set({ connectionStatus: status }),
 
