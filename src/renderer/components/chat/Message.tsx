@@ -1,7 +1,7 @@
 import React from 'react';
 import clsx from 'clsx';
 import { MarkdownPreview } from '../markdown/MarkdownPreview';
-import { ChatMessage } from '../../store/slices/chat.slice';
+import { ChatMessage, ToolUseDisplay } from '../../store/slices/chat.slice';
 import styles from './Message.module.css';
 
 interface MessageProps {
@@ -10,6 +10,71 @@ interface MessageProps {
 
 export const Message: React.FC<MessageProps> = ({ message }) => {
   const isUser = message.type === 'user';
+
+  const renderToolBlock = (tool: ToolUseDisplay) => (
+    <div key={tool.id} className={clsx(styles.tool, styles[`tool${tool.status.charAt(0).toUpperCase() + tool.status.slice(1)}`])}>
+      <div className={styles.toolHeader}>
+        <span className={styles.toolIcon}>
+          {tool.status === 'completed' ? '✓' : tool.status === 'error' ? '✗' : '•'}
+        </span>
+        <span className={styles.toolName}>{tool.name}</span>
+        <span className={clsx(styles.toolStatus, styles[tool.status])}>
+          {tool.status}
+        </span>
+      </div>
+      {tool.input && Object.keys(tool.input).length > 0 && (
+        <details className={styles.toolDetails} open>
+          <summary>Input</summary>
+          <pre>{JSON.stringify(tool.input, null, 2)}</pre>
+        </details>
+      )}
+      {tool.result && (
+        <details className={styles.toolDetails} open>
+          <summary>Result</summary>
+          <pre>{tool.result}</pre>
+        </details>
+      )}
+    </div>
+  );
+
+  // Render content blocks in order (if available) or fall back to old format
+  const renderContent = () => {
+    if (isUser) {
+      return <p className={styles.text}>{message.content}</p>;
+    }
+
+    // Use contentBlocks if available (preserves order)
+    if (message.contentBlocks && message.contentBlocks.length > 0) {
+      return (
+        <div className={styles.orderedContent}>
+          {message.contentBlocks.map((block, index) => {
+            if (block.type === 'text') {
+              return (
+                <div key={`text-${index}`} className={styles.textBlock}>
+                  <MarkdownPreview content={block.text} />
+                </div>
+              );
+            } else if (block.type === 'tool') {
+              return renderToolBlock(block.tool);
+            }
+            return null;
+          })}
+        </div>
+      );
+    }
+
+    // Fall back to old format (text content + tools at end)
+    return (
+      <>
+        {message.content && <MarkdownPreview content={message.content} />}
+        {message.toolUses && message.toolUses.length > 0 && (
+          <div className={styles.tools}>
+            {message.toolUses.map((tool) => renderToolBlock(tool))}
+          </div>
+        )}
+      </>
+    );
+  };
 
   return (
     <div className={clsx(styles.message, isUser ? styles.user : styles.assistant)}>
@@ -49,42 +114,8 @@ export const Message: React.FC<MessageProps> = ({ message }) => {
         )}
 
         <div className={styles.body}>
-          {isUser ? (
-            <p className={styles.text}>{message.content}</p>
-          ) : (
-            <MarkdownPreview content={message.content} />
-          )}
+          {renderContent()}
         </div>
-
-        {message.toolUses && message.toolUses.length > 0 && (
-          <div className={styles.tools}>
-            {message.toolUses.map((tool) => (
-              <div key={tool.id} className={clsx(styles.tool, styles[`tool${tool.status.charAt(0).toUpperCase() + tool.status.slice(1)}`])}>
-                <div className={styles.toolHeader}>
-                  <span className={styles.toolIcon}>
-                    {tool.status === 'completed' ? '✓' : tool.status === 'error' ? '✗' : '•'}
-                  </span>
-                  <span className={styles.toolName}>{tool.name}</span>
-                  <span className={clsx(styles.toolStatus, styles[tool.status])}>
-                    {tool.status}
-                  </span>
-                </div>
-                {tool.input && Object.keys(tool.input).length > 0 && (
-                  <details className={styles.toolDetails}>
-                    <summary>Input</summary>
-                    <pre>{JSON.stringify(tool.input, null, 2)}</pre>
-                  </details>
-                )}
-                {tool.result && (
-                  <details className={styles.toolDetails}>
-                    <summary>Result</summary>
-                    <pre>{tool.result}</pre>
-                  </details>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
       </div>
     </div>
   );

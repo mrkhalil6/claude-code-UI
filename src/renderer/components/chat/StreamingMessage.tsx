@@ -1,18 +1,18 @@
 import React from 'react';
 import { MarkdownPreview } from '../markdown/MarkdownPreview';
-import { ToolUseDisplay } from '../../store/slices/chat.slice';
+import { ToolUseDisplay, ContentBlock } from '../../store/slices/chat.slice';
 import styles from './StreamingMessage.module.css';
 
 interface StreamingMessageProps {
   content: string;
   thinking?: string;
   toolsInProgress?: ToolUseDisplay[];
+  streamingBlocks?: ContentBlock[];
 }
 
 export const StreamingMessage: React.FC<StreamingMessageProps> = ({
-  content,
   thinking,
-  toolsInProgress = []
+  streamingBlocks = []
 }) => {
   const getToolStatusIcon = (status: ToolUseDisplay['status']) => {
     switch (status) {
@@ -42,6 +42,28 @@ export const StreamingMessage: React.FC<StreamingMessageProps> = ({
     }
   };
 
+  const renderToolBlock = (tool: ToolUseDisplay) => (
+    <div key={tool.id} className={`${styles.toolUse} ${getToolStatusClass(tool.status)}`}>
+      <div className={styles.toolHeader}>
+        <span className={styles.toolIcon}>{getToolStatusIcon(tool.status)}</span>
+        <span className={styles.toolName}>{tool.name}</span>
+        <span className={styles.toolStatus}>{tool.status}</span>
+      </div>
+      {tool.input && Object.keys(tool.input).length > 0 && (
+        <details className={styles.toolInput} open>
+          <summary>Input</summary>
+          <pre>{JSON.stringify(tool.input, null, 2)}</pre>
+        </details>
+      )}
+      {tool.result && (
+        <details className={styles.toolResult} open>
+          <summary>Result</summary>
+          <pre>{tool.result}</pre>
+        </details>
+      )}
+    </div>
+  );
+
   return (
     <div className={styles.message}>
       <div className={styles.avatar}>
@@ -65,38 +87,24 @@ export const StreamingMessage: React.FC<StreamingMessageProps> = ({
           </div>
         )}
 
-        {/* Tool Uses */}
-        {toolsInProgress.length > 0 && (
-          <div className={styles.toolUses}>
-            {toolsInProgress.map((tool) => (
-              <div key={tool.id} className={`${styles.toolUse} ${getToolStatusClass(tool.status)}`}>
-                <div className={styles.toolHeader}>
-                  <span className={styles.toolIcon}>{getToolStatusIcon(tool.status)}</span>
-                  <span className={styles.toolName}>{tool.name}</span>
-                  <span className={styles.toolStatus}>{tool.status}</span>
-                </div>
-                {tool.input && Object.keys(tool.input).length > 0 && (
-                  <div className={styles.toolInput}>
-                    <pre>{JSON.stringify(tool.input, null, 2)}</pre>
-                  </div>
-                )}
-                {tool.result && (
-                  <div className={styles.toolResult}>
-                    <div className={styles.toolResultHeader}>Result:</div>
-                    <pre>{tool.result}</pre>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
-
+        {/* Render blocks in order */}
         <div className={styles.body}>
-          {content ? (
-            <MarkdownPreview content={content} />
-          ) : toolsInProgress.length === 0 ? (
+          {streamingBlocks.length > 0 ? (
+            streamingBlocks.map((block, index) => {
+              if (block.type === 'text') {
+                return (
+                  <div key={`text-${index}`} className={styles.textBlock}>
+                    <MarkdownPreview content={block.text} />
+                  </div>
+                );
+              } else if (block.type === 'tool') {
+                return renderToolBlock(block.tool);
+              }
+              return null;
+            })
+          ) : (
             <span className={styles.placeholder}>Thinking...</span>
-          ) : null}
+          )}
           <span className={styles.cursor} />
         </div>
       </div>

@@ -2,6 +2,7 @@ import React from 'react';
 import clsx from 'clsx';
 import { SessionSummary } from '../../../shared/types';
 import { useSession, useSessionActions, useChatActions, useUIActions } from '../../store';
+import { ChatMessage, ToolUseDisplay, ContentBlock } from '../../store/slices/chat.slice';
 import styles from './SessionItem.module.css';
 
 interface SessionItemProps {
@@ -45,18 +46,95 @@ export const SessionItem: React.FC<SessionItemProps> = ({
       setActiveProjectPath(projectPath);
       setCurrentCwd(loadedSession.metadata.cwd);
 
-      // Convert session messages to chat messages
-      const chatMessages = loadedSession.messages.map(msg => ({
-        id: msg.uuid,
-        type: msg.type as 'user' | 'assistant',
-        content: typeof msg.message.content === 'string'
-          ? msg.message.content
-          : msg.message.content
-              .filter((c): c is { type: 'text'; text: string } => c.type === 'text')
-              .map(c => c.text)
-              .join('\n'),
-        timestamp: msg.timestamp
-      }));
+      // First pass: collect tool results from user messages
+      const toolResults = new Map<string, { result: string; isError: boolean }>();
+      for (const msg of loadedSession.messages) {
+        if (msg.type === 'user' && Array.isArray(msg.message.content)) {
+          for (const block of msg.message.content) {
+            if (block.type === 'tool_result' && 'tool_use_id' in block) {
+              const resultContent = typeof block.content === 'string'
+                ? block.content
+                : JSON.stringify(block.content);
+              toolResults.set(block.tool_use_id as string, {
+                result: resultContent.slice(0, 500),
+                isError: !!block.is_error
+              });
+            }
+          }
+        }
+      }
+
+      // Convert session messages to chat messages with tool uses
+      const chatMessages: ChatMessage[] = loadedSession.messages
+        .filter(msg => {
+          // Filter out user messages that only contain tool_result (not visible to user)
+          if (msg.type === 'user' && Array.isArray(msg.message.content)) {
+            const hasUserText = msg.message.content.some(
+              (c) => c.type === 'text' && 'text' in c && (c.text as string).trim()
+            );
+            const hasToolResult = msg.message.content.some(c => c.type === 'tool_result');
+            if (hasToolResult && !hasUserText) return false;
+          }
+          return true;
+        })
+        .map(msg => {
+          const content = msg.message.content;
+
+          if (typeof content === 'string') {
+            return {
+              id: msg.uuid,
+              type: msg.type as 'user' | 'assistant',
+              content,
+              timestamp: msg.timestamp
+            };
+          }
+
+          // Extract text content
+          const textContent = content
+            .filter((c): c is { type: 'text'; text: string } => c.type === 'text')
+            .map(c => c.text)
+            .join('\n');
+
+          // For assistant messages, build contentBlocks and toolUses
+          if (msg.type === 'assistant') {
+            const contentBlocks: ContentBlock[] = [];
+            const toolUses: ToolUseDisplay[] = [];
+
+            for (const block of content) {
+              if (block.type === 'text' && 'text' in block) {
+                contentBlocks.push({ type: 'text', text: block.text });
+              } else if (block.type === 'tool_use' && 'id' in block && 'name' in block) {
+                const toolId = block.id as string;
+                const resultInfo = toolResults.get(toolId);
+                const toolDisplay: ToolUseDisplay = {
+                  id: toolId,
+                  name: block.name as string,
+                  input: (block.input as Record<string, unknown>) || {},
+                  status: resultInfo?.isError ? 'error' : 'completed',
+                  result: resultInfo?.result
+                };
+                contentBlocks.push({ type: 'tool', tool: toolDisplay });
+                toolUses.push(toolDisplay);
+              }
+            }
+
+            return {
+              id: msg.uuid,
+              type: 'assistant' as const,
+              content: textContent,
+              timestamp: msg.timestamp,
+              contentBlocks: contentBlocks.length > 0 ? contentBlocks : undefined,
+              toolUses: toolUses.length > 0 ? toolUses : undefined
+            };
+          }
+
+          return {
+            id: msg.uuid,
+            type: msg.type as 'user' | 'assistant',
+            content: textContent,
+            timestamp: msg.timestamp
+          };
+        });
 
       setMessages(chatMessages);
       setConnectionStatus('connected');

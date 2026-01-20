@@ -206,3 +206,18 @@
   white-space: pre-wrap;
   word-break: break-all;
 }
+
+/* Ordered content blocks for inline tool display */
+.orderedContent {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.textBlock {
+  /* Markdown content block */
+}
+
+.textBlock:empty {
+  display: none;
+}

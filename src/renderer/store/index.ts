@@ -40,6 +40,7 @@ export const useChat = () => useStore((state) => ({
   streamingContent: state.streamingContent,
   streamingThinking: state.streamingThinking,
   toolsInProgress: state.toolsInProgress,
+  streamingBlocks: state.streamingBlocks,
   lastUserMessage: state.lastUserMessage
 }));
 

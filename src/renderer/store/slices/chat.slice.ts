@@ -1,20 +1,26 @@
 import { StateCreator } from 'zustand';
 
-export interface ChatMessage {
-  id: string;
-  type: 'user' | 'assistant';
-  content: string;
-  timestamp: string;
-  thinking?: string;
-  toolUses?: ToolUseDisplay[];
-}
-
 export interface ToolUseDisplay {
   id: string;
   name: string;
   input: Record<string, unknown>;
   status: 'pending' | 'running' | 'completed' | 'error';
   result?: string;
+}
+
+// Content block types for preserving order of text and tool calls
+export type ContentBlock =
+  | { type: 'text'; text: string }
+  | { type: 'tool'; tool: ToolUseDisplay };
+
+export interface ChatMessage {
+  id: string;
+  type: 'user' | 'assistant';
+  content: string;  // Keep for backwards compat and user messages
+  timestamp: string;
+  thinking?: string;
+  contentBlocks?: ContentBlock[];  // Ordered blocks for assistant messages
+  toolUses?: ToolUseDisplay[];  // Keep for backwards compat
 }
 
 export interface ChatSlice {
@@ -24,6 +30,7 @@ export interface ChatSlice {
   streamingContent: string;
   streamingThinking: string;
   toolsInProgress: ToolUseDisplay[];
+  streamingBlocks: ContentBlock[];  // Ordered blocks during streaming
   lastUserMessage: string | null;  // For retrying after permission grant
 
   // Actions
@@ -50,6 +57,7 @@ export const createChatSlice: StateCreator<ChatSlice, [], [], ChatSlice> = (set,
   streamingContent: '',
   streamingThinking: '',
   toolsInProgress: [],
+  streamingBlocks: [],
   lastUserMessage: null,
 
   // Actions
@@ -65,9 +73,24 @@ export const createChatSlice: StateCreator<ChatSlice, [], [], ChatSlice> = (set,
 
   setStreamingContent: (content) => set({ streamingContent: content }),
 
-  appendStreamingContent: (content) => set((state) => ({
-    streamingContent: state.streamingContent + content
-  })),
+  appendStreamingContent: (content) => set((state) => {
+    // Also update streamingBlocks - append to last text block or create new one
+    const blocks = [...state.streamingBlocks];
+    const lastBlock = blocks[blocks.length - 1];
+
+    if (lastBlock && lastBlock.type === 'text') {
+      // Append to existing text block
+      blocks[blocks.length - 1] = { type: 'text', text: lastBlock.text + content };
+    } else {
+      // Create new text block
+      blocks.push({ type: 'text', text: content });
+    }
+
+    return {
+      streamingContent: state.streamingContent + content,
+      streamingBlocks: blocks
+    };
+  }),
 
   setStreamingThinking: (thinking) => set({ streamingThinking: thinking }),
 
@@ -78,31 +101,54 @@ export const createChatSlice: StateCreator<ChatSlice, [], [], ChatSlice> = (set,
   clearStreaming: () => set({
     streamingContent: '',
     streamingThinking: '',
-    toolsInProgress: []
+    toolsInProgress: [],
+    streamingBlocks: []
   }),
 
   addToolInProgress: (tool) => set((state) => ({
-    toolsInProgress: [...state.toolsInProgress, tool]
+    toolsInProgress: [...state.toolsInProgress, tool],
+    // Add tool block to streaming blocks
+    streamingBlocks: [...state.streamingBlocks, { type: 'tool', tool }]
   })),
 
-  updateToolStatus: (toolId, status, result) => set((state) => ({
-    toolsInProgress: state.toolsInProgress.map((tool) =>
+  updateToolStatus: (toolId, status, result) => set((state) => {
+    // Update in toolsInProgress
+    const updatedTools = state.toolsInProgress.map((tool) =>
       tool.id === toolId ? { ...tool, status, result } : tool
-    )
-  })),
+    );
+
+    // Also update in streamingBlocks
+    const updatedBlocks = state.streamingBlocks.map((block) => {
+      if (block.type === 'tool' && block.tool.id === toolId) {
+        return { type: 'tool' as const, tool: { ...block.tool, status, result } };
+      }
+      return block;
+    });
+
+    return {
+      toolsInProgress: updatedTools,
+      streamingBlocks: updatedBlocks
+    };
+  }),
 
   clearToolsInProgress: () => set({ toolsInProgress: [] }),
 
   finalizeStreamingMessage: () => {
     const state = get();
-    if (state.streamingContent || state.streamingThinking) {
+    if (state.streamingBlocks.length > 0 || state.streamingThinking) {
+      // Extract all tools from blocks for backwards compat
+      const toolUses = state.streamingBlocks
+        .filter((b): b is { type: 'tool'; tool: ToolUseDisplay } => b.type === 'tool')
+        .map(b => b.tool);
+
       const message: ChatMessage = {
         id: crypto.randomUUID(),
         type: 'assistant',
         content: state.streamingContent,
         timestamp: new Date().toISOString(),
         thinking: state.streamingThinking || undefined,
-        toolUses: state.toolsInProgress.length > 0 ? [...state.toolsInProgress] : undefined
+        contentBlocks: state.streamingBlocks.length > 0 ? [...state.streamingBlocks] : undefined,
+        toolUses: toolUses.length > 0 ? toolUses : undefined
       };
 
       set((state) => ({
@@ -110,7 +156,8 @@ export const createChatSlice: StateCreator<ChatSlice, [], [], ChatSlice> = (set,
         isStreaming: false,
         streamingContent: '',
         streamingThinking: '',
-        toolsInProgress: []
+        toolsInProgress: [],
+        streamingBlocks: []
       }));
     } else {
       set({ isStreaming: false });

@@ -187,6 +187,21 @@
   margin-top: var(--spacing-xs);
 }
 
+.toolInput summary,
+.toolResult summary {
+  cursor: pointer;
+  font-size: var(--font-size-xs);
+  font-weight: 500;
+  color: var(--text-muted);
+  user-select: none;
+  margin-bottom: var(--spacing-xs);
+}
+
+.toolInput summary:hover,
+.toolResult summary:hover {
+  color: var(--text-secondary);
+}
+
 .toolInput pre {
   margin: 0;
   padding: var(--spacing-xs);
@@ -206,13 +221,6 @@
   border-top: 1px solid var(--border-primary);
 }
 
-.toolResultHeader {
-  font-size: var(--font-size-xs);
-  font-weight: 500;
-  color: var(--text-muted);
-  margin-bottom: var(--spacing-xs);
-}
-
 .toolResult pre {
   margin: 0;
   padding: var(--spacing-xs);
@@ -224,4 +232,13 @@
   max-height: 150px;
   white-space: pre-wrap;
   word-break: break-all;
+}
+
+/* Text blocks in ordered content */
+.textBlock {
+  /* Markdown content block - inherits body styles */
+}
+
+.textBlock:empty {
+  display: none;
 }

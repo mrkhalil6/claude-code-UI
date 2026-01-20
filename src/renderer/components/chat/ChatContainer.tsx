@@ -9,7 +9,7 @@ import styles from './ChatContainer.module.css';
 export const ChatContainer: React.FC = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [error, setError] = useState<string | null>(null);
-  const { messages, isStreaming, streamingContent, streamingThinking, toolsInProgress } = useChat();
+  const { messages, isStreaming, streamingContent, streamingThinking, toolsInProgress, streamingBlocks } = useChat();
   const { activeSessionId, currentCwd, cliSessionId } = useSession();
   const { isPlanMode } = useUI();
   const { pendingPermission } = usePermissions();
@@ -273,6 +273,7 @@ export const ChatContainer: React.FC = () => {
             content={streamingContent}
             thinking={streamingThinking}
             toolsInProgress={toolsInProgress}
+            streamingBlocks={streamingBlocks}
           />
         )}
 
