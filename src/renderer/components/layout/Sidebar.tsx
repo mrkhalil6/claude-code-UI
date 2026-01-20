@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { SessionList } from '../sidebar/SessionList';
 import { Button } from '../common';
 import { useUI, useSession, useSessionActions, useChatActions } from '../../store';
@@ -10,6 +10,9 @@ export interface SelectedSession {
   title: string;
 }
 
+// Debounce delay for session changes (ms)
+const SESSION_CHANGE_DEBOUNCE_MS = 500;
+
 export const Sidebar: React.FC = () => {
   const { sidebarWidth, isSidebarCollapsed } = useUI();
   const { projects, isLoadingSessions } = useSession();
@@ -19,30 +22,53 @@ export const Sidebar: React.FC = () => {
   const [selectedSessions, setSelectedSessions] = useState<SelectedSession[]>([]);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  // Load sessions function
-  const loadSessions = async () => {
-    setIsLoadingSessions(true);
+  // Ref for debounce timeout
+  const loadTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Load sessions function - showLoading controls whether to show loading state
+  const loadSessions = useCallback(async (showLoading = true) => {
+    if (showLoading) {
+      setIsLoadingSessions(true);
+    }
     try {
       const loadedProjects = await window.claudeUI.sessions.getAll();
       setProjects(loadedProjects);
     } catch (error) {
       console.error('Failed to load sessions:', error);
     } finally {
-      setIsLoadingSessions(false);
+      if (showLoading) {
+        setIsLoadingSessions(false);
+      }
     }
-  };
+  }, [setProjects, setIsLoadingSessions]);
 
-  // Load sessions on mount
+  // Debounced load for file watcher events - prevents flickering
+  const debouncedLoadSessions = useCallback(() => {
+    if (loadTimeoutRef.current) {
+      clearTimeout(loadTimeoutRef.current);
+    }
+    loadTimeoutRef.current = setTimeout(() => {
+      loadSessions(false); // Don't show loading state for background refreshes
+    }, SESSION_CHANGE_DEBOUNCE_MS);
+  }, [loadSessions]);
+
+  // Load sessions on mount and subscribe to changes
   useEffect(() => {
-    loadSessions();
+    loadSessions(true); // Show loading state on initial load
 
-    // Subscribe to session changes
+    // Subscribe to session changes with debouncing
     const cleanup = window.claudeUI.sessions.onChanged(() => {
-      loadSessions();
+      debouncedLoadSessions();
     });
 
-    return cleanup;
-  }, [setProjects, setIsLoadingSessions]);
+    return () => {
+      cleanup();
+      // Clear any pending debounce timeout
+      if (loadTimeoutRef.current) {
+        clearTimeout(loadTimeoutRef.current);
+      }
+    };
+  }, [loadSessions, debouncedLoadSessions]);
 
   const handleNewChat = async () => {
     // Clear current chat state

@@ -48,13 +48,16 @@ export class PermissionsService {
    * Load permissions from disk
    */
   async load(): Promise<PermissionsConfig> {
+    console.log(`[Permissions] Loading from: ${this.configPath}`);
     try {
       const content = await readFile(this.configPath, 'utf-8');
       this.config = JSON.parse(content);
+      console.log(`[Permissions] Loaded ${this.config.globalPermissions.length} global permissions:`,
+        this.config.globalPermissions.map(p => `${p.tool}=${p.scope}`).join(', '));
       return this.config;
     } catch (error) {
       // File doesn't exist or is invalid, use defaults
-      console.log('No permissions config found, using defaults');
+      console.log('[Permissions] No permissions config found, using defaults');
       return this.config;
     }
   }

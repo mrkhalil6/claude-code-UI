@@ -38,6 +38,8 @@ export const PermissionsManager: React.FC<PermissionsManagerProps> = ({ type, on
     try {
       const updated = await window.claudeUI.permissions.setGlobal(tool, allowed, scope);
       setGlobalPermissions(updated);
+      // Sync the updated permissions to all active sessions
+      await window.claudeUI.permissions.syncAllSessions();
     } catch (error) {
       console.error('Failed to update permission:', error);
     }
@@ -47,6 +49,8 @@ export const PermissionsManager: React.FC<PermissionsManagerProps> = ({ type, on
     try {
       const updated = await window.claudeUI.permissions.removeGlobal(tool);
       setGlobalPermissions(updated);
+      // Sync the updated permissions to all active sessions
+      await window.claudeUI.permissions.syncAllSessions();
     } catch (error) {
       console.error('Failed to remove permission:', error);
     }

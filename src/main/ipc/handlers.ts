@@ -34,7 +34,15 @@ export function registerIpcHandlers(
   // ===== CLI Session Control =====
 
   ipcMain.handle(IPC_CHANNELS.CLI_START_SESSION, async (_, options: StartSessionOptions) => {
-    return cliService.startSession(options);
+    // Get auto-allowed tools from global permissions
+    const autoAllowedTools = permissionsService.getAutoAllowedTools();
+    console.log(`[IPC] Starting session with auto-allowed tools: ${autoAllowedTools.join(', ') || 'none'}`);
+
+    // Pass auto-allowed tools to the session
+    return cliService.startSession({
+      ...options,
+      initialAllowedTools: autoAllowedTools
+    });
   });
 
   ipcMain.handle(IPC_CHANNELS.CLI_SEND_MESSAGE, async (_, { sessionId, message }: { sessionId: string; message: string }) => {
@@ -140,7 +148,10 @@ export function registerIpcHandlers(
   // ===== Permissions =====
 
   ipcMain.handle(IPC_CHANNELS.PERMISSIONS_GET_GLOBAL, async () => {
-    return permissionsService.getGlobalPermissions();
+    const perms = permissionsService.getGlobalPermissions();
+    console.log(`[IPC] PERMISSIONS_GET_GLOBAL returning ${perms.length} permissions:`,
+      perms.map(p => `${p.tool}=${p.scope}`).join(', '));
+    return perms;
   });
 
   ipcMain.handle(IPC_CHANNELS.PERMISSIONS_SET_GLOBAL, async (_, { tool, allowed, scope }: { tool: string; allowed: boolean; scope: 'always' | 'ask' }) => {
@@ -159,6 +170,30 @@ export function registerIpcHandlers(
 
   ipcMain.handle(IPC_CHANNELS.PERMISSIONS_GET_KNOWN_TOOLS, async () => {
     return [...KNOWN_TOOLS];
+  });
+
+  // Sync permissions to a specific session (combines global auto-allowed + session-specific)
+  ipcMain.handle(IPC_CHANNELS.PERMISSIONS_SYNC_SESSION, async (_, { sessionId, sessionTools }: { sessionId: string; sessionTools: string[] }) => {
+    const globalAutoAllowed = permissionsService.getAutoAllowedTools();
+    // Combine global auto-allowed with session-specific tools (deduplicate)
+    const combinedTools = [...new Set([...globalAutoAllowed, ...sessionTools])];
+    console.log(`[IPC] Syncing session ${sessionId} with tools: ${combinedTools.join(', ') || 'none'}`);
+    return cliService.syncAllowedTools(sessionId, combinedTools);
+  });
+
+  // Sync permissions to ALL active sessions (called when global permissions change)
+  ipcMain.handle(IPC_CHANNELS.PERMISSIONS_SYNC_ALL_SESSIONS, async () => {
+    const globalAutoAllowed = permissionsService.getAutoAllowedTools();
+    const activeSessionIds = cliService.getActiveSessionIds();
+    console.log(`[IPC] Syncing all ${activeSessionIds.length} sessions with global tools: ${globalAutoAllowed.join(', ') || 'none'}`);
+
+    for (const sessionId of activeSessionIds) {
+      // When global permissions change, reset to ONLY the global auto-allowed tools
+      // This ensures revoked permissions are actually removed
+      cliService.syncAllowedTools(sessionId, globalAutoAllowed);
+    }
+
+    return { synced: activeSessionIds.length };
   });
 
   // ===== MCP Servers (Global) =====

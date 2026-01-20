@@ -275,6 +275,12 @@ export const ChatContainer: React.FC = () => {
         });
 
         setActiveSessionId(sessionId);
+
+        // Sync session-level permissions (combines with global auto-allowed)
+        const sessionTools = useStore.getState().sessionAllowedTools;
+        if (sessionTools.length > 0) {
+          await window.claudeUI.permissions.syncSession(sessionId, sessionTools);
+        }
       } catch (err) {
         console.error('Failed to start session:', err);
         setConnectionStatus('error');
@@ -471,8 +477,11 @@ export const ChatContainer: React.FC = () => {
 
         case '/permissions': {
           try {
+            console.log('[/permissions] Fetching global permissions...');
             const globalPerms = await window.claudeUI.permissions.getGlobal();
+            console.log('[/permissions] Got global permissions:', globalPerms);
             const sessionTools = useStore.getState().sessionAllowedTools;
+            console.log('[/permissions] Session tools:', sessionTools);
 
             const globalList = globalPerms.length > 0
               ? globalPerms.map(p => `- **${p.tool}**: ${p.allowed ? 'Allowed' : 'Denied'} (${p.scope})`).join('\n')
@@ -485,14 +494,15 @@ export const ChatContainer: React.FC = () => {
             addMessage({
               id: crypto.randomUUID(),
               type: 'system',
-              content: `## Permissions\n\n### Global Permissions\n${globalList}\n\n### Session Allowed Tools\n${sessionList}\n\n*Go to Settings > Permissions to manage*`,
+              content: `## Permissions\n\n### Global Permissions (${globalPerms.length})\n${globalList}\n\n### Session Allowed Tools (${sessionTools.length})\n${sessionList}\n\n*Go to Settings > Permissions to manage*`,
               timestamp: new Date().toISOString()
             });
           } catch (err) {
+            console.error('[/permissions] Error:', err);
             addMessage({
               id: crypto.randomUUID(),
               type: 'system',
-              content: '## Permissions\n\nFailed to load permissions.',
+              content: `## Permissions\n\nFailed to load permissions: ${err}`,
               timestamp: new Date().toISOString()
             });
           }

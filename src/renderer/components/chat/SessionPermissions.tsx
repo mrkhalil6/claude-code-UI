@@ -44,11 +44,23 @@ export const SessionPermissions: React.FC = () => {
     };
   }, [isOpen]);
 
-  const handleToolToggle = (tool: string) => {
+  const handleToolToggle = async (tool: string) => {
+    let newTools: string[];
     if (sessionAllowedTools.includes(tool)) {
       removeSessionAllowedTool(tool);
+      newTools = sessionAllowedTools.filter(t => t !== tool);
     } else {
       addSessionAllowedTool(tool);
+      newTools = [...sessionAllowedTools, tool];
+    }
+
+    // Sync the updated session permissions to the CLI session
+    if (activeSessionId) {
+      try {
+        await window.claudeUI.permissions.syncSession(activeSessionId, newTools);
+      } catch (error) {
+        console.error('Failed to sync session permissions:', error);
+      }
     }
   };
 
@@ -158,7 +170,17 @@ export const SessionPermissions: React.FC = () => {
                 <div className={styles.dropdownFooter}>
                   <button
                     className={styles.clearButton}
-                    onClick={() => sessionAllowedTools.forEach(t => removeSessionAllowedTool(t))}
+                    onClick={async () => {
+                      sessionAllowedTools.forEach(t => removeSessionAllowedTool(t));
+                      // Sync with empty session tools (will still have global auto-allowed)
+                      if (activeSessionId) {
+                        try {
+                          await window.claudeUI.permissions.syncSession(activeSessionId, []);
+                        } catch (error) {
+                          console.error('Failed to sync session permissions:', error);
+                        }
+                      }
+                    }}
                   >
                     Clear all
                   </button>

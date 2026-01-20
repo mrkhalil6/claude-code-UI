@@ -151,7 +151,15 @@ const api = {
       ipcRenderer.invoke(IPC_CHANNELS.PERMISSIONS_GET_AUTO_ALLOWED),
 
     getKnownTools: (): Promise<string[]> =>
-      ipcRenderer.invoke(IPC_CHANNELS.PERMISSIONS_GET_KNOWN_TOOLS)
+      ipcRenderer.invoke(IPC_CHANNELS.PERMISSIONS_GET_KNOWN_TOOLS),
+
+    // Sync permissions to a specific session (combines global + session tools)
+    syncSession: (sessionId: string, sessionTools: string[]): Promise<boolean> =>
+      ipcRenderer.invoke(IPC_CHANNELS.PERMISSIONS_SYNC_SESSION, { sessionId, sessionTools }),
+
+    // Sync global permissions to all active sessions
+    syncAllSessions: (): Promise<{ synced: number }> =>
+      ipcRenderer.invoke(IPC_CHANNELS.PERMISSIONS_SYNC_ALL_SESSIONS)
   },
 
   // ===== MCP Servers =====

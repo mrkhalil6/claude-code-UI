@@ -43,6 +43,17 @@ export class ClaudeCliService extends EventEmitter {
     console.log(`Creating Claude CLI session: ${sessionId}`);
     console.log(`Working directory: ${options.cwd}`);
 
+    // Initialize with auto-allowed tools from global settings
+    const initialTools = new Set<string>();
+    if (options.initialAllowedTools && options.initialAllowedTools.length > 0) {
+      for (const tool of options.initialAllowedTools) {
+        // For Bash tool, use wildcard pattern to allow all commands
+        const toolPattern = tool === 'Bash' ? 'Bash(*)' : tool;
+        initialTools.add(toolPattern);
+      }
+      console.log(`Initial allowed tools: ${Array.from(initialTools).join(', ')}`);
+    }
+
     const session: ActiveSession = {
       process: null,
       readline: null,
@@ -51,7 +62,7 @@ export class ClaudeCliService extends EventEmitter {
       cwd: options.cwd,
       isPlanMode: options.permissionMode === 'plan',
       isProcessing: false,
-      allowedTools: new Set<string>(),
+      allowedTools: initialTools,
       model: null
     };
 
@@ -79,9 +90,14 @@ export class ClaudeCliService extends EventEmitter {
     }
 
     session.isProcessing = true;
-    console.log(`[sendMessage] Session ${sessionId}`);
-    console.log(`[sendMessage] Session allowedTools: ${Array.from(session.allowedTools).join(', ') || 'none'}`);
-    console.log(`[sendMessage] Message: ${message.slice(0, 100)}`);
+    console.log(`\n========== SENDING MESSAGE ==========`);
+    console.log(`Session: ${sessionId}`);
+    console.log(`Message: "${message.slice(0, 100)}${message.length > 100 ? '...' : ''}"`);
+    console.log(`Allowed Tools (${session.allowedTools.size}):`);
+    Array.from(session.allowedTools).forEach((tool, i) => {
+      console.log(`  ${i + 1}. ${tool}`);
+    });
+    console.log(`======================================\n`);
 
     // Build args array
     const args = this.buildArgs(session, message);
@@ -139,11 +155,12 @@ export class ClaudeCliService extends EventEmitter {
       console.log(`[buildArgs] Using model: ${session.model}`);
     }
 
-    // Add allowed tools using = syntax to bind the value and prevent greedy parsing
+    // Add allowed tools - use = syntax to prevent greedy argument parsing
     if (session.allowedTools.size > 0) {
-      const toolsList = Array.from(session.allowedTools).join(',');
-      args.push(`--allowedTools=${toolsList}`);
-      console.log(`[buildArgs] Adding allowed tools flag: --allowedTools=${toolsList}`);
+      const toolsArray = Array.from(session.allowedTools);
+      const toolsStr = toolsArray.join(',');
+      args.push(`--allowedTools=${toolsStr}`);
+      console.log(`[buildArgs] Adding allowed tools: ${toolsStr}`);
     } else {
       console.log(`[buildArgs] No allowed tools for this session`);
     }
@@ -197,6 +214,35 @@ export class ClaudeCliService extends EventEmitter {
   getAllowedTools(sessionId: string): string[] {
     const session = this.activeSessions.get(sessionId);
     return session ? Array.from(session.allowedTools) : [];
+  }
+
+  /**
+   * Sync allowed tools for a session - replaces the entire set
+   * Used when global or session permissions change
+   */
+  syncAllowedTools(sessionId: string, tools: string[]): boolean {
+    const session = this.activeSessions.get(sessionId);
+    if (!session) {
+      console.error(`[syncAllowedTools] No session found: ${sessionId}`);
+      return false;
+    }
+
+    // Clear and rebuild the set with proper patterns
+    session.allowedTools.clear();
+    for (const tool of tools) {
+      const toolPattern = tool === 'Bash' ? 'Bash(*)' : tool;
+      session.allowedTools.add(toolPattern);
+    }
+
+    console.log(`[syncAllowedTools] Session ${sessionId} now has tools: ${Array.from(session.allowedTools).join(', ') || 'none'}`);
+    return true;
+  }
+
+  /**
+   * Get all active session IDs
+   */
+  getActiveSessionIds(): string[] {
+    return Array.from(this.activeSessions.keys());
   }
 
   private setupProcessListeners(session: ActiveSession): void {
@@ -467,12 +513,5 @@ export class ClaudeCliService extends EventEmitter {
    */
   getClaudePath(): string {
     return this.claudePath;
-  }
-
-  /**
-   * Get list of active session IDs
-   */
-  getActiveSessionIds(): string[] {
-    return Array.from(this.activeSessions.keys());
   }
 }

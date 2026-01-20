@@ -43,6 +43,8 @@ export const IPC_CHANNELS = {
   PERMISSIONS_REMOVE_GLOBAL: 'permissions:removeGlobal',
   PERMISSIONS_GET_AUTO_ALLOWED: 'permissions:getAutoAllowed',
   PERMISSIONS_GET_KNOWN_TOOLS: 'permissions:getKnownTools',
+  PERMISSIONS_SYNC_SESSION: 'permissions:syncSession',
+  PERMISSIONS_SYNC_ALL_SESSIONS: 'permissions:syncAllSessions',
 
   // MCP Servers (Global)
   MCP_GET_GLOBAL_SERVERS: 'mcp:getGlobalServers',

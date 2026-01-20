@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, memo } from 'react';
 import clsx from 'clsx';
 import { SessionSummary } from '../../../shared/types';
 import { useSession, useSessionActions, useChatActions, useUIActions } from '../../store';
@@ -16,7 +16,7 @@ interface SessionItemProps {
   onToggleSelection?: (session: SelectedSession) => void;
 }
 
-export const SessionItem: React.FC<SessionItemProps> = ({
+export const SessionItem: React.FC<SessionItemProps> = memo(({
   session,
   projectPath,
   projectEncodedName,
@@ -257,4 +257,4 @@ export const SessionItem: React.FC<SessionItemProps> = ({
       </button>
     </div>
   );
-};
+});

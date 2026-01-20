@@ -80,4 +80,5 @@ export interface StartSessionOptions {
   resumeSessionId?: string;  // CLI session ID to resume (for loading from sidebar)
   permissionMode?: 'default' | 'plan' | 'acceptEdits';
   model?: string;
+  initialAllowedTools?: string[];  // Tools to auto-allow from global settings
 }
