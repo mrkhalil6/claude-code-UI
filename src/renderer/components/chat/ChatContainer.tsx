@@ -2,6 +2,7 @@ import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { MessageList } from './MessageList';
 import { StreamingMessage } from './StreamingMessage';
 import { InputArea } from './InputArea';
+import { SessionPermissions } from './SessionPermissions';
 import { PermissionDialog } from '../permissions';
 import { useChat, useSession, useUI, useChatActions, useUIActions, useSessionActions, usePermissions, usePermissionActions } from '../../store';
 import styles from './ChatContainer.module.css';
@@ -287,11 +288,16 @@ export const ChatContainer: React.FC = () => {
         <div ref={messagesEndRef} />
       </div>
 
-      <InputArea
-        onSend={handleSendMessage}
-        disabled={isStreaming || !!pendingPermission}
-        placeholder={isPlanMode ? 'Describe what you want to plan...' : 'Ask Claude anything...'}
-      />
+      <div className={styles.inputWrapper}>
+        <div className={styles.inputToolbar}>
+          <SessionPermissions />
+        </div>
+        <InputArea
+          onSend={handleSendMessage}
+          disabled={isStreaming || !!pendingPermission}
+          placeholder={isPlanMode ? 'Describe what you want to plan...' : 'Ask Claude anything...'}
+        />
+      </div>
 
       {pendingPermission && (
         <PermissionDialog

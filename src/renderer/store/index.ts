@@ -47,7 +47,10 @@ export const useChat = () => useStore((state) => ({
 export const usePermissions = () => useStore((state) => ({
   pendingPermission: state.pendingPermission,
   permissionHistory: state.permissionHistory,
-  pendingFileChanges: state.pendingFileChanges
+  pendingFileChanges: state.pendingFileChanges,
+  globalPermissions: state.globalPermissions,
+  knownTools: state.knownTools,
+  sessionAllowedTools: state.sessionAllowedTools
 }));
 
 export const useUI = () => useStore((state) => ({
@@ -98,7 +101,15 @@ export const usePermissionActions = () => useStore((state) => ({
   addPendingFileChange: state.addPendingFileChange,
   updateFileChangeStatus: state.updateFileChangeStatus,
   removePendingFileChange: state.removePendingFileChange,
-  clearPendingFileChanges: state.clearPendingFileChanges
+  clearPendingFileChanges: state.clearPendingFileChanges,
+  // Global permissions
+  setGlobalPermissions: state.setGlobalPermissions,
+  setKnownTools: state.setKnownTools,
+  // Session permissions
+  setSessionAllowedTools: state.setSessionAllowedTools,
+  addSessionAllowedTool: state.addSessionAllowedTool,
+  removeSessionAllowedTool: state.removeSessionAllowedTool,
+  clearSessionAllowedTools: state.clearSessionAllowedTools
 }));
 
 export const useUIActions = () => useStore((state) => ({

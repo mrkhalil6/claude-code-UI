@@ -4,17 +4,20 @@ import { registerIpcHandlers } from './ipc/handlers';
 import { ClaudeCliService } from './services/claude-cli.service';
 import { SessionLoaderService } from './services/session-loader.service';
 import { CredentialsService } from './services/credentials.service';
+import { PermissionsService } from './services/permissions.service';
 
 class Application {
   private mainWindow: BrowserWindow | null = null;
   private cliService: ClaudeCliService;
   private sessionLoader: SessionLoaderService;
   private credentialsService: CredentialsService;
+  private permissionsService: PermissionsService;
 
   constructor() {
     this.cliService = new ClaudeCliService();
     this.sessionLoader = new SessionLoaderService();
     this.credentialsService = new CredentialsService();
+    this.permissionsService = new PermissionsService();
   }
 
   async initialize(): Promise<void> {
@@ -29,11 +32,16 @@ class Application {
       console.warn('No Claude credentials found. User will need to authenticate.');
     }
 
+    // Load permissions
+    await this.permissionsService.load();
+    console.log('Permissions loaded');
+
     // Register IPC handlers before creating window
     registerIpcHandlers(
       this.cliService,
       this.sessionLoader,
-      this.credentialsService
+      this.credentialsService,
+      this.permissionsService
     );
 
     // Create the main window

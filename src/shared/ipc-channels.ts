@@ -30,7 +30,14 @@ export const IPC_CHANNELS = {
   FS_GET_HOME_DIR: 'fs:getHomeDir',
 
   // App
-  APP_GET_VERSION: 'app:getVersion'
+  APP_GET_VERSION: 'app:getVersion',
+
+  // Permissions
+  PERMISSIONS_GET_GLOBAL: 'permissions:getGlobal',
+  PERMISSIONS_SET_GLOBAL: 'permissions:setGlobal',
+  PERMISSIONS_REMOVE_GLOBAL: 'permissions:removeGlobal',
+  PERMISSIONS_GET_AUTO_ALLOWED: 'permissions:getAutoAllowed',
+  PERMISSIONS_GET_KNOWN_TOOLS: 'permissions:getKnownTools'
 } as const;
 
 export type IpcChannel = typeof IPC_CHANNELS[keyof typeof IPC_CHANNELS];

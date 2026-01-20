@@ -5,12 +5,14 @@ import { IPC_CHANNELS } from '../../shared/ipc-channels';
 import { ClaudeCliService } from '../services/claude-cli.service';
 import { SessionLoaderService } from '../services/session-loader.service';
 import { CredentialsService } from '../services/credentials.service';
+import { PermissionsService, KNOWN_TOOLS } from '../services/permissions.service';
 import { StartSessionOptions } from '../../shared/types';
 
 export function registerIpcHandlers(
   cliService: ClaudeCliService,
   sessionLoader: SessionLoaderService,
-  _credentialsService: CredentialsService
+  _credentialsService: CredentialsService,
+  permissionsService: PermissionsService
 ): void {
   // ===== Session Management =====
 
@@ -105,6 +107,30 @@ export function registerIpcHandlers(
   cliService.on('cli:permission-required', forwardToRenderer(IPC_CHANNELS.CLI_EVENT_PERMISSION));
   cliService.on('cli:error', forwardToRenderer(IPC_CHANNELS.CLI_EVENT_ERROR));
   cliService.on('cli:exit', forwardToRenderer(IPC_CHANNELS.CLI_EVENT_EXIT));
+
+  // ===== Permissions =====
+
+  ipcMain.handle(IPC_CHANNELS.PERMISSIONS_GET_GLOBAL, async () => {
+    return permissionsService.getGlobalPermissions();
+  });
+
+  ipcMain.handle(IPC_CHANNELS.PERMISSIONS_SET_GLOBAL, async (_, { tool, allowed, scope }: { tool: string; allowed: boolean; scope: 'always' | 'ask' }) => {
+    await permissionsService.setGlobalPermission(tool, allowed, scope);
+    return permissionsService.getGlobalPermissions();
+  });
+
+  ipcMain.handle(IPC_CHANNELS.PERMISSIONS_REMOVE_GLOBAL, async (_, { tool }: { tool: string }) => {
+    await permissionsService.removeGlobalPermission(tool);
+    return permissionsService.getGlobalPermissions();
+  });
+
+  ipcMain.handle(IPC_CHANNELS.PERMISSIONS_GET_AUTO_ALLOWED, async () => {
+    return permissionsService.getAutoAllowedTools();
+  });
+
+  ipcMain.handle(IPC_CHANNELS.PERMISSIONS_GET_KNOWN_TOOLS, async () => {
+    return [...KNOWN_TOOLS];
+  });
 
   // ===== Session File Watching =====
 

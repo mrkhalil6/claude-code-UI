@@ -119,6 +119,24 @@ const api = {
   app: {
     getVersion: (): Promise<string> =>
       ipcRenderer.invoke(IPC_CHANNELS.APP_GET_VERSION)
+  },
+
+  // ===== Permissions =====
+  permissions: {
+    getGlobal: (): Promise<Array<{ tool: string; allowed: boolean; scope: 'always' | 'ask' }>> =>
+      ipcRenderer.invoke(IPC_CHANNELS.PERMISSIONS_GET_GLOBAL),
+
+    setGlobal: (tool: string, allowed: boolean, scope: 'always' | 'ask'): Promise<Array<{ tool: string; allowed: boolean; scope: 'always' | 'ask' }>> =>
+      ipcRenderer.invoke(IPC_CHANNELS.PERMISSIONS_SET_GLOBAL, { tool, allowed, scope }),
+
+    removeGlobal: (tool: string): Promise<Array<{ tool: string; allowed: boolean; scope: 'always' | 'ask' }>> =>
+      ipcRenderer.invoke(IPC_CHANNELS.PERMISSIONS_REMOVE_GLOBAL, { tool }),
+
+    getAutoAllowed: (): Promise<string[]> =>
+      ipcRenderer.invoke(IPC_CHANNELS.PERMISSIONS_GET_AUTO_ALLOWED),
+
+    getKnownTools: (): Promise<string[]> =>
+      ipcRenderer.invoke(IPC_CHANNELS.PERMISSIONS_GET_KNOWN_TOOLS)
   }
 };
 
