@@ -1,0 +1,77 @@
+.container {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  cursor: pointer;
+  user-select: none;
+}
+
+.container.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.label {
+  font-size: var(--font-size-md);
+  color: var(--text-primary);
+}
+
+.toggle {
+  position: relative;
+  background-color: var(--bg-tertiary);
+  border: 1px solid var(--border-primary);
+  border-radius: 999px;
+  transition: all var(--transition-fast);
+  cursor: pointer;
+}
+
+.toggle:focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 2px;
+}
+
+.toggle.sm {
+  width: 32px;
+  height: 18px;
+}
+
+.toggle.md {
+  width: 40px;
+  height: 22px;
+}
+
+.toggle.checked {
+  background-color: var(--accent-primary);
+  border-color: var(--accent-primary);
+}
+
+.thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  background-color: var(--text-primary);
+  border-radius: 50%;
+  transition: transform var(--transition-fast);
+}
+
+.sm .thumb {
+  width: 12px;
+  height: 12px;
+}
+
+.md .thumb {
+  width: 16px;
+  height: 16px;
+}
+
+.checked .thumb {
+  background-color: white;
+}
+
+.sm.checked .thumb {
+  transform: translateX(14px);
+}
+
+.md.checked .thumb {
+  transform: translateX(18px);
+}

@@ -1,0 +1,130 @@
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+}
+
+.iconWrapper {
+  display: flex;
+  justify-content: center;
+}
+
+.icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  background-color: rgba(204, 167, 0, 0.15);
+  border-radius: 50%;
+  color: var(--text-warning);
+}
+
+.toolInfo {
+  text-align: center;
+}
+
+.toolName {
+  font-size: var(--font-size-xl);
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 var(--spacing-xs);
+}
+
+.description {
+  font-size: var(--font-size-md);
+  color: var(--text-secondary);
+  margin: 0;
+  word-break: break-all;
+}
+
+.details {
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--border-radius-md);
+  overflow: hidden;
+}
+
+.detailsTitle {
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  color: var(--text-secondary);
+  margin: 0;
+  padding: var(--spacing-sm) var(--spacing-md);
+  background-color: var(--bg-tertiary);
+  border-bottom: 1px solid var(--border-primary);
+}
+
+.detailsContent {
+  margin: 0;
+  padding: var(--spacing-md);
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-sm);
+  color: var(--text-primary);
+  overflow-x: auto;
+  max-height: 200px;
+}
+
+.scopeOptions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.scopeTitle {
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  color: var(--text-secondary);
+  margin: 0 0 var(--spacing-sm);
+}
+
+.scopeOption {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-md);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--border-radius-md);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.scopeOption:hover {
+  background-color: var(--bg-hover);
+  border-color: var(--border-secondary);
+}
+
+.scopeOption:has(input:checked) {
+  background-color: rgba(0, 120, 212, 0.1);
+  border-color: var(--accent-primary);
+}
+
+.scopeOption input {
+  margin-top: 2px;
+  accent-color: var(--accent-primary);
+}
+
+.scopeContent {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.scopeLabel {
+  font-size: var(--font-size-md);
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.scopeDesc {
+  font-size: var(--font-size-sm);
+  color: var(--text-muted);
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--spacing-sm);
+  padding-top: var(--spacing-md);
+  border-top: 1px solid var(--border-primary);
+}

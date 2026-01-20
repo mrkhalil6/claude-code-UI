@@ -1,0 +1,138 @@
+.markdown {
+  color: var(--text-primary);
+  line-height: 1.6;
+}
+
+.markdown h1,
+.markdown h2,
+.markdown h3,
+.markdown h4,
+.markdown h5,
+.markdown h6 {
+  margin-top: 1.5em;
+  margin-bottom: 0.5em;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.markdown h1:first-child,
+.markdown h2:first-child,
+.markdown h3:first-child {
+  margin-top: 0;
+}
+
+.markdown h1 {
+  font-size: 1.5em;
+  border-bottom: 1px solid var(--border-primary);
+  padding-bottom: 0.3em;
+}
+
+.markdown h2 {
+  font-size: 1.3em;
+}
+
+.markdown h3 {
+  font-size: 1.1em;
+}
+
+.markdown p {
+  margin: 0.8em 0;
+}
+
+.markdown p:first-child {
+  margin-top: 0;
+}
+
+.markdown p:last-child {
+  margin-bottom: 0;
+}
+
+.markdown ul,
+.markdown ol {
+  margin: 0.8em 0;
+  padding-left: 1.5em;
+}
+
+.markdown li {
+  margin: 0.3em 0;
+}
+
+.markdown li > ul,
+.markdown li > ol {
+  margin: 0.3em 0;
+}
+
+.markdown blockquote {
+  margin: 1em 0;
+  padding: 0.5em 1em;
+  border-left: 4px solid var(--accent-primary);
+  background-color: var(--bg-secondary);
+  color: var(--text-secondary);
+}
+
+.markdown blockquote p {
+  margin: 0;
+}
+
+.inlineCode {
+  font-family: var(--font-family-mono);
+  font-size: 0.9em;
+  background-color: var(--bg-tertiary);
+  padding: 2px 6px;
+  border-radius: var(--border-radius-sm);
+  color: var(--syntax-string);
+}
+
+.markdown a {
+  color: var(--text-link);
+  text-decoration: none;
+}
+
+.markdown a:hover {
+  text-decoration: underline;
+}
+
+.markdown hr {
+  margin: 1.5em 0;
+  border: none;
+  border-top: 1px solid var(--border-primary);
+}
+
+.tableWrapper {
+  overflow-x: auto;
+  margin: 1em 0;
+}
+
+.markdown table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+.markdown th,
+.markdown td {
+  padding: 0.5em 1em;
+  border: 1px solid var(--border-primary);
+  text-align: left;
+}
+
+.markdown th {
+  background-color: var(--bg-secondary);
+  font-weight: 600;
+}
+
+.markdown tr:nth-child(even) {
+  background-color: var(--bg-secondary);
+}
+
+.markdown img {
+  max-width: 100%;
+  border-radius: var(--border-radius-md);
+}
+
+.markdown strong {
+  font-weight: 600;
+}
+
+.markdown em {
+  font-style: italic;
+}

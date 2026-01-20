@@ -1,0 +1,141 @@
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: var(--header-height);
+  padding: 0 var(--spacing-md);
+  background-color: var(--bg-header);
+  border-bottom: 1px solid var(--border-primary);
+  -webkit-app-region: drag;
+}
+
+.left,
+.center,
+.right {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  -webkit-app-region: no-drag;
+}
+
+.left {
+  flex: 1;
+}
+
+.center {
+  flex: 0;
+}
+
+.right {
+  flex: 1;
+  justify-content: flex-end;
+}
+
+.menuButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--border-radius-md);
+  color: var(--text-secondary);
+  transition: all var(--transition-fast);
+}
+
+.menuButton:hover {
+  background-color: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.logoIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+  border-radius: var(--border-radius-sm);
+  color: white;
+  font-weight: 700;
+  font-size: var(--font-size-sm);
+}
+
+.logoText {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.cwd {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  background-color: var(--bg-tertiary);
+  border-radius: var(--border-radius-md);
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+  max-width: 200px;
+}
+
+.cwdText {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sessionIndicator {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-xs) var(--spacing-md);
+  background-color: var(--bg-tertiary);
+  border-radius: var(--border-radius-md);
+}
+
+.statusDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.statusConnected {
+  background-color: var(--text-success);
+}
+
+.statusConnecting {
+  background-color: var(--text-warning);
+  animation: pulse 1s infinite;
+}
+
+.statusError {
+  background-color: var(--text-error);
+}
+
+.statusDisconnected {
+  background-color: var(--text-muted);
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.sessionText {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+}
+
+.planModeToggle {
+  display: flex;
+  align-items: center;
+}
