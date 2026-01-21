@@ -66,3 +66,16 @@ export interface GitRemote {
   fetchUrl: string;
   pushUrl: string;
 }
+
+export interface GitStashEntry {
+  index: number;
+  message: string;
+  branch: string;
+  date: string;
+}
+
+export interface GitStashResult {
+  success: boolean;
+  error?: string;
+  message?: string;
+}

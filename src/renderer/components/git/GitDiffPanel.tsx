@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { DiffEditor, Editor } from '@monaco-editor/react';
 import type { editor } from 'monaco-editor';
 import { GitFileList } from './GitFileList';
-import { GitStatusResult, GitFileDiff } from '../../../shared/types';
+import { GitStatusResult, GitFileDiff, GitStashEntry } from '../../../shared/types';
 import { useSession } from '../../store';
 import styles from './GitDiffPanel.module.css';
 
@@ -45,8 +45,12 @@ export const GitDiffPanel: React.FC<GitDiffPanelProps> = ({ onClose }) => {
   const [isCommitting, setIsCommitting] = useState(false);
   const [isPushing, setIsPushing] = useState(false);
   const [isPulling, setIsPulling] = useState(false);
+  const [isStashing, setIsStashing] = useState(false);
+  const [stashList, setStashList] = useState<GitStashEntry[]>([]);
+  const [showStashMenu, setShowStashMenu] = useState(false);
   const [actionMessage, setActionMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const commitInputRef = useRef<HTMLTextAreaElement>(null);
+  const stashMenuRef = useRef<HTMLDivElement>(null);
 
   // Load git status
   const loadStatus = useCallback(async () => {
@@ -261,6 +265,96 @@ export const GitDiffPanel: React.FC<GitDiffPanelProps> = ({ onClose }) => {
       setIsPulling(false);
     }
   };
+
+  // Load stash list
+  const loadStashList = useCallback(async () => {
+    if (!currentCwd) return;
+    const list = await window.claudeUI.git.stashList(currentCwd);
+    setStashList(list);
+  }, [currentCwd]);
+
+  // Stash changes
+  const handleStash = async () => {
+    if (!currentCwd) return;
+
+    setIsStashing(true);
+    try {
+      const result = await window.claudeUI.git.stash(currentCwd);
+      if (result.success) {
+        await loadStatus();
+        await loadStashList();
+        setSelectedFile(null);
+        setCurrentDiff(null);
+        setActionMessage({ type: 'success', text: result.message || 'Changes stashed' });
+      } else {
+        setActionMessage({ type: 'error', text: result.error || 'Stash failed' });
+      }
+    } catch (err) {
+      setActionMessage({ type: 'error', text: 'Stash failed' });
+    } finally {
+      setIsStashing(false);
+    }
+  };
+
+  // Pop stash (apply and remove)
+  const handleStashPop = async (index?: number) => {
+    if (!currentCwd) return;
+
+    setIsStashing(true);
+    setShowStashMenu(false);
+    try {
+      const result = await window.claudeUI.git.stashPop(currentCwd, index);
+      if (result.success) {
+        await loadStatus();
+        await loadStashList();
+        setActionMessage({ type: 'success', text: result.message || 'Stash applied' });
+      } else {
+        setActionMessage({ type: 'error', text: result.error || 'Failed to apply stash' });
+      }
+    } catch (err) {
+      setActionMessage({ type: 'error', text: 'Failed to apply stash' });
+    } finally {
+      setIsStashing(false);
+    }
+  };
+
+  // Drop stash
+  const handleStashDrop = async (index: number) => {
+    if (!currentCwd) return;
+    if (!confirm(`Drop stash@{${index}}? This cannot be undone.`)) return;
+
+    try {
+      const result = await window.claudeUI.git.stashDrop(currentCwd, index);
+      if (result.success) {
+        await loadStashList();
+        setActionMessage({ type: 'success', text: 'Stash dropped' });
+      } else {
+        setActionMessage({ type: 'error', text: result.error || 'Failed to drop stash' });
+      }
+    } catch (err) {
+      setActionMessage({ type: 'error', text: 'Failed to drop stash' });
+    }
+  };
+
+  // Load stash list when panel opens
+  useEffect(() => {
+    if (currentCwd && !isLoading) {
+      loadStashList();
+    }
+  }, [currentCwd, isLoading, loadStashList]);
+
+  // Close stash menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (stashMenuRef.current && !stashMenuRef.current.contains(e.target as Node)) {
+        setShowStashMenu(false);
+      }
+    };
+    if (showStashMenu) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [showStashMenu]);
 
   // Save edited file
   const handleSaveFile = async () => {
@@ -569,6 +663,53 @@ export const GitDiffPanel: React.FC<GitDiffPanelProps> = ({ onClose }) => {
                 </button>
               </>
             )}
+            <button
+              className={styles.headerButton}
+              onClick={handleStash}
+              disabled={isStashing || files.length === 0 || hasConflicts}
+              title="Stash changes"
+            >
+              {isStashing ? '...' : '📦 Stash'}
+            </button>
+            <div className={styles.stashMenuContainer} ref={stashMenuRef}>
+              <button
+                className={styles.headerButton}
+                onClick={() => setShowStashMenu(!showStashMenu)}
+                disabled={isStashing || stashList.length === 0}
+                title={stashList.length > 0 ? `${stashList.length} stash${stashList.length > 1 ? 'es' : ''}` : 'No stashes'}
+              >
+                📤 Unstash {stashList.length > 0 && `(${stashList.length})`}
+              </button>
+              {showStashMenu && stashList.length > 0 && (
+                <div className={styles.stashMenu}>
+                  <div className={styles.stashMenuHeader}>Stashes</div>
+                  {stashList.map((entry) => (
+                    <div key={entry.index} className={styles.stashMenuItem}>
+                      <div className={styles.stashItemInfo}>
+                        <span className={styles.stashIndex}>stash@{`{${entry.index}}`}</span>
+                        <span className={styles.stashMessage}>{entry.message}</span>
+                      </div>
+                      <div className={styles.stashItemActions}>
+                        <button
+                          className={styles.stashApplyBtn}
+                          onClick={() => handleStashPop(entry.index)}
+                          title="Apply and remove this stash"
+                        >
+                          Apply
+                        </button>
+                        <button
+                          className={styles.stashDropBtn}
+                          onClick={() => handleStashDrop(entry.index)}
+                          title="Drop this stash"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
             <button
               className={styles.headerButton}
               onClick={handlePull}

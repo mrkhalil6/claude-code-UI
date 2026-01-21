@@ -9,7 +9,9 @@ import {
   GitCommitResult,
   GitPushResult,
   GitPullResult,
-  GitLogEntry
+  GitLogEntry,
+  GitStashEntry,
+  GitStashResult
 } from '../../shared/types';
 
 export class GitService {
@@ -374,6 +376,218 @@ export class GitService {
    */
   async abortMerge(cwd: string): Promise<boolean> {
     return this.runGitCommand(cwd, ['merge', '--abort']);
+  }
+
+  /**
+   * Stash changes
+   */
+  async stash(cwd: string, message?: string): Promise<GitStashResult> {
+    return new Promise((resolve) => {
+      const args = ['stash', 'push'];
+      if (message) {
+        args.push('-m', message);
+      }
+
+      const proc = spawn('git', args, {
+        cwd,
+        stdio: ['pipe', 'pipe', 'pipe']
+      });
+
+      let stdout = '';
+      let stderr = '';
+
+      proc.stdout.on('data', (data) => {
+        stdout += data.toString();
+      });
+
+      proc.stderr.on('data', (data) => {
+        stderr += data.toString();
+      });
+
+      proc.on('close', (code) => {
+        if (code === 0) {
+          resolve({
+            success: true,
+            message: stdout.trim() || 'Changes stashed'
+          });
+        } else {
+          // Check if "No local changes to save"
+          if (stderr.includes('No local changes') || stdout.includes('No local changes')) {
+            resolve({
+              success: false,
+              error: 'No local changes to stash'
+            });
+          } else {
+            resolve({
+              success: false,
+              error: stderr || 'Stash failed'
+            });
+          }
+        }
+      });
+
+      proc.on('error', (err) => {
+        resolve({
+          success: false,
+          error: err.message
+        });
+      });
+    });
+  }
+
+  /**
+   * Pop the last stash
+   */
+  async stashPop(cwd: string, index?: number): Promise<GitStashResult> {
+    return new Promise((resolve) => {
+      const args = ['stash', 'pop'];
+      if (index !== undefined) {
+        args.push(`stash@{${index}}`);
+      }
+
+      const proc = spawn('git', args, {
+        cwd,
+        stdio: ['pipe', 'pipe', 'pipe']
+      });
+
+      let stdout = '';
+      let stderr = '';
+
+      proc.stdout.on('data', (data) => {
+        stdout += data.toString();
+      });
+
+      proc.stderr.on('data', (data) => {
+        stderr += data.toString();
+      });
+
+      proc.on('close', (code) => {
+        if (code === 0) {
+          resolve({
+            success: true,
+            message: stdout.trim() || 'Stash applied and dropped'
+          });
+        } else {
+          // Check for conflicts
+          if (stderr.includes('CONFLICT') || stdout.includes('CONFLICT')) {
+            resolve({
+              success: false,
+              error: 'Merge conflicts - stash applied but not dropped'
+            });
+          } else if (stderr.includes('No stash entries') || stdout.includes('No stash entries')) {
+            resolve({
+              success: false,
+              error: 'No stash entries found'
+            });
+          } else {
+            resolve({
+              success: false,
+              error: stderr || 'Failed to pop stash'
+            });
+          }
+        }
+      });
+
+      proc.on('error', (err) => {
+        resolve({
+          success: false,
+          error: err.message
+        });
+      });
+    });
+  }
+
+  /**
+   * List all stashes
+   */
+  async stashList(cwd: string): Promise<GitStashEntry[]> {
+    return new Promise((resolve) => {
+      // Format: index|message|branch|date
+      const proc = spawn('git', [
+        'stash', 'list',
+        '--format=%gd|%gs|%s|%ai'
+      ], {
+        cwd,
+        stdio: ['pipe', 'pipe', 'pipe']
+      });
+
+      let output = '';
+      proc.stdout.on('data', (data) => {
+        output += data.toString();
+      });
+
+      proc.on('close', (code) => {
+        if (code === 0 && output.trim()) {
+          const entries = output.trim().split('\n').map((line, idx) => {
+            const parts = line.split('|');
+            // Parse stash@{0} to get index
+            const indexMatch = parts[0]?.match(/stash@\{(\d+)\}/);
+            return {
+              index: indexMatch ? parseInt(indexMatch[1], 10) : idx,
+              message: parts[1] || '',
+              branch: parts[2] || '',
+              date: parts[3] || ''
+            };
+          });
+          resolve(entries);
+        } else {
+          resolve([]);
+        }
+      });
+
+      proc.on('error', () => {
+        resolve([]);
+      });
+    });
+  }
+
+  /**
+   * Drop a specific stash
+   */
+  async stashDrop(cwd: string, index?: number): Promise<GitStashResult> {
+    return new Promise((resolve) => {
+      const args = ['stash', 'drop'];
+      if (index !== undefined) {
+        args.push(`stash@{${index}}`);
+      }
+
+      const proc = spawn('git', args, {
+        cwd,
+        stdio: ['pipe', 'pipe', 'pipe']
+      });
+
+      let stdout = '';
+      let stderr = '';
+
+      proc.stdout.on('data', (data) => {
+        stdout += data.toString();
+      });
+
+      proc.stderr.on('data', (data) => {
+        stderr += data.toString();
+      });
+
+      proc.on('close', (code) => {
+        if (code === 0) {
+          resolve({
+            success: true,
+            message: stdout.trim() || 'Stash dropped'
+          });
+        } else {
+          resolve({
+            success: false,
+            error: stderr || 'Failed to drop stash'
+          });
+        }
+      });
+
+      proc.on('error', (err) => {
+        resolve({
+          success: false,
+          error: err.message
+        });
+      });
+    });
   }
 
   /**

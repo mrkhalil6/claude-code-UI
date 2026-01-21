@@ -13,7 +13,9 @@ import {
   GitCommitResult,
   GitPushResult,
   GitPullResult,
-  GitLogEntry
+  GitLogEntry,
+  GitStashEntry,
+  GitStashResult
 } from '../shared/types';
 
 // MCP Server types
@@ -256,7 +258,19 @@ const api = {
       ipcRenderer.invoke(IPC_CHANNELS.GIT_RESOLVE_CONFLICT, { cwd, filePath }),
 
     abortMerge: (cwd: string): Promise<boolean> =>
-      ipcRenderer.invoke(IPC_CHANNELS.GIT_ABORT_MERGE, { cwd })
+      ipcRenderer.invoke(IPC_CHANNELS.GIT_ABORT_MERGE, { cwd }),
+
+    stash: (cwd: string, message?: string): Promise<GitStashResult> =>
+      ipcRenderer.invoke(IPC_CHANNELS.GIT_STASH, { cwd, message }),
+
+    stashPop: (cwd: string, index?: number): Promise<GitStashResult> =>
+      ipcRenderer.invoke(IPC_CHANNELS.GIT_STASH_POP, { cwd, index }),
+
+    stashList: (cwd: string): Promise<GitStashEntry[]> =>
+      ipcRenderer.invoke(IPC_CHANNELS.GIT_STASH_LIST, { cwd }),
+
+    stashDrop: (cwd: string, index?: number): Promise<GitStashResult> =>
+      ipcRenderer.invoke(IPC_CHANNELS.GIT_STASH_DROP, { cwd, index })
   }
 };
 

@@ -452,6 +452,22 @@ export function registerIpcHandlers(
     return gitService.abortMerge(cwd);
   });
 
+  ipcMain.handle(IPC_CHANNELS.GIT_STASH, async (_, { cwd, message }: { cwd: string; message?: string }) => {
+    return gitService.stash(cwd, message);
+  });
+
+  ipcMain.handle(IPC_CHANNELS.GIT_STASH_POP, async (_, { cwd, index }: { cwd: string; index?: number }) => {
+    return gitService.stashPop(cwd, index);
+  });
+
+  ipcMain.handle(IPC_CHANNELS.GIT_STASH_LIST, async (_, { cwd }: { cwd: string }) => {
+    return gitService.stashList(cwd);
+  });
+
+  ipcMain.handle(IPC_CHANNELS.GIT_STASH_DROP, async (_, { cwd, index }: { cwd: string; index?: number }) => {
+    return gitService.stashDrop(cwd, index);
+  });
+
   // ===== Session File Watching =====
 
   sessionLoader.startWatching((event, path) => {

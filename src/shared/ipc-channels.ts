@@ -81,7 +81,11 @@ export const IPC_CHANNELS = {
   GIT_GET_LOG: 'git:getLog',
   GIT_SAVE_FILE: 'git:saveFile',
   GIT_RESOLVE_CONFLICT: 'git:resolveConflict',
-  GIT_ABORT_MERGE: 'git:abortMerge'
+  GIT_ABORT_MERGE: 'git:abortMerge',
+  GIT_STASH: 'git:stash',
+  GIT_STASH_POP: 'git:stashPop',
+  GIT_STASH_LIST: 'git:stashList',
+  GIT_STASH_DROP: 'git:stashDrop'
 } as const;
 
 export type IpcChannel = typeof IPC_CHANNELS[keyof typeof IPC_CHANNELS];
