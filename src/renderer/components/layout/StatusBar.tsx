@@ -25,12 +25,6 @@ const formatModelName = (model: string, availableModels: ModelInfo[]): string =>
 };
 
 
-// Format cost for display
-const formatCost = (cost: number): string => {
-  if (cost < 0.01) return `$${cost.toFixed(4)}`;
-  return `$${cost.toFixed(2)}`;
-};
-
 export const StatusBar: React.FC = () => {
   const { connectionStatus, isPlanMode, usage } = useUI();
   const { isStreaming, messages, todos } = useChat();
@@ -42,8 +36,6 @@ export const StatusBar: React.FC = () => {
   const [selectedModel, setSelectedModel] = useState<ModelInfo | null>(null);
   const todoRef = useRef<HTMLDivElement>(null);
   const modelRef = useRef<HTMLDivElement>(null);
-
-  const totalTokens = usage.inputTokens + usage.outputTokens + usage.cacheReadTokens + usage.cacheCreationTokens;
 
   // Fetch available models
   const fetchModels = useCallback(async () => {
@@ -63,14 +55,6 @@ export const StatusBar: React.FC = () => {
       fetchModels();
     }
   }, [showModelSelector, modelsLoaded, fetchModels]);
-
-  // Auto-compact triggers when free space reaches 0%
-  // Free space = context - tokens_used - autocompact_buffer (22.5%)
-  // Usage = 100% - free_space%
-  const autocompactBufferRatio = 0.225;
-  const tokenPercent = usage.contextWindow > 0 ? (totalTokens / usage.contextWindow) * 100 : 0;
-  const freeSpacePercent = Math.max(0, Math.round(100 - tokenPercent - (autocompactBufferRatio * 100)));
-  const usagePercent = 100 - freeSpacePercent;
 
   // Todo stats
   const completedCount = todos.filter(t => t.status === 'completed').length;
@@ -235,33 +219,6 @@ export const StatusBar: React.FC = () => {
       </div>
 
       <div className={styles.right}>
-        {usage.totalCost > 0 && (
-          <>
-            <span className={styles.cost} title="Session cost">
-              {formatCost(usage.totalCost)}
-            </span>
-            <span className={styles.separator}>|</span>
-          </>
-        )}
-        {totalTokens > 0 && (
-          <>
-            <span
-              className={styles.context}
-              title={`${freeSpacePercent}% free space left till auto compact`}
-            >
-              <span className={styles.contextBar}>
-                <span
-                  className={`${styles.contextFill} ${usagePercent > 80 ? styles.contextWarning : ''}`}
-                  style={{ width: `${Math.min(usagePercent, 100)}%` }}
-                />
-              </span>
-              <span className={styles.contextText}>
-                {usagePercent}%
-              </span>
-            </span>
-            <span className={styles.separator}>|</span>
-          </>
-        )}
         <span className={styles.item}>
           {connectionStatus}
         </span>
