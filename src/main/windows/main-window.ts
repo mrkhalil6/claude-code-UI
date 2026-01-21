@@ -10,6 +10,7 @@ export function createMainWindow(): BrowserWindow {
     backgroundColor: '#1e1e1e',
     titleBarStyle: 'hiddenInset',
     frame: process.platform === 'darwin' ? false : true,
+    autoHideMenuBar: true,
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
       nodeIntegration: false,
@@ -18,10 +19,15 @@ export function createMainWindow(): BrowserWindow {
     }
   });
 
+  // Hide menu bar completely on Windows/Linux
+  if (process.platform !== 'darwin') {
+    mainWindow.setMenuBarVisibility(false);
+  }
+
   // Load the app
   if (process.env.NODE_ENV === 'development' || process.env.VITE_DEV_SERVER_URL) {
     mainWindow.loadURL(process.env.VITE_DEV_SERVER_URL || 'http://localhost:5173');
-    mainWindow.webContents.openDevTools();
+    // DevTools hidden by default - use Ctrl+Shift+I (Cmd+Option+I on Mac) to open manually
   } else {
     mainWindow.loadFile(join(__dirname, '../renderer/index.html'));
   }
