@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { useUI, useChat, useSession } from '../../store';
+import { useUI, useUIActions, useChat, useSession } from '../../store';
 import styles from './StatusBar.module.css';
 
 interface ModelInfo {
@@ -26,7 +26,8 @@ const formatModelName = (model: string, availableModels: ModelInfo[]): string =>
 
 
 export const StatusBar: React.FC = () => {
-  const { connectionStatus, isPlanMode, usage } = useUI();
+  const { connectionStatus, isPlanMode, usage, showTerminal } = useUI();
+  const { toggleTerminal } = useUIActions();
   const { isStreaming, messages, todos } = useChat();
   const { activeSessionId } = useSession();
   const [showTodoPopup, setShowTodoPopup] = useState(false);
@@ -219,6 +220,17 @@ export const StatusBar: React.FC = () => {
       </div>
 
       <div className={styles.right}>
+        <button
+          className={`${styles.iconButton} ${showTerminal ? styles.iconButtonActive : ''}`}
+          onClick={toggleTerminal}
+          title={showTerminal ? 'Hide Terminal' : 'Show Terminal'}
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="4 17 10 11 4 5" />
+            <line x1="12" y1="19" x2="20" y2="19" />
+          </svg>
+        </button>
+        <span className={styles.separator}>|</span>
         <span className={styles.item}>
           {connectionStatus}
         </span>

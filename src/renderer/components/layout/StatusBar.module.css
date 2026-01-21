@@ -38,6 +38,33 @@
   opacity: 0.5;
 }
 
+.iconButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.7);
+  cursor: pointer;
+  border-radius: 4px;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.iconButton:hover {
+  background-color: rgba(255, 255, 255, 0.15);
+  color: white;
+}
+
+.iconButtonActive {
+  background-color: rgba(255, 255, 255, 0.2);
+  color: white;
+}
+
+.iconButtonActive:hover {
+  background-color: rgba(255, 255, 255, 0.25);
+}
+
 .streaming {
   display: flex;
   align-items: center;

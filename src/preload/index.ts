@@ -271,6 +271,33 @@ const api = {
 
     stashDrop: (cwd: string, index?: number): Promise<GitStashResult> =>
       ipcRenderer.invoke(IPC_CHANNELS.GIT_STASH_DROP, { cwd, index })
+  },
+
+  // ===== Terminal =====
+  terminal: {
+    create: (id: string, cwd?: string): Promise<{ id: string; pid: number }> =>
+      ipcRenderer.invoke(IPC_CHANNELS.TERMINAL_CREATE, { id, cwd }),
+
+    write: (id: string, data: string): Promise<boolean> =>
+      ipcRenderer.invoke(IPC_CHANNELS.TERMINAL_WRITE, { id, data }),
+
+    resize: (id: string, cols: number, rows: number): Promise<boolean> =>
+      ipcRenderer.invoke(IPC_CHANNELS.TERMINAL_RESIZE, { id, cols, rows }),
+
+    destroy: (id: string): Promise<boolean> =>
+      ipcRenderer.invoke(IPC_CHANNELS.TERMINAL_DESTROY, { id }),
+
+    onData: (callback: (data: { id: string; data: string }) => void): CleanupFn => {
+      const handler = (_: IpcRendererEvent, data: { id: string; data: string }) => callback(data);
+      ipcRenderer.on(IPC_CHANNELS.TERMINAL_DATA, handler);
+      return () => ipcRenderer.removeListener(IPC_CHANNELS.TERMINAL_DATA, handler);
+    },
+
+    onExit: (callback: (data: { id: string; exitCode: number; signal?: number }) => void): CleanupFn => {
+      const handler = (_: IpcRendererEvent, data: { id: string; exitCode: number; signal?: number }) => callback(data);
+      ipcRenderer.on(IPC_CHANNELS.TERMINAL_EXIT, handler);
+      return () => ipcRenderer.removeListener(IPC_CHANNELS.TERMINAL_EXIT, handler);
+    }
   }
 };
 

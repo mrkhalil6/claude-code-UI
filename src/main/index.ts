@@ -7,6 +7,7 @@ import { CredentialsService } from './services/credentials.service';
 import { PermissionsService } from './services/permissions.service';
 import { McpService } from './services/mcp.service';
 import { GitService } from './services/git.service';
+import { terminalService } from './services/terminal.service';
 
 class Application {
   private mainWindow: BrowserWindow | null = null;
@@ -96,6 +97,9 @@ class Application {
 
     // Stop file watching
     this.sessionLoader.stopWatching();
+
+    // Destroy all terminal sessions
+    terminalService.destroyAllTerminals();
   }
 }
 

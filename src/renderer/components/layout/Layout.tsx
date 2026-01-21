@@ -4,12 +4,14 @@ import { Sidebar } from './Sidebar';
 import { StatusBar } from './StatusBar';
 import { ChatContainer } from '../chat/ChatContainer';
 import { GitDiffPanel } from '../git';
-import { useUI, useUIActions } from '../../store';
+import { TerminalPanel } from '../terminal';
+import { useUI, useUIActions, useSession } from '../../store';
 import styles from './Layout.module.css';
 
 export const Layout: React.FC = () => {
-  const { showGitDiff } = useUI();
+  const { showGitDiff, showTerminal } = useUI();
   const { setShowGitDiff } = useUIActions();
+  const { activeProjectPath } = useSession();
 
   return (
     <div className={styles.layout}>
@@ -18,7 +20,12 @@ export const Layout: React.FC = () => {
       <div className={styles.body}>
         <Sidebar />
         <main className={styles.main}>
-          <ChatContainer />
+          <div className={styles.mainContent}>
+            <ChatContainer />
+          </div>
+          {showTerminal && (
+            <TerminalPanel cwd={activeProjectPath || undefined} />
+          )}
         </main>
       </div>
 

@@ -62,6 +62,8 @@ export const useUI = () => useStore((state) => ({
   activeDiffId: state.activeDiffId,
   showSettings: state.showSettings,
   showGitDiff: state.showGitDiff,
+  showTerminal: state.showTerminal,
+  terminalHeight: state.terminalHeight,
   connectionStatus: state.connectionStatus,
   errorMessage: state.errorMessage,
   usage: state.usage
@@ -128,6 +130,9 @@ export const useUIActions = () => useStore((state) => ({
   setActiveDiffId: state.setActiveDiffId,
   setShowSettings: state.setShowSettings,
   setShowGitDiff: state.setShowGitDiff,
+  setShowTerminal: state.setShowTerminal,
+  toggleTerminal: state.toggleTerminal,
+  setTerminalHeight: state.setTerminalHeight,
   setConnectionStatus: state.setConnectionStatus,
   setErrorMessage: state.setErrorMessage,
   setModelInfo: state.setModelInfo,

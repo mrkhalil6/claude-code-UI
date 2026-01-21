@@ -9,6 +9,7 @@ import { CredentialsService } from '../services/credentials.service';
 import { PermissionsService, KNOWN_TOOLS } from '../services/permissions.service';
 import { McpService, McpServer } from '../services/mcp.service';
 import { GitService } from '../services/git.service';
+import { terminalService } from '../services/terminal.service';
 import { StartSessionOptions } from '../../shared/types';
 
 export function registerIpcHandlers(
@@ -466,6 +467,24 @@ export function registerIpcHandlers(
 
   ipcMain.handle(IPC_CHANNELS.GIT_STASH_DROP, async (_, { cwd, index }: { cwd: string; index?: number }) => {
     return gitService.stashDrop(cwd, index);
+  });
+
+  // ===== Terminal =====
+
+  ipcMain.handle(IPC_CHANNELS.TERMINAL_CREATE, async (_, { id, cwd }: { id: string; cwd?: string }) => {
+    return terminalService.createTerminal(id, cwd);
+  });
+
+  ipcMain.handle(IPC_CHANNELS.TERMINAL_WRITE, async (_, { id, data }: { id: string; data: string }) => {
+    return terminalService.writeToTerminal(id, data);
+  });
+
+  ipcMain.handle(IPC_CHANNELS.TERMINAL_RESIZE, async (_, { id, cols, rows }: { id: string; cols: number; rows: number }) => {
+    return terminalService.resizeTerminal(id, cols, rows);
+  });
+
+  ipcMain.handle(IPC_CHANNELS.TERMINAL_DESTROY, async (_, { id }: { id: string }) => {
+    return terminalService.destroyTerminal(id);
   });
 
   // ===== Session File Watching =====

@@ -1,0 +1,99 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  background-color: #1e1e1e;
+  border-top: 1px solid var(--border-color);
+  position: relative;
+}
+
+.resizeHandle {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  cursor: ns-resize;
+  z-index: 10;
+  background: transparent;
+  transition: background-color 0.2s;
+}
+
+.resizeHandle:hover,
+.resizeHandle.resizing {
+  background-color: var(--accent-color);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 12px;
+  background-color: #252526;
+  border-bottom: 1px solid #3c3c3c;
+  min-height: 32px;
+}
+
+.title {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+}
+
+.closeButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  border-radius: 4px;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.closeButton:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: var(--text-primary);
+}
+
+.terminal {
+  flex: 1;
+  padding: 8px;
+  overflow: hidden;
+}
+
+/* Override xterm styles */
+.terminal :global(.xterm) {
+  height: 100%;
+}
+
+.terminal :global(.xterm-viewport) {
+  overflow-y: auto !important;
+}
+
+.terminal :global(.xterm-viewport::-webkit-scrollbar) {
+  width: 10px;
+}
+
+.terminal :global(.xterm-viewport::-webkit-scrollbar-track) {
+  background: #1e1e1e;
+}
+
+.terminal :global(.xterm-viewport::-webkit-scrollbar-thumb) {
+  background: #424242;
+  border-radius: 5px;
+}
+
+.terminal :global(.xterm-viewport::-webkit-scrollbar-thumb:hover) {
+  background: #555555;
+}

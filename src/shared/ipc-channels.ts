@@ -85,7 +85,15 @@ export const IPC_CHANNELS = {
   GIT_STASH: 'git:stash',
   GIT_STASH_POP: 'git:stashPop',
   GIT_STASH_LIST: 'git:stashList',
-  GIT_STASH_DROP: 'git:stashDrop'
+  GIT_STASH_DROP: 'git:stashDrop',
+
+  // Terminal
+  TERMINAL_CREATE: 'terminal:create',
+  TERMINAL_WRITE: 'terminal:write',
+  TERMINAL_RESIZE: 'terminal:resize',
+  TERMINAL_DESTROY: 'terminal:destroy',
+  TERMINAL_DATA: 'terminal:data',
+  TERMINAL_EXIT: 'terminal:exit'
 } as const;
 
 export type IpcChannel = typeof IPC_CHANNELS[keyof typeof IPC_CHANNELS];

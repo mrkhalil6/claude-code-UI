@@ -21,6 +21,8 @@ export interface UISlice {
   activeDiffId: string | null;
   showSettings: boolean;
   showGitDiff: boolean;
+  showTerminal: boolean;
+  terminalHeight: number;
   connectionStatus: 'disconnected' | 'connecting' | 'connected' | 'error';
   errorMessage: string | null;
   usage: UsageInfo;
@@ -35,6 +37,9 @@ export interface UISlice {
   setActiveDiffId: (id: string | null) => void;
   setShowSettings: (show: boolean) => void;
   setShowGitDiff: (show: boolean) => void;
+  setShowTerminal: (show: boolean) => void;
+  toggleTerminal: () => void;
+  setTerminalHeight: (height: number) => void;
   setConnectionStatus: (status: UISlice['connectionStatus']) => void;
   setErrorMessage: (message: string | null) => void;
   setModelInfo: (modelName: string, contextWindow: number, maxOutputTokens: number, version: string) => void;
@@ -63,6 +68,8 @@ export const createUISlice: StateCreator<UISlice, [], [], UISlice> = (set) => ({
   activeDiffId: null,
   showSettings: false,
   showGitDiff: false,
+  showTerminal: false,
+  terminalHeight: 300,
   connectionStatus: 'disconnected',
   errorMessage: null,
   usage: initialUsage,
@@ -85,6 +92,12 @@ export const createUISlice: StateCreator<UISlice, [], [], UISlice> = (set) => ({
   setShowSettings: (show) => set({ showSettings: show }),
 
   setShowGitDiff: (show) => set({ showGitDiff: show }),
+
+  setShowTerminal: (show) => set({ showTerminal: show }),
+
+  toggleTerminal: () => set((state) => ({ showTerminal: !state.showTerminal })),
+
+  setTerminalHeight: (height) => set({ terminalHeight: height }),
 
   setConnectionStatus: (status) => set({ connectionStatus: status }),
 
