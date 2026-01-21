@@ -194,7 +194,6 @@ export const Sidebar: React.FC = () => {
         ) : (
           <SessionList
             projects={projects}
-            onRefresh={loadSessions}
             isSelectMode={isSelectMode}
             selectedSessions={selectedSessions}
             onToggleSelection={toggleSessionSelection}

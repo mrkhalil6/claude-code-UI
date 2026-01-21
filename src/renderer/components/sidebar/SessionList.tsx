@@ -6,7 +6,6 @@ import styles from './SessionList.module.css';
 
 interface SessionListProps {
   projects: ProjectWithSessions[];
-  onRefresh?: () => void;
   isSelectMode?: boolean;
   selectedSessions?: SelectedSession[];
   onToggleSelection?: (session: SelectedSession) => void;
@@ -14,7 +13,6 @@ interface SessionListProps {
 
 export const SessionList: React.FC<SessionListProps> = ({
   projects,
-  onRefresh,
   isSelectMode = false,
   selectedSessions = [],
   onToggleSelection
@@ -68,7 +66,6 @@ export const SessionList: React.FC<SessionListProps> = ({
                   session={session}
                   projectPath={project.path}
                   projectEncodedName={project.encodedName}
-                  onDelete={onRefresh}
                   isSelectMode={isSelectMode}
                   isSelected={selectedSessions.some(s => s.sessionId === session.id)}
                   onToggleSelection={onToggleSelection}

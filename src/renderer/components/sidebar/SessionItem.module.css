@@ -1,7 +1,6 @@
 .itemWrapper {
   display: flex;
   align-items: stretch;
-  margin: var(--spacing-xs) 0;
   border-radius: var(--border-radius-md);
   border: 1px solid transparent;
   transition: all var(--transition-fast);
@@ -21,10 +20,6 @@
   border-color: var(--accent-primary);
 }
 
-.itemWrapper:hover .deleteButton {
-  opacity: 1;
-}
-
 .item {
   flex: 1;
   display: flex;
@@ -38,39 +33,22 @@
   cursor: pointer;
 }
 
-.deleteButton {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  background: none;
-  border: none;
-  color: var(--text-muted);
-  cursor: pointer;
-  opacity: 0;
-  transition: opacity 0.15s ease, color 0.15s ease;
-  border-radius: var(--border-radius-md) 0 0 var(--border-radius-md);
-}
-
-.deleteButton:hover {
-  color: var(--text-error);
-  background-color: rgba(239, 68, 68, 0.1);
-}
-
-.deleteButton:disabled {
-  cursor: not-allowed;
-  opacity: 0.5;
-}
-
 .checkboxButton {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
+  width: 36px;
+  min-width: 36px;
+  flex-shrink: 0;
   background: none;
   border: none;
   cursor: pointer;
   border-radius: var(--border-radius-md) 0 0 var(--border-radius-md);
+  transition: background-color 0.15s ease;
+}
+
+.checkboxButton:hover {
+  background-color: var(--bg-hover);
 }
 
 .checkbox {

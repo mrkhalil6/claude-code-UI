@@ -1,4 +1,4 @@
-import React, { useState, memo } from 'react';
+import React, { memo } from 'react';
 import clsx from 'clsx';
 import { SessionSummary } from '../../../shared/types';
 import { useSession, useSessionActions, useChatActions, useUIActions } from '../../store';
@@ -10,7 +10,6 @@ interface SessionItemProps {
   session: SessionSummary;
   projectPath: string;
   projectEncodedName: string;
-  onDelete?: () => void;
   isSelectMode?: boolean;
   isSelected?: boolean;
   onToggleSelection?: (session: SelectedSession) => void;
@@ -20,7 +19,6 @@ export const SessionItem: React.FC<SessionItemProps> = memo(({
   session,
   projectPath,
   projectEncodedName,
-  onDelete,
   isSelectMode = false,
   isSelected = false,
   onToggleSelection
@@ -29,7 +27,6 @@ export const SessionItem: React.FC<SessionItemProps> = memo(({
   const { setActiveSessionId, setCliSessionId, setActiveProjectPath, setCurrentCwd, setIsLoadingSession } = useSessionActions();
   const { setMessages, clearMessages } = useChatActions();
   const { setConnectionStatus } = useUIActions();
-  const [isDeleting, setIsDeleting] = useState(false);
 
   const isActive = cliSessionId === session.id;
 
@@ -172,37 +169,6 @@ export const SessionItem: React.FC<SessionItemProps> = memo(({
     }
   };
 
-  const handleDelete = async (e: React.MouseEvent) => {
-    e.stopPropagation();
-
-    if (isDeleting) return;
-
-    // Confirm deletion
-    if (!confirm(`Delete this chat?\n\n"${session.title}"`)) return;
-
-    setIsDeleting(true);
-    try {
-      const homeDir = await window.claudeUI.fs.getHomeDir();
-      const fullProjectPath = `${homeDir}/.claude/projects/${projectEncodedName}`;
-
-      const success = await window.claudeUI.sessions.delete(fullProjectPath, session.id);
-
-      if (success) {
-        // If this was the active session, clear it
-        if (isActive) {
-          setCliSessionId(null);
-          clearMessages();
-        }
-        // Trigger refresh of session list
-        onDelete?.();
-      }
-    } catch (error) {
-      console.error('Failed to delete session:', error);
-    } finally {
-      setIsDeleting(false);
-    }
-  };
-
   const handleCheckboxClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     onToggleSelection?.({
@@ -214,7 +180,7 @@ export const SessionItem: React.FC<SessionItemProps> = memo(({
 
   return (
     <div className={clsx(styles.itemWrapper, isActive && styles.active, isSelected && styles.selected)}>
-      {isSelectMode ? (
+      {isSelectMode && (
         <button
           className={styles.checkboxButton}
           onClick={handleCheckboxClick}
@@ -227,17 +193,6 @@ export const SessionItem: React.FC<SessionItemProps> = memo(({
               </svg>
             )}
           </div>
-        </button>
-      ) : (
-        <button
-          className={styles.deleteButton}
-          onClick={handleDelete}
-          disabled={isDeleting}
-          title="Delete chat"
-        >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6h14" />
-          </svg>
         </button>
       )}
       <button
