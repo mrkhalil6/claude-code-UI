@@ -445,6 +445,44 @@ export class ClaudeCliService extends EventEmitter {
   }
 
   /**
+   * Interrupt the current execution (like Ctrl+C in CLI)
+   * This stops the current process but keeps the session context intact
+   * so the user can send a follow-up message
+   */
+  interruptSession(sessionId: string): boolean {
+    const session = this.activeSessions.get(sessionId);
+    if (!session) {
+      console.warn(`[interruptSession] No session found: ${sessionId}`);
+      return false;
+    }
+
+    if (!session.process) {
+      console.warn(`[interruptSession] No active process for session: ${sessionId}`);
+      return false;
+    }
+
+    console.log(`[interruptSession] Sending SIGINT to session: ${sessionId}`);
+
+    // Send SIGINT (Ctrl+C equivalent) to gracefully interrupt
+    // On Windows, we need to use a different approach
+    if (process.platform === 'win32') {
+      // On Windows, kill with SIGINT doesn't work the same way
+      // We'll use SIGTERM but the conversation context is preserved in the session file
+      session.process.kill('SIGTERM');
+    } else {
+      session.process.kill('SIGINT');
+    }
+
+    // Clear any pending retry message since user is interrupting
+    session.pendingRetryMessage = null;
+
+    // Emit an interrupt event so UI knows it was interrupted
+    this.emit('cli:interrupted', { sessionId });
+
+    return true;
+  }
+
+  /**
    * Kill a specific session
    */
   killSession(sessionId: string): void {

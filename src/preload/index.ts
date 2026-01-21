@@ -57,6 +57,9 @@ const api = {
     sendMessage: (sessionId: string, message: string): Promise<void> =>
       ipcRenderer.invoke(IPC_CHANNELS.CLI_SEND_MESSAGE, { sessionId, message }),
 
+    interruptSession: (sessionId: string): Promise<boolean> =>
+      ipcRenderer.invoke(IPC_CHANNELS.CLI_INTERRUPT_SESSION, { sessionId }),
+
     killSession: (sessionId: string): Promise<void> =>
       ipcRenderer.invoke(IPC_CHANNELS.CLI_KILL_SESSION, { sessionId }),
 
@@ -110,6 +113,12 @@ const api = {
       const handler = (_: IpcRendererEvent, data: CLIExitEvent) => callback(data);
       ipcRenderer.on(IPC_CHANNELS.CLI_EVENT_EXIT, handler);
       return () => ipcRenderer.removeListener(IPC_CHANNELS.CLI_EVENT_EXIT, handler);
+    },
+
+    onInterrupted: (callback: (data: { sessionId: string }) => void): CleanupFn => {
+      const handler = (_: IpcRendererEvent, data: { sessionId: string }) => callback(data);
+      ipcRenderer.on(IPC_CHANNELS.CLI_EVENT_INTERRUPTED, handler);
+      return () => ipcRenderer.removeListener(IPC_CHANNELS.CLI_EVENT_INTERRUPTED, handler);
     },
 
     onPlanModeExit: (callback: (data: { sessionId: string }) => void): CleanupFn => {

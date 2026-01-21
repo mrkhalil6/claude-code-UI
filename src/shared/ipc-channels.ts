@@ -9,6 +9,7 @@ export const IPC_CHANNELS = {
   // CLI Control
   CLI_START_SESSION: 'cli:startSession',
   CLI_SEND_MESSAGE: 'cli:sendMessage',
+  CLI_INTERRUPT_SESSION: 'cli:interruptSession',
   CLI_KILL_SESSION: 'cli:killSession',
   CLI_SET_PLAN_MODE: 'cli:setPlanMode',
 
@@ -24,6 +25,7 @@ export const IPC_CHANNELS = {
   CLI_EVENT_RESULT: 'cli:event:result',
   CLI_EVENT_ERROR: 'cli:event:error',
   CLI_EVENT_EXIT: 'cli:event:exit',
+  CLI_EVENT_INTERRUPTED: 'cli:event:interrupted',
   CLI_EVENT_PLAN_MODE_EXIT: 'cli:event:planModeExit',
 
   // File System

@@ -10,6 +10,7 @@ import styles from './ChatContainer.module.css';
 
 export const ChatContainer: React.FC = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const wasInterruptedRef = useRef(false);  // Track intentional interrupts
   const [error, setError] = useState<string | null>(null);
   const { messages, isStreaming, streamingContent, streamingThinking, toolsInProgress, streamingBlocks } = useChat();
   const { activeSessionId, currentCwd, cliSessionId } = useSession();
@@ -181,8 +182,14 @@ export const ChatContainer: React.FC = () => {
     cleanups.push(
       window.claudeUI.cli.onExit((data) => {
         console.log('CLI exited:', data);
-        // Only disconnect if there was an error
-        if (data.code !== 0) {
+        // Don't show error if it was an intentional interrupt
+        if (wasInterruptedRef.current) {
+          wasInterruptedRef.current = false;  // Reset for next time
+          setIsStreaming(false);
+          return;
+        }
+        // Only disconnect if there was an error (code !== 0 and not null from signal)
+        if (data.code !== 0 && data.code !== null) {
           setConnectionStatus('error');
           setError(`Process exited with code ${data.code}`);
         }
@@ -208,10 +215,31 @@ export const ChatContainer: React.FC = () => {
       })
     );
 
+    // Handle interrupted event (user pressed Stop)
+    cleanups.push(
+      window.claudeUI.cli.onInterrupted((data) => {
+        console.log('CLI interrupted:', data);
+        wasInterruptedRef.current = true;  // Mark as intentional so onExit doesn't show error
+
+        // Finalize the streaming message to preserve what Claude was doing
+        // This keeps the text/tools visible instead of losing them
+        finalizeStreamingMessage();
+        setIsStreaming(false);
+
+        // Add a small system note about the interruption
+        addMessage({
+          id: crypto.randomUUID(),
+          type: 'system',
+          content: '*Interrupted — conversation context is preserved. Send a message to continue.*',
+          timestamp: new Date().toISOString()
+        });
+      })
+    );
+
     return () => {
       cleanups.forEach(cleanup => cleanup());
     };
-  }, [setConnectionStatus, setIsStreaming, appendStreamingContent, appendStreamingThinking, finalizeStreamingMessage, clearStreaming, addToolInProgress, updateToolStatus, setCliSessionId, setCurrentCwd, setTodos, setModelInfo, updateUsage, setIsPlanMode]);
+  }, [setConnectionStatus, setIsStreaming, appendStreamingContent, appendStreamingThinking, finalizeStreamingMessage, clearStreaming, addToolInProgress, updateToolStatus, setCliSessionId, setCurrentCwd, setTodos, setModelInfo, updateUsage, setIsPlanMode, addMessage]);
 
   const handleSendMessage = useCallback(async (content: string) => {
     if (!content.trim()) return;
@@ -279,6 +307,27 @@ export const ChatContainer: React.FC = () => {
       setIsStreaming(false);
     }
   }, [activeSessionId, currentCwd, cliSessionId, isPlanMode, addMessage, setLastUserMessage, setCurrentCwd, setConnectionStatus, setActiveSessionId, setIsStreaming, clearStreaming]);
+
+  // Handle interrupt (Stop button)
+  const handleInterrupt = useCallback(async () => {
+    if (!activeSessionId) {
+      console.warn('No active session to interrupt');
+      return;
+    }
+
+    console.log('Interrupting session:', activeSessionId);
+    try {
+      const success = await window.claudeUI.cli.interruptSession(activeSessionId);
+      if (!success) {
+        console.warn('Failed to interrupt session (may have already finished)');
+        setIsStreaming(false);
+      }
+      // The onInterrupted event handler will update the UI
+    } catch (err) {
+      console.error('Failed to interrupt session:', err);
+      setIsStreaming(false);
+    }
+  }, [activeSessionId, setIsStreaming]);
 
   // Handle slash commands
   const handleSlashCommand = useCallback(async (command: SlashCommand, args: string) => {
@@ -587,7 +636,9 @@ export const ChatContainer: React.FC = () => {
         <InputArea
           onSend={handleSendMessage}
           onSlashCommand={handleSlashCommand}
+          onInterrupt={handleInterrupt}
           disabled={isStreaming}
+          isStreaming={isStreaming}
           placeholder={isPlanMode ? 'Describe what you want to plan...' : 'Ask Claude anything...'}
         />
       </div>

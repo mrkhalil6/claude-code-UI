@@ -6,14 +6,18 @@ import styles from './InputArea.module.css';
 interface InputAreaProps {
   onSend: (message: string) => void;
   onSlashCommand?: (command: SlashCommand, args: string) => void;
+  onInterrupt?: () => void;
   disabled?: boolean;
+  isStreaming?: boolean;
   placeholder?: string;
 }
 
 export const InputArea: React.FC<InputAreaProps> = ({
   onSend,
   onSlashCommand,
+  onInterrupt,
   disabled = false,
+  isStreaming = false,
   placeholder = 'Type a message... (/ for commands)'
 }) => {
   const [value, setValue] = useState('');
@@ -167,19 +171,35 @@ export const InputArea: React.FC<InputAreaProps> = ({
 
         <div className={styles.actions}>
           <span className={styles.hint}>
-            Press <kbd>Enter</kbd> to send, <kbd>Shift+Enter</kbd> for new line, <kbd>/</kbd> for commands
+            {isStreaming
+              ? 'Claude is responding... Press Stop to interrupt'
+              : <>Press <kbd>Enter</kbd> to send, <kbd>Shift+Enter</kbd> for new line, <kbd>/</kbd> for commands</>
+            }
           </span>
-          <Button
-            variant="primary"
-            size="sm"
-            onClick={handleSubmit}
-            disabled={disabled || !value.trim()}
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
-            </svg>
-            Send
-          </Button>
+          {isStreaming && onInterrupt ? (
+            <Button
+              variant="danger"
+              size="sm"
+              onClick={onInterrupt}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                <rect x="6" y="6" width="12" height="12" rx="2"/>
+              </svg>
+              Stop
+            </Button>
+          ) : (
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={handleSubmit}
+              disabled={disabled || !value.trim()}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+              </svg>
+              Send
+            </Button>
+          )}
         </div>
       </div>
     </div>

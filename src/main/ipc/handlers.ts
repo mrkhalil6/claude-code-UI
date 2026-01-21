@@ -46,6 +46,10 @@ export function registerIpcHandlers(
     cliService.sendMessage(sessionId, message);
   });
 
+  ipcMain.handle(IPC_CHANNELS.CLI_INTERRUPT_SESSION, async (_, { sessionId }: { sessionId: string }) => {
+    return cliService.interruptSession(sessionId);
+  });
+
   ipcMain.handle(IPC_CHANNELS.CLI_KILL_SESSION, async (_, { sessionId }: { sessionId: string }) => {
     cliService.killSession(sessionId);
   });
@@ -125,6 +129,7 @@ export function registerIpcHandlers(
   cliService.on('cli:result', forwardToRenderer(IPC_CHANNELS.CLI_EVENT_RESULT));
   cliService.on('cli:error', forwardToRenderer(IPC_CHANNELS.CLI_EVENT_ERROR));
   cliService.on('cli:exit', forwardToRenderer(IPC_CHANNELS.CLI_EVENT_EXIT));
+  cliService.on('cli:interrupted', forwardToRenderer(IPC_CHANNELS.CLI_EVENT_INTERRUPTED));
   cliService.on('cli:plan-mode-exit', forwardToRenderer(IPC_CHANNELS.CLI_EVENT_PLAN_MODE_EXIT));
 
   // ===== MCP Servers (Global) =====
