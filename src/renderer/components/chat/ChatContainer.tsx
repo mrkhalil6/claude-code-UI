@@ -20,7 +20,7 @@ export const ChatContainer: React.FC = () => {
   const { setShowSettings } = useUIActions();
   const { addMessage, setIsStreaming, appendStreamingContent, appendStreamingThinking, finalizeStreamingMessage, clearStreaming, setLastUserMessage, addToolInProgress, updateToolStatus, setTodos } = useChatActions();
   const { setActiveSessionId, setCliSessionId, setCurrentCwd, clearSession } = useSessionActions();
-  const { setConnectionStatus, setModelInfo, updateUsage } = useUIActions();
+  const { setConnectionStatus, setModelInfo, updateUsage, setIsPlanMode } = useUIActions();
   const { setPendingPermission, mergeKnownTools } = usePermissionActions();
 
   // Auto-scroll to bottom when new messages arrive
@@ -226,10 +226,19 @@ export const ChatContainer: React.FC = () => {
       })
     );
 
+    // Handle plan mode exit (when Claude uses ExitPlanMode tool)
+    cleanups.push(
+      window.claudeUI.cli.onPlanModeExit((data) => {
+        console.log('Plan mode exit requested:', data);
+        // Update UI state to reflect plan mode has ended
+        setIsPlanMode(false);
+      })
+    );
+
     return () => {
       cleanups.forEach(cleanup => cleanup());
     };
-  }, [setConnectionStatus, setIsStreaming, appendStreamingContent, appendStreamingThinking, finalizeStreamingMessage, clearStreaming, setPendingPermission, addToolInProgress, updateToolStatus, mergeKnownTools, setCliSessionId, setCurrentCwd, setTodos, setModelInfo, updateUsage]);
+  }, [setConnectionStatus, setIsStreaming, appendStreamingContent, appendStreamingThinking, finalizeStreamingMessage, clearStreaming, setPendingPermission, addToolInProgress, updateToolStatus, mergeKnownTools, setCliSessionId, setCurrentCwd, setTodos, setModelInfo, updateUsage, setIsPlanMode]);
 
   const handleSendMessage = useCallback(async (content: string) => {
     if (!content.trim()) return;
@@ -368,6 +377,95 @@ export const ChatContainer: React.FC = () => {
           // Clear messages and reset session
           useStore.getState().clearMessages();
           clearSession();
+          return;
+
+        case '/rename':
+          // Validate we have an active session to rename
+          if (!cliSessionId) {
+            addMessage({
+              id: crypto.randomUUID(),
+              type: 'system',
+              content: 'No active session to rename. Start a chat first.',
+              timestamp: new Date().toISOString()
+            });
+            return;
+          }
+
+          // Validate we have a name provided
+          const newName = args.trim();
+          if (!newName) {
+            addMessage({
+              id: crypto.randomUUID(),
+              type: 'system',
+              content: 'Usage: /rename <new name>\n\nExample: /rename Fix authentication bug',
+              timestamp: new Date().toISOString()
+            });
+            return;
+          }
+
+          // Validate name length
+          if (newName.length > 100) {
+            addMessage({
+              id: crypto.randomUUID(),
+              type: 'system',
+              content: 'Session name must be 100 characters or less.',
+              timestamp: new Date().toISOString()
+            });
+            return;
+          }
+
+          try {
+            // Get the home directory and find the project for this session
+            const homeDir = await window.claudeUI.fs.getHomeDir();
+            const projects = await window.claudeUI.sessions.getAll();
+            let projectEncodedName: string | null = null;
+
+            for (const project of projects) {
+              const hasSession = project.sessions.some(s => s.id === cliSessionId);
+              if (hasSession) {
+                projectEncodedName = project.encodedName;
+                break;
+              }
+            }
+
+            if (!projectEncodedName) {
+              addMessage({
+                id: crypto.randomUUID(),
+                type: 'system',
+                content: 'Could not find the project for this session. The session may not have been saved yet.',
+                timestamp: new Date().toISOString()
+              });
+              return;
+            }
+
+            const fullProjectPath = `${homeDir}/.claude/projects/${projectEncodedName}`;
+            const success = await window.claudeUI.sessions.rename(fullProjectPath, cliSessionId, newName);
+
+            if (success) {
+              addMessage({
+                id: crypto.randomUUID(),
+                type: 'system',
+                content: `Session renamed to: **${newName}**`,
+                timestamp: new Date().toISOString()
+              });
+              // The file watcher will automatically trigger a sidebar refresh
+            } else {
+              addMessage({
+                id: crypto.randomUUID(),
+                type: 'system',
+                content: 'Failed to rename session. The session file may not exist yet (send a message first).',
+                timestamp: new Date().toISOString()
+              });
+            }
+          } catch (err) {
+            console.error('Failed to rename session:', err);
+            addMessage({
+              id: crypto.randomUUID(),
+              type: 'system',
+              content: `Failed to rename session: ${err instanceof Error ? err.message : 'Unknown error'}`,
+              timestamp: new Date().toISOString()
+            });
+          }
           return;
 
         default:

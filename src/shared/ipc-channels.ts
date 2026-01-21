@@ -3,6 +3,7 @@ export const IPC_CHANNELS = {
   SESSIONS_GET_ALL: 'sessions:getAll',
   SESSION_LOAD: 'sessions:load',
   SESSION_DELETE: 'sessions:delete',
+  SESSION_RENAME: 'sessions:rename',
   SESSIONS_CHANGED: 'sessions:changed',
 
   // CLI Control
@@ -28,6 +29,7 @@ export const IPC_CHANNELS = {
   CLI_EVENT_PERMISSION_DENIALS: 'cli:event:permissionDenials',
   CLI_EVENT_ERROR: 'cli:event:error',
   CLI_EVENT_EXIT: 'cli:event:exit',
+  CLI_EVENT_PLAN_MODE_EXIT: 'cli:event:planModeExit',
 
   // File System
   FS_READ_FILE: 'fs:readFile',

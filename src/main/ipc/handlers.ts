@@ -34,6 +34,10 @@ export function registerIpcHandlers(
     return sessionLoader.deleteSession(projectPath, sessionId);
   });
 
+  ipcMain.handle(IPC_CHANNELS.SESSION_RENAME, async (_, { projectPath, sessionId, newName }: { projectPath: string; sessionId: string; newName: string }) => {
+    return sessionLoader.renameSession(projectPath, sessionId, newName);
+  });
+
   // ===== CLI Session Control =====
 
   ipcMain.handle(IPC_CHANNELS.CLI_START_SESSION, async (_, options: StartSessionOptions) => {
@@ -147,6 +151,7 @@ export function registerIpcHandlers(
   cliService.on('cli:permission-required', forwardToRenderer(IPC_CHANNELS.CLI_EVENT_PERMISSION));
   cliService.on('cli:error', forwardToRenderer(IPC_CHANNELS.CLI_EVENT_ERROR));
   cliService.on('cli:exit', forwardToRenderer(IPC_CHANNELS.CLI_EVENT_EXIT));
+  cliService.on('cli:plan-mode-exit', forwardToRenderer(IPC_CHANNELS.CLI_EVENT_PLAN_MODE_EXIT));
 
   // ===== Permissions =====
 

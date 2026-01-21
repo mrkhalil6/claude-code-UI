@@ -30,6 +30,12 @@ export const SLASH_COMMANDS: SlashCommand[] = [
     description: 'Start a new chat session',
     type: 'local'
   },
+  {
+    name: '/rename',
+    description: 'Rename the current chat session',
+    usage: '/rename <new name>',
+    type: 'local'
+  },
 
   // CLI-local commands (CLI commands we handle in UI)
   {

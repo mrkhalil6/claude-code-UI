@@ -408,6 +408,21 @@ export class ClaudeCliService extends EventEmitter {
           for (const denial of event.permission_denials) {
             console.log(`[handleCliEvent] Permission denial: tool_name="${denial.tool_name}", tool_use_id="${denial.tool_use_id}"`);
             console.log(`[handleCliEvent] Tool input:`, JSON.stringify(denial.tool_input).slice(0, 200));
+
+            // Special handling for ExitPlanMode - auto-approve and exit plan mode
+            if (denial.tool_name === 'ExitPlanMode') {
+              console.log(`[handleCliEvent] ExitPlanMode detected - auto-exiting plan mode`);
+              const session = this.activeSessions.get(sessionId);
+              if (session) {
+                session.isPlanMode = false;
+                // Add ExitPlanMode to allowed tools so it won't be denied again
+                session.allowedTools.add('ExitPlanMode');
+              }
+              // Emit special event for UI to handle
+              this.emit('cli:plan-mode-exit', { sessionId });
+              continue; // Don't emit permission-required for ExitPlanMode
+            }
+
             const permissionEvent: CLIPermissionRequiredEvent = {
               sessionId,
               toolUseId: denial.tool_use_id,

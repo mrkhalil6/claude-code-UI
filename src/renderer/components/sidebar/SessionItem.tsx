@@ -1,4 +1,4 @@
-import React, { memo } from 'react';
+import React, { memo, useState, useRef, useEffect } from 'react';
 import clsx from 'clsx';
 import { SessionSummary } from '../../../shared/types';
 import { useSession, useSessionActions, useChatActions, useUIActions } from '../../store';
@@ -28,7 +28,72 @@ export const SessionItem: React.FC<SessionItemProps> = memo(({
   const { setMessages, clearMessages } = useChatActions();
   const { setConnectionStatus } = useUIActions();
 
+  const [isEditing, setIsEditing] = useState(false);
+  const [editValue, setEditValue] = useState(session.title);
+  const [isRenaming, setIsRenaming] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
   const isActive = cliSessionId === session.id;
+
+  // Focus input when editing starts
+  useEffect(() => {
+    if (isEditing && inputRef.current) {
+      inputRef.current.focus();
+      inputRef.current.select();
+    }
+  }, [isEditing]);
+
+  const handleRename = async () => {
+    const newName = editValue.trim();
+    if (!newName || newName === session.title || isRenaming) {
+      setIsEditing(false);
+      setEditValue(session.title);
+      return;
+    }
+
+    if (newName.length > 100) {
+      setEditValue(session.title);
+      setIsEditing(false);
+      return;
+    }
+
+    setIsRenaming(true);
+    try {
+      const homeDir = await window.claudeUI.fs.getHomeDir();
+      const fullProjectPath = `${homeDir}/.claude/projects/${projectEncodedName}`;
+      const success = await window.claudeUI.sessions.rename(fullProjectPath, session.id, newName);
+
+      if (!success) {
+        setEditValue(session.title);
+      }
+      // File watcher will refresh the list with the new name
+    } catch (error) {
+      console.error('Failed to rename session:', error);
+      setEditValue(session.title);
+    } finally {
+      setIsRenaming(false);
+      setIsEditing(false);
+    }
+  };
+
+  const handleEditClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setEditValue(session.title);
+    setIsEditing(true);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleRename();
+    } else if (e.key === 'Escape') {
+      setEditValue(session.title);
+      setIsEditing(false);
+    }
+  };
+
+  const handleBlur = () => {
+    handleRename();
+  };
 
   const handleClick = async () => {
     if (isActive) return;
@@ -200,8 +265,23 @@ export const SessionItem: React.FC<SessionItemProps> = memo(({
         onClick={isSelectMode ? handleCheckboxClick : handleClick}
       >
         <div className={styles.content}>
-          <span className={styles.title}>{session.title}</span>
-          {session.preview && (
+          {isEditing ? (
+            <input
+              ref={inputRef}
+              type="text"
+              value={editValue}
+              onChange={(e) => setEditValue(e.target.value)}
+              onKeyDown={handleKeyDown}
+              onBlur={handleBlur}
+              onClick={(e) => e.stopPropagation()}
+              className={styles.editInput}
+              disabled={isRenaming}
+              maxLength={100}
+            />
+          ) : (
+            <span className={styles.title}>{session.title}</span>
+          )}
+          {session.preview && !isEditing && (
             <span className={styles.preview}>{session.preview}</span>
           )}
         </div>
@@ -210,6 +290,18 @@ export const SessionItem: React.FC<SessionItemProps> = memo(({
           <span className={styles.count}>{session.messageCount}</span>
         </div>
       </button>
+      {!isSelectMode && !isEditing && (
+        <button
+          className={styles.editButton}
+          onClick={handleEditClick}
+          title="Rename session"
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+            <path d="m15 5 4 4" />
+          </svg>
+        </button>
+      )}
     </div>
   );
 });

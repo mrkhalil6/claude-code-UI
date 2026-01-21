@@ -4,7 +4,7 @@ import type { editor } from 'monaco-editor';
 import { GitFileList } from './GitFileList';
 import { GitStatusResult, GitFileDiff, GitStashEntry } from '../../../shared/types';
 import { useSession, useUI } from '../../store';
-import { getDiffEditorTheme } from '../../monaco-config';
+import { getDiffEditorTheme, getMonacoTheme } from '../../monaco-config';
 import styles from './GitDiffPanel.module.css';
 
 interface GitDiffPanelProps {

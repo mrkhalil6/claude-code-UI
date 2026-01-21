@@ -40,6 +40,9 @@ const api = {
     delete: (projectPath: string, sessionId: string): Promise<boolean> =>
       ipcRenderer.invoke(IPC_CHANNELS.SESSION_DELETE, { projectPath, sessionId }),
 
+    rename: (projectPath: string, sessionId: string, newName: string): Promise<boolean> =>
+      ipcRenderer.invoke(IPC_CHANNELS.SESSION_RENAME, { projectPath, sessionId, newName }),
+
     onChanged: (callback: (data: { event: string; path: string }) => void): CleanupFn => {
       const handler = (_: IpcRendererEvent, data: { event: string; path: string }) => callback(data);
       ipcRenderer.on(IPC_CHANNELS.SESSIONS_CHANGED, handler);
@@ -123,6 +126,12 @@ const api = {
       const handler = (_: IpcRendererEvent, data: CLIExitEvent) => callback(data);
       ipcRenderer.on(IPC_CHANNELS.CLI_EVENT_EXIT, handler);
       return () => ipcRenderer.removeListener(IPC_CHANNELS.CLI_EVENT_EXIT, handler);
+    },
+
+    onPlanModeExit: (callback: (data: { sessionId: string }) => void): CleanupFn => {
+      const handler = (_: IpcRendererEvent, data: { sessionId: string }) => callback(data);
+      ipcRenderer.on(IPC_CHANNELS.CLI_EVENT_PLAN_MODE_EXIT, handler);
+      return () => ipcRenderer.removeListener(IPC_CHANNELS.CLI_EVENT_PLAN_MODE_EXIT, handler);
     }
   },
 

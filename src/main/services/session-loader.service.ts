@@ -1,4 +1,4 @@
-import { readdir, readFile, stat, unlink } from 'fs/promises';
+import { readdir, readFile, stat, unlink, writeFile } from 'fs/promises';
 import { join, basename } from 'path';
 import { watch, FSWatcher } from 'chokidar';
 import { getSessionsPath, decodeProjectPath } from '../utils/paths';
@@ -244,6 +244,48 @@ export class SessionLoaderService {
       return true;
     } catch (error) {
       console.error(`Failed to delete session ${sessionId}:`, error);
+      return false;
+    }
+  }
+
+  /**
+   * Rename a session by updating the slug field
+   */
+  async renameSession(projectPath: string, sessionId: string, newName: string): Promise<boolean> {
+    const filePath = join(projectPath, `${sessionId}.jsonl`);
+
+    try {
+      const content = await readFile(filePath, 'utf-8');
+      const lines = content.split('\n');
+      let updated = false;
+
+      const updatedLines = lines.map(line => {
+        if (!line.trim() || updated) return line;
+
+        try {
+          const parsed = JSON.parse(line);
+          // Find the first user message and update its slug
+          if (parsed.type === 'user') {
+            parsed.slug = newName.trim();
+            updated = true;
+            return JSON.stringify(parsed);
+          }
+        } catch {
+          // Skip unparseable lines
+        }
+        return line;
+      });
+
+      if (updated) {
+        await writeFile(filePath, updatedLines.join('\n'));
+        console.log(`Renamed session ${sessionId} to: ${newName}`);
+        return true;
+      }
+
+      console.warn(`No user message found in session ${sessionId} to attach slug`);
+      return false;
+    } catch (error) {
+      console.error(`Failed to rename session ${sessionId}:`, error);
       return false;
     }
   }
