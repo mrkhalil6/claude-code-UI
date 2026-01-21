@@ -1,7 +1,16 @@
 import { spawn } from 'child_process';
-import { readFile, access } from 'fs/promises';
+import { readFile, writeFile, access } from 'fs/promises';
 import { join } from 'path';
-import { GitStatusResult, GitFileDiff, GitFileStatus, GitFileStatusType } from '../../shared/types';
+import {
+  GitStatusResult,
+  GitFileDiff,
+  GitFileStatus,
+  GitFileStatusType,
+  GitCommitResult,
+  GitPushResult,
+  GitPullResult,
+  GitLogEntry
+} from '../../shared/types';
 
 export class GitService {
   /**
@@ -15,6 +24,8 @@ export class GitService {
         isRepo: false,
         branch: '',
         files: [],
+        ahead: 0,
+        behind: 0,
         error: 'Not a git repository'
       };
     }
@@ -26,10 +37,16 @@ export class GitService {
       // Get file statuses using porcelain format
       const files = await this.getFileStatuses(cwd);
 
+      // Get ahead/behind counts
+      const { ahead, behind, remote } = await this.getAheadBehind(cwd);
+
       return {
         isRepo: true,
         branch,
-        files
+        files,
+        ahead,
+        behind,
+        remote
       };
     } catch (error) {
       console.error('Error getting git status:', error);
@@ -37,6 +54,8 @@ export class GitService {
         isRepo: true,
         branch: '',
         files: [],
+        ahead: 0,
+        behind: 0,
         error: error instanceof Error ? error.message : 'Unknown error'
       };
     }
@@ -99,6 +118,353 @@ export class GitService {
       status: fileStatus,
       isBinary: false
     };
+  }
+
+  /**
+   * Stage a file for commit
+   */
+  async stageFile(cwd: string, filePath: string): Promise<boolean> {
+    return this.runGitCommand(cwd, ['add', '--', filePath]);
+  }
+
+  /**
+   * Stage all files
+   */
+  async stageAll(cwd: string): Promise<boolean> {
+    return this.runGitCommand(cwd, ['add', '-A']);
+  }
+
+  /**
+   * Unstage a file
+   */
+  async unstageFile(cwd: string, filePath: string): Promise<boolean> {
+    return this.runGitCommand(cwd, ['reset', 'HEAD', '--', filePath]);
+  }
+
+  /**
+   * Unstage all files
+   */
+  async unstageAll(cwd: string): Promise<boolean> {
+    return this.runGitCommand(cwd, ['reset', 'HEAD']);
+  }
+
+  /**
+   * Discard changes in a file (revert to HEAD)
+   */
+  async discardFile(cwd: string, filePath: string): Promise<boolean> {
+    const status = await this.getFileStatus(cwd, filePath);
+    if (status?.status === 'untracked') {
+      // For untracked files, we need to delete them
+      const { unlink } = await import('fs/promises');
+      try {
+        await unlink(join(cwd, filePath));
+        return true;
+      } catch {
+        return false;
+      }
+    }
+    // For tracked files, checkout from HEAD
+    return this.runGitCommand(cwd, ['checkout', 'HEAD', '--', filePath]);
+  }
+
+  /**
+   * Discard all changes
+   */
+  async discardAll(cwd: string): Promise<boolean> {
+    // First, reset staged changes
+    await this.runGitCommand(cwd, ['reset', 'HEAD']);
+    // Then checkout all tracked files
+    await this.runGitCommand(cwd, ['checkout', '--', '.']);
+    // Clean untracked files
+    return this.runGitCommand(cwd, ['clean', '-fd']);
+  }
+
+  /**
+   * Commit staged changes
+   */
+  async commit(cwd: string, message: string): Promise<GitCommitResult> {
+    return new Promise((resolve) => {
+      const proc = spawn('git', ['commit', '-m', message], {
+        cwd,
+        stdio: ['pipe', 'pipe', 'pipe']
+      });
+
+      let stdout = '';
+      let stderr = '';
+
+      proc.stdout.on('data', (data) => {
+        stdout += data.toString();
+      });
+
+      proc.stderr.on('data', (data) => {
+        stderr += data.toString();
+      });
+
+      proc.on('close', (code) => {
+        if (code === 0) {
+          // Extract commit hash from output
+          const hashMatch = stdout.match(/\[[\w-]+ ([a-f0-9]+)\]/);
+          resolve({
+            success: true,
+            hash: hashMatch?.[1],
+            message
+          });
+        } else {
+          resolve({
+            success: false,
+            error: stderr || 'Commit failed'
+          });
+        }
+      });
+
+      proc.on('error', (err) => {
+        resolve({
+          success: false,
+          error: err.message
+        });
+      });
+    });
+  }
+
+  /**
+   * Push to remote
+   */
+  async push(cwd: string, remote: string = 'origin', branch?: string): Promise<GitPushResult> {
+    return new Promise(async (resolve) => {
+      // If no branch specified, get current branch
+      const currentBranch = branch || await this.getBranch(cwd);
+
+      const proc = spawn('git', ['push', remote, currentBranch], {
+        cwd,
+        stdio: ['pipe', 'pipe', 'pipe']
+      });
+
+      let stderr = '';
+
+      proc.stderr.on('data', (data) => {
+        stderr += data.toString();
+      });
+
+      proc.on('close', (code) => {
+        if (code === 0) {
+          resolve({ success: true });
+        } else {
+          resolve({
+            success: false,
+            error: stderr || 'Push failed'
+          });
+        }
+      });
+
+      proc.on('error', (err) => {
+        resolve({
+          success: false,
+          error: err.message
+        });
+      });
+    });
+  }
+
+  /**
+   * Pull from remote
+   */
+  async pull(cwd: string, remote: string = 'origin', branch?: string): Promise<GitPullResult> {
+    return new Promise(async (resolve) => {
+      const currentBranch = branch || await this.getBranch(cwd);
+
+      const proc = spawn('git', ['pull', remote, currentBranch], {
+        cwd,
+        stdio: ['pipe', 'pipe', 'pipe']
+      });
+
+      let stdout = '';
+      let stderr = '';
+
+      proc.stdout.on('data', (data) => {
+        stdout += data.toString();
+      });
+
+      proc.stderr.on('data', (data) => {
+        stderr += data.toString();
+      });
+
+      proc.on('close', (code) => {
+        if (code === 0) {
+          resolve({ success: true });
+        } else {
+          // Check for merge conflicts
+          const hasConflicts = stderr.includes('CONFLICT') || stdout.includes('CONFLICT');
+          resolve({
+            success: false,
+            error: hasConflicts ? 'Merge conflicts detected' : (stderr || 'Pull failed'),
+            conflicts: hasConflicts ? this.extractConflictFiles(stdout + stderr) : undefined
+          });
+        }
+      });
+
+      proc.on('error', (err) => {
+        resolve({
+          success: false,
+          error: err.message
+        });
+      });
+    });
+  }
+
+  /**
+   * Get recent commits
+   */
+  async getLog(cwd: string, limit: number = 10): Promise<GitLogEntry[]> {
+    return new Promise((resolve) => {
+      const proc = spawn('git', [
+        'log',
+        `--max-count=${limit}`,
+        '--pretty=format:%H|%h|%s|%an|%ai'
+      ], {
+        cwd,
+        stdio: ['pipe', 'pipe', 'pipe']
+      });
+
+      let output = '';
+      proc.stdout.on('data', (data) => {
+        output += data.toString();
+      });
+
+      proc.on('close', (code) => {
+        if (code === 0 && output.trim()) {
+          const entries = output.trim().split('\n').map(line => {
+            const [hash, shortHash, message, author, date] = line.split('|');
+            return { hash, shortHash, message, author, date };
+          });
+          resolve(entries);
+        } else {
+          resolve([]);
+        }
+      });
+
+      proc.on('error', () => {
+        resolve([]);
+      });
+    });
+  }
+
+  /**
+   * Save file content (for accepting changes)
+   */
+  async saveFile(cwd: string, filePath: string, content: string): Promise<boolean> {
+    try {
+      const fullPath = join(cwd, filePath);
+      await writeFile(fullPath, content, 'utf-8');
+      return true;
+    } catch (error) {
+      console.error('Failed to save file:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Mark conflict as resolved
+   */
+  async resolveConflict(cwd: string, filePath: string): Promise<boolean> {
+    return this.runGitCommand(cwd, ['add', '--', filePath]);
+  }
+
+  /**
+   * Abort merge
+   */
+  async abortMerge(cwd: string): Promise<boolean> {
+    return this.runGitCommand(cwd, ['merge', '--abort']);
+  }
+
+  /**
+   * Get ahead/behind count relative to remote
+   */
+  private async getAheadBehind(cwd: string): Promise<{ ahead: number; behind: number; remote?: string }> {
+    return new Promise((resolve) => {
+      const proc = spawn('git', ['rev-list', '--left-right', '--count', '@{upstream}...HEAD'], {
+        cwd,
+        stdio: ['pipe', 'pipe', 'pipe']
+      });
+
+      let output = '';
+      proc.stdout.on('data', (data) => {
+        output += data.toString();
+      });
+
+      proc.on('close', (code) => {
+        if (code === 0 && output.trim()) {
+          const [behind, ahead] = output.trim().split(/\s+/).map(Number);
+          // Also get the remote tracking branch name
+          this.getRemoteTrackingBranch(cwd).then(remote => {
+            resolve({ ahead: ahead || 0, behind: behind || 0, remote });
+          });
+        } else {
+          resolve({ ahead: 0, behind: 0 });
+        }
+      });
+
+      proc.on('error', () => {
+        resolve({ ahead: 0, behind: 0 });
+      });
+    });
+  }
+
+  /**
+   * Get remote tracking branch
+   */
+  private getRemoteTrackingBranch(cwd: string): Promise<string | undefined> {
+    return new Promise((resolve) => {
+      const proc = spawn('git', ['rev-parse', '--abbrev-ref', '--symbolic-full-name', '@{upstream}'], {
+        cwd,
+        stdio: ['pipe', 'pipe', 'pipe']
+      });
+
+      let output = '';
+      proc.stdout.on('data', (data) => {
+        output += data.toString();
+      });
+
+      proc.on('close', (code) => {
+        resolve(code === 0 ? output.trim() : undefined);
+      });
+
+      proc.on('error', () => {
+        resolve(undefined);
+      });
+    });
+  }
+
+  /**
+   * Extract conflict file paths from git output
+   */
+  private extractConflictFiles(output: string): string[] {
+    const conflicts: string[] = [];
+    const regex = /CONFLICT.*?:\s+.*?in\s+(.+)/g;
+    let match;
+    while ((match = regex.exec(output)) !== null) {
+      conflicts.push(match[1]);
+    }
+    return conflicts;
+  }
+
+  /**
+   * Run a simple git command and return success/failure
+   */
+  private runGitCommand(cwd: string, args: string[]): Promise<boolean> {
+    return new Promise((resolve) => {
+      const proc = spawn('git', args, {
+        cwd,
+        stdio: ['pipe', 'pipe', 'pipe']
+      });
+
+      proc.on('close', (code) => {
+        resolve(code === 0);
+      });
+
+      proc.on('error', () => {
+        resolve(false);
+      });
+    });
   }
 
   /**
@@ -235,13 +601,14 @@ export class GitService {
       }
 
       // Determine status and staged state
-      const { status, staged } = this.determineStatus(indexStatus, workTreeStatus);
+      const { status, staged, hasConflict } = this.determineStatus(indexStatus, workTreeStatus);
 
       files.push({
         path: filename,
         status,
         staged,
-        oldPath
+        oldPath,
+        hasConflict
       });
     }
 
@@ -251,7 +618,14 @@ export class GitService {
   /**
    * Determine file status from porcelain codes
    */
-  private determineStatus(indexStatus: string, workTreeStatus: string): { status: GitFileStatusType; staged: boolean } {
+  private determineStatus(indexStatus: string, workTreeStatus: string): { status: GitFileStatusType; staged: boolean; hasConflict?: boolean } {
+    // Check for conflicts (UU, AA, DD, AU, UA, DU, UD)
+    if (indexStatus === 'U' || workTreeStatus === 'U' ||
+        (indexStatus === 'A' && workTreeStatus === 'A') ||
+        (indexStatus === 'D' && workTreeStatus === 'D')) {
+      return { status: 'conflicted', staged: false, hasConflict: true };
+    }
+
     // Check for untracked
     if (indexStatus === '?' && workTreeStatus === '?') {
       return { status: 'untracked', staged: false };

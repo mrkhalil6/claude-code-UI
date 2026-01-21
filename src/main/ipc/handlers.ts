@@ -400,6 +400,58 @@ export function registerIpcHandlers(
     return gitService.getFileDiff(cwd, filePath);
   });
 
+  ipcMain.handle(IPC_CHANNELS.GIT_STAGE_FILE, async (_, { cwd, filePath }: { cwd: string; filePath: string }) => {
+    return gitService.stageFile(cwd, filePath);
+  });
+
+  ipcMain.handle(IPC_CHANNELS.GIT_STAGE_ALL, async (_, { cwd }: { cwd: string }) => {
+    return gitService.stageAll(cwd);
+  });
+
+  ipcMain.handle(IPC_CHANNELS.GIT_UNSTAGE_FILE, async (_, { cwd, filePath }: { cwd: string; filePath: string }) => {
+    return gitService.unstageFile(cwd, filePath);
+  });
+
+  ipcMain.handle(IPC_CHANNELS.GIT_UNSTAGE_ALL, async (_, { cwd }: { cwd: string }) => {
+    return gitService.unstageAll(cwd);
+  });
+
+  ipcMain.handle(IPC_CHANNELS.GIT_DISCARD_FILE, async (_, { cwd, filePath }: { cwd: string; filePath: string }) => {
+    return gitService.discardFile(cwd, filePath);
+  });
+
+  ipcMain.handle(IPC_CHANNELS.GIT_DISCARD_ALL, async (_, { cwd }: { cwd: string }) => {
+    return gitService.discardAll(cwd);
+  });
+
+  ipcMain.handle(IPC_CHANNELS.GIT_COMMIT, async (_, { cwd, message }: { cwd: string; message: string }) => {
+    return gitService.commit(cwd, message);
+  });
+
+  ipcMain.handle(IPC_CHANNELS.GIT_PUSH, async (_, { cwd, remote, branch }: { cwd: string; remote?: string; branch?: string }) => {
+    return gitService.push(cwd, remote, branch);
+  });
+
+  ipcMain.handle(IPC_CHANNELS.GIT_PULL, async (_, { cwd, remote, branch }: { cwd: string; remote?: string; branch?: string }) => {
+    return gitService.pull(cwd, remote, branch);
+  });
+
+  ipcMain.handle(IPC_CHANNELS.GIT_GET_LOG, async (_, { cwd, limit }: { cwd: string; limit?: number }) => {
+    return gitService.getLog(cwd, limit);
+  });
+
+  ipcMain.handle(IPC_CHANNELS.GIT_SAVE_FILE, async (_, { cwd, filePath, content }: { cwd: string; filePath: string; content: string }) => {
+    return gitService.saveFile(cwd, filePath, content);
+  });
+
+  ipcMain.handle(IPC_CHANNELS.GIT_RESOLVE_CONFLICT, async (_, { cwd, filePath }: { cwd: string; filePath: string }) => {
+    return gitService.resolveConflict(cwd, filePath);
+  });
+
+  ipcMain.handle(IPC_CHANNELS.GIT_ABORT_MERGE, async (_, { cwd }: { cwd: string }) => {
+    return gitService.abortMerge(cwd);
+  });
+
   // ===== Session File Watching =====
 
   sessionLoader.startWatching((event, path) => {

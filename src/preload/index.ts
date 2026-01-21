@@ -9,7 +9,11 @@ import {
   CLIExitEvent,
   CLIErrorEvent,
   GitStatusResult,
-  GitFileDiff
+  GitFileDiff,
+  GitCommitResult,
+  GitPushResult,
+  GitPullResult,
+  GitLogEntry
 } from '../shared/types';
 
 // MCP Server types
@@ -213,7 +217,46 @@ const api = {
       ipcRenderer.invoke(IPC_CHANNELS.GIT_GET_STATUS, { cwd }),
 
     getFileDiff: (cwd: string, filePath: string): Promise<GitFileDiff> =>
-      ipcRenderer.invoke(IPC_CHANNELS.GIT_GET_FILE_DIFF, { cwd, filePath })
+      ipcRenderer.invoke(IPC_CHANNELS.GIT_GET_FILE_DIFF, { cwd, filePath }),
+
+    stageFile: (cwd: string, filePath: string): Promise<boolean> =>
+      ipcRenderer.invoke(IPC_CHANNELS.GIT_STAGE_FILE, { cwd, filePath }),
+
+    stageAll: (cwd: string): Promise<boolean> =>
+      ipcRenderer.invoke(IPC_CHANNELS.GIT_STAGE_ALL, { cwd }),
+
+    unstageFile: (cwd: string, filePath: string): Promise<boolean> =>
+      ipcRenderer.invoke(IPC_CHANNELS.GIT_UNSTAGE_FILE, { cwd, filePath }),
+
+    unstageAll: (cwd: string): Promise<boolean> =>
+      ipcRenderer.invoke(IPC_CHANNELS.GIT_UNSTAGE_ALL, { cwd }),
+
+    discardFile: (cwd: string, filePath: string): Promise<boolean> =>
+      ipcRenderer.invoke(IPC_CHANNELS.GIT_DISCARD_FILE, { cwd, filePath }),
+
+    discardAll: (cwd: string): Promise<boolean> =>
+      ipcRenderer.invoke(IPC_CHANNELS.GIT_DISCARD_ALL, { cwd }),
+
+    commit: (cwd: string, message: string): Promise<GitCommitResult> =>
+      ipcRenderer.invoke(IPC_CHANNELS.GIT_COMMIT, { cwd, message }),
+
+    push: (cwd: string, remote?: string, branch?: string): Promise<GitPushResult> =>
+      ipcRenderer.invoke(IPC_CHANNELS.GIT_PUSH, { cwd, remote, branch }),
+
+    pull: (cwd: string, remote?: string, branch?: string): Promise<GitPullResult> =>
+      ipcRenderer.invoke(IPC_CHANNELS.GIT_PULL, { cwd, remote, branch }),
+
+    getLog: (cwd: string, limit?: number): Promise<GitLogEntry[]> =>
+      ipcRenderer.invoke(IPC_CHANNELS.GIT_GET_LOG, { cwd, limit }),
+
+    saveFile: (cwd: string, filePath: string, content: string): Promise<boolean> =>
+      ipcRenderer.invoke(IPC_CHANNELS.GIT_SAVE_FILE, { cwd, filePath, content }),
+
+    resolveConflict: (cwd: string, filePath: string): Promise<boolean> =>
+      ipcRenderer.invoke(IPC_CHANNELS.GIT_RESOLVE_CONFLICT, { cwd, filePath }),
+
+    abortMerge: (cwd: string): Promise<boolean> =>
+      ipcRenderer.invoke(IPC_CHANNELS.GIT_ABORT_MERGE, { cwd })
   }
 };
 

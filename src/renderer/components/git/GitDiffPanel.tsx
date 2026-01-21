@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { DiffEditor } from '@monaco-editor/react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { DiffEditor, Editor } from '@monaco-editor/react';
+import type { editor } from 'monaco-editor';
 import { GitFileList } from './GitFileList';
 import { GitStatusResult, GitFileDiff } from '../../../shared/types';
 import { useSession } from '../../store';
@@ -7,6 +8,25 @@ import styles from './GitDiffPanel.module.css';
 
 interface GitDiffPanelProps {
   onClose: () => void;
+}
+
+type ViewMode = 'diff' | 'final' | 'conflict';
+
+interface DiffChange {
+  originalStartLineNumber: number;
+  originalEndLineNumber: number;
+  modifiedStartLineNumber: number;
+  modifiedEndLineNumber: number;
+  originalContent: string;
+  modifiedContent: string;
+}
+
+interface ConflictSection {
+  start: number;
+  end: number;
+  ours: string;
+  theirs: string;
+  marker: string;
 }
 
 export const GitDiffPanel: React.FC<GitDiffPanelProps> = ({ onClose }) => {
@@ -17,6 +37,16 @@ export const GitDiffPanel: React.FC<GitDiffPanelProps> = ({ onClose }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [isDiffLoading, setIsDiffLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<ViewMode>('diff');
+  const [editedContent, setEditedContent] = useState<string>('');
+  const [commitMessage, setCommitMessage] = useState('');
+  const [diffChanges, setDiffChanges] = useState<DiffChange[]>([]);
+  const diffEditorRef = useRef<editor.IStandaloneDiffEditor | null>(null);
+  const [isCommitting, setIsCommitting] = useState(false);
+  const [isPushing, setIsPushing] = useState(false);
+  const [isPulling, setIsPulling] = useState(false);
+  const [actionMessage, setActionMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const commitInputRef = useRef<HTMLTextAreaElement>(null);
 
   // Load git status
   const loadStatus = useCallback(async () => {
@@ -54,10 +84,10 @@ export const GitDiffPanel: React.FC<GitDiffPanelProps> = ({ onClose }) => {
     setCurrentDiff(null);
 
     try {
-      console.log('Loading diff for:', filePath);
       const diff = await window.claudeUI.git.getFileDiff(currentCwd, filePath);
-      console.log('Diff loaded:', diff.path, 'binary:', diff.isBinary);
       setCurrentDiff(diff);
+      setEditedContent(diff.modifiedContent);
+      setDiffChanges([]);
     } catch (err) {
       console.error('Failed to get file diff:', err);
       setCurrentDiff(null);
@@ -75,6 +105,7 @@ export const GitDiffPanel: React.FC<GitDiffPanelProps> = ({ onClose }) => {
   useEffect(() => {
     if (selectedFile) {
       loadFileDiff(selectedFile);
+      setViewMode('diff');
     } else {
       setCurrentDiff(null);
     }
@@ -92,40 +123,406 @@ export const GitDiffPanel: React.FC<GitDiffPanelProps> = ({ onClose }) => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [onClose]);
 
+  // Clear action message after delay
+  useEffect(() => {
+    if (actionMessage) {
+      const timer = setTimeout(() => setActionMessage(null), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [actionMessage]);
+
   // Get language from file extension
   const getLanguage = (filePath: string): string => {
     const ext = filePath.split('.').pop()?.toLowerCase();
     const languageMap: Record<string, string> = {
-      'js': 'javascript',
-      'jsx': 'javascript',
-      'ts': 'typescript',
-      'tsx': 'typescript',
-      'py': 'python',
-      'rb': 'ruby',
-      'go': 'go',
-      'rs': 'rust',
-      'java': 'java',
-      'c': 'c',
-      'cpp': 'cpp',
-      'h': 'cpp',
-      'cs': 'csharp',
-      'php': 'php',
-      'html': 'html',
-      'css': 'css',
-      'scss': 'scss',
-      'json': 'json',
-      'xml': 'xml',
-      'yaml': 'yaml',
-      'yml': 'yaml',
-      'md': 'markdown',
-      'sql': 'sql',
-      'sh': 'shell',
-      'bash': 'shell'
+      'js': 'javascript', 'jsx': 'javascript', 'ts': 'typescript', 'tsx': 'typescript',
+      'py': 'python', 'rb': 'ruby', 'go': 'go', 'rs': 'rust', 'java': 'java',
+      'c': 'c', 'cpp': 'cpp', 'h': 'cpp', 'cs': 'csharp', 'php': 'php',
+      'html': 'html', 'css': 'css', 'scss': 'scss', 'json': 'json', 'xml': 'xml',
+      'yaml': 'yaml', 'yml': 'yaml', 'md': 'markdown', 'sql': 'sql',
+      'sh': 'shell', 'bash': 'shell'
     };
     return languageMap[ext || ''] || 'plaintext';
   };
 
+  // Stage a file
+  const handleStageFile = async (filePath: string) => {
+    if (!currentCwd) return;
+    const success = await window.claudeUI.git.stageFile(currentCwd, filePath);
+    if (success) {
+      await loadStatus();
+      setActionMessage({ type: 'success', text: `Staged ${filePath}` });
+    }
+  };
+
+  // Unstage a file
+  const handleUnstageFile = async (filePath: string) => {
+    if (!currentCwd) return;
+    const success = await window.claudeUI.git.unstageFile(currentCwd, filePath);
+    if (success) {
+      await loadStatus();
+      setActionMessage({ type: 'success', text: `Unstaged ${filePath}` });
+    }
+  };
+
+  // Discard changes in a file
+  const handleDiscardFile = async (filePath: string) => {
+    if (!currentCwd) return;
+    if (!confirm(`Discard all changes to ${filePath}? This cannot be undone.`)) return;
+
+    const success = await window.claudeUI.git.discardFile(currentCwd, filePath);
+    if (success) {
+      await loadStatus();
+      if (selectedFile === filePath) {
+        setSelectedFile(null);
+        setCurrentDiff(null);
+      }
+      setActionMessage({ type: 'success', text: `Discarded changes to ${filePath}` });
+    }
+  };
+
+  // Stage all files
+  const handleStageAll = async () => {
+    if (!currentCwd) return;
+    const success = await window.claudeUI.git.stageAll(currentCwd);
+    if (success) {
+      await loadStatus();
+      setActionMessage({ type: 'success', text: 'Staged all files' });
+    }
+  };
+
+  // Unstage all files
+  const handleUnstageAll = async () => {
+    if (!currentCwd) return;
+    const success = await window.claudeUI.git.unstageAll(currentCwd);
+    if (success) {
+      await loadStatus();
+      setActionMessage({ type: 'success', text: 'Unstaged all files' });
+    }
+  };
+
+  // Commit staged changes
+  const handleCommit = async () => {
+    if (!currentCwd || !commitMessage.trim()) return;
+
+    setIsCommitting(true);
+    try {
+      const result = await window.claudeUI.git.commit(currentCwd, commitMessage.trim());
+      if (result.success) {
+        setCommitMessage('');
+        await loadStatus();
+        setActionMessage({ type: 'success', text: `Committed: ${result.hash?.slice(0, 7)}` });
+      } else {
+        setActionMessage({ type: 'error', text: result.error || 'Commit failed' });
+      }
+    } catch (err) {
+      setActionMessage({ type: 'error', text: 'Commit failed' });
+    } finally {
+      setIsCommitting(false);
+    }
+  };
+
+  // Push to remote
+  const handlePush = async () => {
+    if (!currentCwd) return;
+
+    setIsPushing(true);
+    try {
+      const result = await window.claudeUI.git.push(currentCwd);
+      if (result.success) {
+        await loadStatus();
+        setActionMessage({ type: 'success', text: 'Pushed to remote' });
+      } else {
+        setActionMessage({ type: 'error', text: result.error || 'Push failed' });
+      }
+    } catch (err) {
+      setActionMessage({ type: 'error', text: 'Push failed' });
+    } finally {
+      setIsPushing(false);
+    }
+  };
+
+  // Pull from remote
+  const handlePull = async () => {
+    if (!currentCwd) return;
+
+    setIsPulling(true);
+    try {
+      const result = await window.claudeUI.git.pull(currentCwd);
+      if (result.success) {
+        await loadStatus();
+        setActionMessage({ type: 'success', text: 'Pulled from remote' });
+      } else {
+        setActionMessage({ type: 'error', text: result.error || 'Pull failed' });
+      }
+    } catch (err) {
+      setActionMessage({ type: 'error', text: 'Pull failed' });
+    } finally {
+      setIsPulling(false);
+    }
+  };
+
+  // Save edited file
+  const handleSaveFile = async () => {
+    if (!currentCwd || !selectedFile) return;
+
+    const success = await window.claudeUI.git.saveFile(currentCwd, selectedFile, editedContent);
+    if (success) {
+      await loadFileDiff(selectedFile);
+      await loadStatus();
+      setActionMessage({ type: 'success', text: `Saved ${selectedFile}` });
+    } else {
+      setActionMessage({ type: 'error', text: 'Failed to save file' });
+    }
+  };
+
+  // Accept original (discard this file's changes)
+  const handleAcceptOriginal = async () => {
+    if (!currentCwd || !selectedFile || !currentDiff) return;
+    if (!confirm('Revert to the original version? Your changes will be lost.')) return;
+
+    const success = await window.claudeUI.git.saveFile(currentCwd, selectedFile, currentDiff.originalContent);
+    if (success) {
+      await loadFileDiff(selectedFile);
+      await loadStatus();
+      setActionMessage({ type: 'success', text: 'Reverted to original' });
+    }
+  };
+
+  // Accept a specific change (keep modified version for that hunk)
+  const handleAcceptChange = useCallback(async (change: DiffChange) => {
+    if (!currentCwd || !selectedFile || !currentDiff) return;
+
+    // The change is already in modifiedContent, so we just need to save it
+    // For a single change acceptance, we're keeping the modified version
+    setActionMessage({ type: 'success', text: `Accepted change at line ${change.modifiedStartLineNumber}` });
+  }, [currentCwd, selectedFile, currentDiff]);
+
+  // Reject a specific change (revert to original for that hunk)
+  const handleRejectChange = useCallback(async (change: DiffChange) => {
+    if (!currentCwd || !selectedFile || !currentDiff) return;
+
+    // Replace the modified content for this specific hunk with original
+    const modifiedLines = currentDiff.modifiedContent.split('\n');
+    const originalLines = currentDiff.originalContent.split('\n');
+
+    // Calculate the replacement
+    const beforeChange = modifiedLines.slice(0, change.modifiedStartLineNumber - 1);
+    const afterChange = modifiedLines.slice(change.modifiedEndLineNumber);
+    const originalHunk = originalLines.slice(
+      change.originalStartLineNumber - 1,
+      change.originalEndLineNumber
+    );
+
+    const newContent = [...beforeChange, ...originalHunk, ...afterChange].join('\n');
+
+    const success = await window.claudeUI.git.saveFile(currentCwd, selectedFile, newContent);
+    if (success) {
+      await loadFileDiff(selectedFile);
+      setActionMessage({ type: 'success', text: `Rejected change at line ${change.modifiedStartLineNumber}` });
+    }
+  }, [currentCwd, selectedFile, currentDiff, loadFileDiff]);
+
+  // Handle DiffEditor mount to get changes
+  const handleDiffEditorMount = useCallback((diffEditor: editor.IStandaloneDiffEditor) => {
+    diffEditorRef.current = diffEditor;
+
+    // Get line changes when diff is computed
+    const updateChanges = () => {
+      const lineChanges = diffEditor.getLineChanges();
+      if (lineChanges && currentDiff) {
+        const originalLines = currentDiff.originalContent.split('\n');
+        const modifiedLines = currentDiff.modifiedContent.split('\n');
+
+        const changes: DiffChange[] = lineChanges.map(change => ({
+          originalStartLineNumber: change.originalStartLineNumber,
+          originalEndLineNumber: change.originalEndLineNumber,
+          modifiedStartLineNumber: change.modifiedStartLineNumber,
+          modifiedEndLineNumber: change.modifiedEndLineNumber,
+          originalContent: originalLines.slice(
+            change.originalStartLineNumber - 1,
+            change.originalEndLineNumber
+          ).join('\n'),
+          modifiedContent: modifiedLines.slice(
+            change.modifiedStartLineNumber - 1,
+            change.modifiedEndLineNumber
+          ).join('\n')
+        }));
+
+        setDiffChanges(changes);
+      }
+    };
+
+    // Update on mount and when diff changes
+    diffEditor.onDidUpdateDiff(updateChanges);
+    setTimeout(updateChanges, 100); // Initial update after render
+  }, [currentDiff]);
+
   const files = status?.files || [];
+  const stagedFiles = files.filter(f => f.staged);
+  const hasChanges = stagedFiles.length > 0;
+  const conflictedFiles = files.filter(f => f.status === 'conflicted');
+  const hasConflicts = conflictedFiles.length > 0;
+
+  // Parse conflict markers from content
+  const parseConflicts = useCallback((content: string): ConflictSection[] => {
+    const conflicts: ConflictSection[] = [];
+    const lines = content.split('\n');
+    let i = 0;
+
+    while (i < lines.length) {
+      if (lines[i].startsWith('<<<<<<<')) {
+        const start = i;
+        const marker = lines[i];
+        let oursLines: string[] = [];
+        let theirsLines: string[] = [];
+        let inOurs = true;
+
+        i++;
+        while (i < lines.length && !lines[i].startsWith('>>>>>>>')) {
+          if (lines[i].startsWith('=======')) {
+            inOurs = false;
+          } else if (inOurs) {
+            oursLines.push(lines[i]);
+          } else {
+            theirsLines.push(lines[i]);
+          }
+          i++;
+        }
+
+        conflicts.push({
+          start,
+          end: i,
+          ours: oursLines.join('\n'),
+          theirs: theirsLines.join('\n'),
+          marker
+        });
+      }
+      i++;
+    }
+
+    return conflicts;
+  }, []);
+
+  // Check if current file has conflicts
+  const currentConflicts = useMemo(() => {
+    if (!currentDiff?.modifiedContent) return [];
+    return parseConflicts(currentDiff.modifiedContent);
+  }, [currentDiff, parseConflicts]);
+
+  const isConflictedFile = currentConflicts.length > 0;
+
+  // Auto-switch to conflict view when selecting conflicted file
+  useEffect(() => {
+    if (isConflictedFile && viewMode === 'diff') {
+      setViewMode('conflict');
+    }
+  }, [isConflictedFile, viewMode]);
+
+  // Accept "ours" version (current branch changes)
+  const handleAcceptOurs = async () => {
+    if (!currentCwd || !selectedFile || !currentDiff) return;
+
+    let content = currentDiff.modifiedContent;
+    const lines = content.split('\n');
+    let result: string[] = [];
+    let i = 0;
+
+    while (i < lines.length) {
+      if (lines[i].startsWith('<<<<<<<')) {
+        // Skip to our content
+        i++;
+        while (i < lines.length && !lines[i].startsWith('=======')) {
+          result.push(lines[i]);
+          i++;
+        }
+        // Skip separator and theirs content
+        while (i < lines.length && !lines[i].startsWith('>>>>>>>')) {
+          i++;
+        }
+        i++; // Skip closing marker
+      } else {
+        result.push(lines[i]);
+        i++;
+      }
+    }
+
+    const newContent = result.join('\n');
+    const success = await window.claudeUI.git.saveFile(currentCwd, selectedFile, newContent);
+    if (success) {
+      await loadFileDiff(selectedFile);
+      await loadStatus();
+      setActionMessage({ type: 'success', text: 'Accepted your changes' });
+    }
+  };
+
+  // Accept "theirs" version (incoming changes)
+  const handleAcceptTheirs = async () => {
+    if (!currentCwd || !selectedFile || !currentDiff) return;
+
+    let content = currentDiff.modifiedContent;
+    const lines = content.split('\n');
+    let result: string[] = [];
+    let i = 0;
+
+    while (i < lines.length) {
+      if (lines[i].startsWith('<<<<<<<')) {
+        // Skip our content
+        while (i < lines.length && !lines[i].startsWith('=======')) {
+          i++;
+        }
+        i++; // Skip separator
+        // Take theirs content
+        while (i < lines.length && !lines[i].startsWith('>>>>>>>')) {
+          result.push(lines[i]);
+          i++;
+        }
+        i++; // Skip closing marker
+      } else {
+        result.push(lines[i]);
+        i++;
+      }
+    }
+
+    const newContent = result.join('\n');
+    const success = await window.claudeUI.git.saveFile(currentCwd, selectedFile, newContent);
+    if (success) {
+      await loadFileDiff(selectedFile);
+      await loadStatus();
+      setActionMessage({ type: 'success', text: 'Accepted incoming changes' });
+    }
+  };
+
+  // Mark conflict as resolved and stage file
+  const handleMarkResolved = async () => {
+    if (!currentCwd || !selectedFile) return;
+
+    // Check if there are still conflict markers
+    if (isConflictedFile) {
+      setActionMessage({ type: 'error', text: 'File still contains conflict markers' });
+      return;
+    }
+
+    const success = await window.claudeUI.git.resolveConflict(currentCwd, selectedFile);
+    if (success) {
+      await loadStatus();
+      setActionMessage({ type: 'success', text: 'Conflict marked as resolved' });
+    }
+  };
+
+  // Abort merge
+  const handleAbortMerge = async () => {
+    if (!currentCwd) return;
+    if (!confirm('Abort merge and reset to HEAD? All merge progress will be lost.')) return;
+
+    const success = await window.claudeUI.git.abortMerge(currentCwd);
+    if (success) {
+      await loadStatus();
+      setSelectedFile(null);
+      setCurrentDiff(null);
+      setActionMessage({ type: 'success', text: 'Merge aborted' });
+    }
+  };
 
   return (
     <div className={styles.overlay} onClick={onClose}>
@@ -134,9 +531,9 @@ export const GitDiffPanel: React.FC<GitDiffPanelProps> = ({ onClose }) => {
         <div className={styles.header}>
           <div className={styles.headerLeft}>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M21.007 8.222A3.738 3.738 0 0 0 15.045 5.2a3.737 3.737 0 0 0-6.09 0 3.738 3.738 0 0 0-5.962 3.022 3.737 3.737 0 0 0 2.49 6.527h.008l-.003.254c0 2.068 1.679 3.747 3.747 3.747h5.536a3.747 3.747 0 0 0 3.747-3.747l-.003-.254h.008a3.737 3.737 0 0 0 2.484-6.527zM12 18.75H9.226a1.747 1.747 0 0 1-1.747-1.747v-.254H9.5v-2H5.527a1.737 1.737 0 0 1-.74-3.306l.658-.306-.082-.71a1.737 1.737 0 0 1 1.75-1.932 1.72 1.72 0 0 1 .983.306l.655.445.465-.645A1.738 1.738 0 0 1 12 8c.585 0 1.13.29 1.455.778l.465.645.655-.445a1.72 1.72 0 0 1 .983-.306 1.738 1.738 0 0 1 1.75 1.932l-.082.71.658.306a1.737 1.737 0 0 1-.74 3.306H14.5v2h2.021v.254A1.747 1.747 0 0 1 14.773 19L12 18.75z"/>
+              <path d="M2.6 10.59L8.38 4.8l1.69 1.7c-.24.85.15 1.78.93 2.23v5.54c-.6.34-1 .99-1 1.73a2 2 0 0 0 2 2 2 2 0 0 0 2-2c0-.74-.4-1.39-1-1.73V9.41l2.07 2.09c-.07.15-.07.32-.07.5a2 2 0 0 0 2 2 2 2 0 0 0 2-2 2 2 0 0 0-2-2c-.18 0-.35 0-.5.07L13.93 7.5a2 2 0 0 0-1.15-2.34c-.43-.16-.88-.2-1.28-.09L9.8 3.38l.79-.78c.78-.79 2.04-.79 2.82 0l7.99 7.99c.79.78.79 2.04 0 2.82l-7.99 7.99c-.78.79-2.04.79-2.82 0L2.6 13.41c-.79-.78-.79-2.04 0-2.82z"/>
             </svg>
-            <h2 className={styles.title}>Git Changes</h2>
+            <h2 className={styles.title}>Git</h2>
             {status?.branch && (
               <span className={styles.branch}>
                 <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor">
@@ -145,8 +542,49 @@ export const GitDiffPanel: React.FC<GitDiffPanelProps> = ({ onClose }) => {
                 {status.branch}
               </span>
             )}
+            {status && (status.ahead > 0 || status.behind > 0) && (
+              <span className={styles.syncStatus}>
+                {status.ahead > 0 && <span className={styles.ahead}>↑{status.ahead}</span>}
+                {status.behind > 0 && <span className={styles.behind}>↓{status.behind}</span>}
+              </span>
+            )}
           </div>
           <div className={styles.headerRight}>
+            {actionMessage && (
+              <span className={`${styles.actionMessage} ${styles[actionMessage.type]}`}>
+                {actionMessage.text}
+              </span>
+            )}
+            {hasConflicts && (
+              <>
+                <span className={styles.conflictWarning}>
+                  {conflictedFiles.length} conflict{conflictedFiles.length > 1 ? 's' : ''}
+                </span>
+                <button
+                  className={styles.headerButtonDanger}
+                  onClick={handleAbortMerge}
+                  title="Abort merge"
+                >
+                  Abort Merge
+                </button>
+              </>
+            )}
+            <button
+              className={styles.headerButton}
+              onClick={handlePull}
+              disabled={isPulling || !status?.remote || hasConflicts}
+              title="Pull from remote"
+            >
+              {isPulling ? '...' : '↓ Pull'}
+            </button>
+            <button
+              className={styles.headerButton}
+              onClick={handlePush}
+              disabled={isPushing || !status?.remote || status?.ahead === 0 || hasConflicts}
+              title="Push to remote"
+            >
+              {isPushing ? '...' : '↑ Push'}
+            </button>
             <button
               className={styles.refreshButton}
               onClick={loadStatus}
@@ -191,16 +629,44 @@ export const GitDiffPanel: React.FC<GitDiffPanelProps> = ({ onClose }) => {
             </div>
           ) : (
             <>
-              {/* File list */}
+              {/* Left sidebar - File list and commit area */}
               <div className={styles.sidebar}>
                 <GitFileList
                   files={files}
                   selectedFile={selectedFile}
                   onSelectFile={setSelectedFile}
+                  onStageFile={handleStageFile}
+                  onUnstageFile={handleUnstageFile}
+                  onDiscardFile={handleDiscardFile}
+                  onStageAll={handleStageAll}
+                  onUnstageAll={handleUnstageAll}
                 />
+
+                {/* Commit area */}
+                <div className={styles.commitArea}>
+                  <textarea
+                    ref={commitInputRef}
+                    className={styles.commitInput}
+                    placeholder="Commit message..."
+                    value={commitMessage}
+                    onChange={(e) => setCommitMessage(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                        handleCommit();
+                      }
+                    }}
+                  />
+                  <button
+                    className={styles.commitButton}
+                    onClick={handleCommit}
+                    disabled={isCommitting || !hasChanges || !commitMessage.trim()}
+                  >
+                    {isCommitting ? 'Committing...' : `Commit (${stagedFiles.length})`}
+                  </button>
+                </div>
               </div>
 
-              {/* Diff viewer */}
+              {/* Diff/Editor area */}
               <div className={styles.diffArea}>
                 {!selectedFile ? (
                   <div className={styles.placeholder}>
@@ -228,33 +694,197 @@ export const GitDiffPanel: React.FC<GitDiffPanelProps> = ({ onClose }) => {
                 ) : currentDiff ? (
                   <>
                     <div className={styles.diffHeader}>
-                      <span className={styles.diffPath}>{currentDiff.path}</span>
-                      <span className={styles.diffStatus} data-status={currentDiff.status}>
-                        {currentDiff.status}
-                      </span>
+                      <div className={styles.diffHeaderLeft}>
+                        <span className={styles.diffPath}>{currentDiff.path}</span>
+                        <span className={styles.diffStatus} data-status={currentDiff.status}>
+                          {currentDiff.status}
+                        </span>
+                        {viewMode === 'diff' && diffChanges.length > 0 && (
+                          <div className={styles.diffActions}>
+                            <span className={styles.changeCount}>{diffChanges.length} change{diffChanges.length > 1 ? 's' : ''}</span>
+                            <button
+                              className={styles.acceptAllBtn}
+                              onClick={handleSaveFile}
+                              title="Accept all changes (keep modified)"
+                            >
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <polyline points="20 6 9 17 4 12" />
+                              </svg>
+                              Accept All
+                            </button>
+                            <button
+                              className={styles.rejectAllBtn}
+                              onClick={handleAcceptOriginal}
+                              title="Reject all changes (revert to original)"
+                            >
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <line x1="18" y1="6" x2="6" y2="18" />
+                                <line x1="6" y1="6" x2="18" y2="18" />
+                              </svg>
+                              Reject All
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                      <div className={styles.diffHeaderRight}>
+                        <div className={styles.viewModeToggle}>
+                          <button
+                            className={`${styles.viewModeBtn} ${viewMode === 'diff' ? styles.active : ''}`}
+                            onClick={() => setViewMode('diff')}
+                            title="Side-by-side diff view with accept/reject"
+                          >
+                            Diff
+                          </button>
+                          <button
+                            className={`${styles.viewModeBtn} ${viewMode === 'final' ? styles.active : ''}`}
+                            onClick={() => setViewMode('final')}
+                            title="Edit final result"
+                          >
+                            Edit
+                          </button>
+                          {isConflictedFile && (
+                            <button
+                              className={`${styles.viewModeBtn} ${viewMode === 'conflict' ? styles.active : ''}`}
+                              onClick={() => setViewMode('conflict')}
+                            >
+                              Conflicts ({currentConflicts.length})
+                            </button>
+                          )}
+                        </div>
+                        {viewMode === 'final' && (
+                          <>
+                            <button className={styles.actionBtn} onClick={handleSaveFile}>
+                              Save
+                            </button>
+                            <button className={styles.actionBtnDanger} onClick={handleAcceptOriginal}>
+                              Revert
+                            </button>
+                          </>
+                        )}
+                        {isConflictedFile && viewMode === 'conflict' && (
+                          <>
+                            <button className={styles.actionBtn} onClick={handleAcceptOurs}>
+                              Accept Ours
+                            </button>
+                            <button className={styles.actionBtn} onClick={handleAcceptTheirs}>
+                              Accept Theirs
+                            </button>
+                            <button
+                              className={styles.actionBtn}
+                              onClick={handleMarkResolved}
+                              disabled={isConflictedFile}
+                              title={isConflictedFile ? 'Remove conflict markers first' : 'Mark as resolved'}
+                            >
+                              Mark Resolved
+                            </button>
+                          </>
+                        )}
+                      </div>
                     </div>
+                    {/* Change navigator bar */}
+                    {viewMode === 'diff' && diffChanges.length > 0 && (
+                      <div className={styles.changeNavigator}>
+                        {diffChanges.map((change, idx) => (
+                          <div key={idx} className={styles.changeChip}>
+                            <button
+                              className={styles.changeChipBtn}
+                              onClick={() => {
+                                // Scroll to this change in the editor
+                                if (diffEditorRef.current) {
+                                  diffEditorRef.current.getModifiedEditor().revealLineInCenter(change.modifiedStartLineNumber);
+                                }
+                              }}
+                              title={`Go to line ${change.modifiedStartLineNumber}`}
+                            >
+                              <span className={styles.changeChipLine}>L{change.modifiedStartLineNumber}</span>
+                            </button>
+                            <button
+                              className={styles.changeChipAccept}
+                              onClick={() => handleAcceptChange(change)}
+                              title="Accept this change"
+                            >
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                                <polyline points="20 6 9 17 4 12" />
+                              </svg>
+                            </button>
+                            <button
+                              className={styles.changeChipReject}
+                              onClick={() => handleRejectChange(change)}
+                              title="Reject this change"
+                            >
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                                <line x1="18" y1="6" x2="6" y2="18" />
+                                <line x1="6" y1="6" x2="18" y2="18" />
+                              </svg>
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                     <div className={styles.diffEditor}>
-                      <DiffEditor
-                        height="100%"
-                        language={getLanguage(currentDiff.path)}
-                        original={currentDiff.originalContent}
-                        modified={currentDiff.modifiedContent}
-                        theme="vs-dark"
-                        options={{
-                          readOnly: true,
-                          renderSideBySide: true,
-                          enableSplitViewResizing: true,
-                          ignoreTrimWhitespace: false,
-                          renderIndicators: true,
-                          originalEditable: false,
-                          minimap: { enabled: false },
-                          scrollBeyondLastLine: false,
-                          fontSize: 13,
-                          lineHeight: 20,
-                          wordWrap: 'on',
-                          diffWordWrap: 'on'
-                        }}
-                      />
+                      {viewMode === 'diff' ? (
+                        <DiffEditor
+                          height="100%"
+                          language={getLanguage(currentDiff.path)}
+                          original={currentDiff.originalContent}
+                          modified={currentDiff.modifiedContent}
+                          theme="vs-dark"
+                          onMount={handleDiffEditorMount}
+                          options={{
+                            readOnly: true,
+                            renderSideBySide: true,
+                            enableSplitViewResizing: true,
+                            ignoreTrimWhitespace: false,
+                            renderIndicators: true,
+                            originalEditable: false,
+                            minimap: { enabled: false },
+                            scrollBeyondLastLine: false,
+                            fontSize: 13,
+                            lineHeight: 20,
+                            wordWrap: 'on'
+                          }}
+                        />
+                      ) : viewMode === 'conflict' ? (
+                        <>
+                          {isConflictedFile && (
+                            <div className={styles.conflictBanner}>
+                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                              </svg>
+                              <span>This file has {currentConflicts.length} conflict{currentConflicts.length > 1 ? 's' : ''}. Edit the file to resolve them or use the buttons above to accept changes.</span>
+                            </div>
+                          )}
+                          <Editor
+                            height="100%"
+                            language={getLanguage(currentDiff.path)}
+                            value={editedContent}
+                            onChange={(value) => setEditedContent(value || '')}
+                            theme="vs-dark"
+                            options={{
+                              minimap: { enabled: false },
+                              scrollBeyondLastLine: false,
+                              fontSize: 13,
+                              lineHeight: 20,
+                              wordWrap: 'on'
+                            }}
+                          />
+                        </>
+                      ) : (
+                        <Editor
+                          height="100%"
+                          language={getLanguage(currentDiff.path)}
+                          value={editedContent}
+                          onChange={(value) => setEditedContent(value || '')}
+                          theme="vs-dark"
+                          options={{
+                            minimap: { enabled: false },
+                            scrollBeyondLastLine: false,
+                            fontSize: 13,
+                            lineHeight: 20,
+                            wordWrap: 'on'
+                          }}
+                        />
+                      )}
                     </div>
                   </>
                 ) : (

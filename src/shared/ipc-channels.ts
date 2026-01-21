@@ -68,7 +68,20 @@ export const IPC_CHANNELS = {
 
   // Git Operations
   GIT_GET_STATUS: 'git:getStatus',
-  GIT_GET_FILE_DIFF: 'git:getFileDiff'
+  GIT_GET_FILE_DIFF: 'git:getFileDiff',
+  GIT_STAGE_FILE: 'git:stageFile',
+  GIT_STAGE_ALL: 'git:stageAll',
+  GIT_UNSTAGE_FILE: 'git:unstageFile',
+  GIT_UNSTAGE_ALL: 'git:unstageAll',
+  GIT_DISCARD_FILE: 'git:discardFile',
+  GIT_DISCARD_ALL: 'git:discardAll',
+  GIT_COMMIT: 'git:commit',
+  GIT_PUSH: 'git:push',
+  GIT_PULL: 'git:pull',
+  GIT_GET_LOG: 'git:getLog',
+  GIT_SAVE_FILE: 'git:saveFile',
+  GIT_RESOLVE_CONFLICT: 'git:resolveConflict',
+  GIT_ABORT_MERGE: 'git:abortMerge'
 } as const;
 
 export type IpcChannel = typeof IPC_CHANNELS[keyof typeof IPC_CHANNELS];
