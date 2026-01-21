@@ -797,14 +797,19 @@ export class GitService {
    */
   private parsePortelainOutput(output: string): GitFileStatus[] {
     const files: GitFileStatus[] = [];
-    const lines = output.trim().split('\n').filter(Boolean);
+    // Remove BOM if present (common on Windows), but don't trim - leading spaces are significant!
+    const cleanOutput = output.replace(/^\uFEFF/, '');
+    // Split by newlines and filter empty lines, but preserve leading spaces on each line
+    const lines = cleanOutput.split('\n').filter(line => line.length >= 3);
 
     for (const line of lines) {
-      if (line.length < 3) continue;
+      // Strip carriage return from Windows line endings
+      const cleanLine = line.replace(/\r$/, '');
+      if (cleanLine.length < 3) continue;
 
-      const indexStatus = line[0];
-      const workTreeStatus = line[1];
-      let filename = line.slice(3);
+      const indexStatus = cleanLine[0];
+      const workTreeStatus = cleanLine[1];
+      let filename = cleanLine.slice(3);
 
       // Handle renamed files (format: "R  old -> new")
       let oldPath: string | undefined;
