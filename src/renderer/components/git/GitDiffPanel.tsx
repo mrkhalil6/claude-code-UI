@@ -41,7 +41,9 @@ export const GitDiffPanel: React.FC<GitDiffPanelProps> = ({ onClose }) => {
   const [editedContent, setEditedContent] = useState<string>('');
   const [commitMessage, setCommitMessage] = useState('');
   const [diffChanges, setDiffChanges] = useState<DiffChange[]>([]);
+  const [changePositions, setChangePositions] = useState<{ top: number; index: number }[]>([]);
   const diffEditorRef = useRef<editor.IStandaloneDiffEditor | null>(null);
+  const diffContainerRef = useRef<HTMLDivElement | null>(null);
   const [isCommitting, setIsCommitting] = useState(false);
   const [isPushing, setIsPushing] = useState(false);
   const [isPulling, setIsPulling] = useState(false);
@@ -417,6 +419,41 @@ export const GitDiffPanel: React.FC<GitDiffPanelProps> = ({ onClose }) => {
     }
   }, [currentCwd, selectedFile, currentDiff, loadFileDiff]);
 
+  // Store diffChanges in a ref for use in callbacks
+  const diffChangesRef = useRef<DiffChange[]>([]);
+  diffChangesRef.current = diffChanges;
+
+  // Calculate button positions for inline display
+  const updateButtonPositions = useCallback(() => {
+    if (!diffEditorRef.current || diffChangesRef.current.length === 0) {
+      setChangePositions([]);
+      return;
+    }
+
+    const modifiedEditor = diffEditorRef.current.getModifiedEditor();
+    const positions: { top: number; index: number }[] = [];
+
+    diffChangesRef.current.forEach((change, index) => {
+      // Get the top position for the start line of each change
+      const top = modifiedEditor.getTopForLineNumber(change.modifiedStartLineNumber);
+      const scrollTop = modifiedEditor.getScrollTop();
+      positions.push({ top: top - scrollTop, index });
+    });
+
+    setChangePositions(positions);
+  }, []);
+
+  // Update positions when diffChanges changes
+  useEffect(() => {
+    if (diffChanges.length > 0 && diffEditorRef.current) {
+      // Small delay to ensure editor has rendered
+      const timer = setTimeout(updateButtonPositions, 100);
+      return () => clearTimeout(timer);
+    } else {
+      setChangePositions([]);
+    }
+  }, [diffChanges, updateButtonPositions]);
+
   // Handle DiffEditor mount to get changes
   const handleDiffEditorMount = useCallback((diffEditor: editor.IStandaloneDiffEditor) => {
     diffEditorRef.current = diffEditor;
@@ -447,10 +484,24 @@ export const GitDiffPanel: React.FC<GitDiffPanelProps> = ({ onClose }) => {
       }
     };
 
+    // Update button positions on scroll
+    const modifiedEditor = diffEditor.getModifiedEditor();
+    modifiedEditor.onDidScrollChange(() => {
+      updateButtonPositions();
+    });
+
+    // Also update on layout changes
+    modifiedEditor.onDidLayoutChange(() => {
+      updateButtonPositions();
+    });
+
     // Update on mount and when diff changes
-    diffEditor.onDidUpdateDiff(updateChanges);
+    diffEditor.onDidUpdateDiff(() => {
+      updateChanges();
+    });
+
     setTimeout(updateChanges, 100); // Initial update after render
-  }, [currentDiff]);
+  }, [currentDiff, updateButtonPositions]);
 
   const files = status?.files || [];
   const stagedFiles = files.filter(f => f.staged);
@@ -922,69 +973,105 @@ export const GitDiffPanel: React.FC<GitDiffPanelProps> = ({ onClose }) => {
                         )}
                       </div>
                     </div>
-                    {/* Change navigator bar */}
-                    {viewMode === 'diff' && diffChanges.length > 0 && (
-                      <div className={styles.changeNavigator}>
-                        {diffChanges.map((change, idx) => (
-                          <div key={idx} className={styles.changeChip}>
-                            <button
-                              className={styles.changeChipBtn}
-                              onClick={() => {
-                                // Scroll to this change in the editor
-                                if (diffEditorRef.current) {
-                                  diffEditorRef.current.getModifiedEditor().revealLineInCenter(change.modifiedStartLineNumber);
-                                }
-                              }}
-                              title={`Go to line ${change.modifiedStartLineNumber}`}
-                            >
-                              <span className={styles.changeChipLine}>L{change.modifiedStartLineNumber}</span>
-                            </button>
-                            <button
-                              className={styles.changeChipAccept}
-                              onClick={() => handleAcceptChange(change)}
-                              title="Accept this change"
-                            >
-                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                                <polyline points="20 6 9 17 4 12" />
-                              </svg>
-                            </button>
-                            <button
-                              className={styles.changeChipReject}
-                              onClick={() => handleRejectChange(change)}
-                              title="Reject this change"
-                            >
-                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                                <line x1="18" y1="6" x2="6" y2="18" />
-                                <line x1="6" y1="6" x2="18" y2="18" />
-                              </svg>
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    )}
                     <div className={styles.diffEditor}>
                       {viewMode === 'diff' ? (
-                        <DiffEditor
-                          height="100%"
-                          language={getLanguage(currentDiff.path)}
-                          original={currentDiff.originalContent}
-                          modified={currentDiff.modifiedContent}
-                          theme="vs-dark"
-                          onMount={handleDiffEditorMount}
-                          options={{
-                            readOnly: true,
-                            renderSideBySide: true,
-                            enableSplitViewResizing: true,
-                            ignoreTrimWhitespace: false,
-                            renderIndicators: true,
-                            originalEditable: false,
-                            minimap: { enabled: false },
-                            scrollBeyondLastLine: false,
-                            fontSize: 13,
-                            lineHeight: 20,
-                            wordWrap: 'on'
-                          }}
-                        />
+                        <div className={styles.diffEditorWrapper} ref={diffContainerRef}>
+                          <DiffEditor
+                            height="100%"
+                            language={getLanguage(currentDiff.path)}
+                            original={currentDiff.originalContent}
+                            modified={currentDiff.modifiedContent}
+                            theme="vs-dark"
+                            onMount={handleDiffEditorMount}
+                            options={{
+                              readOnly: true,
+                              renderSideBySide: true,
+                              enableSplitViewResizing: true,
+                              ignoreTrimWhitespace: false,
+                              renderIndicators: true,
+                              originalEditable: false,
+                              minimap: { enabled: false },
+                              scrollBeyondLastLine: false,
+                              fontSize: 13,
+                              lineHeight: 20,
+                              wordWrap: 'on',
+                              glyphMargin: true
+                            }}
+                          />
+                          {/* Inline change action buttons */}
+                          {diffChanges.length > 0 && (
+                            <div className={styles.inlineButtonsOverlay}>
+                              {changePositions.length > 0 ? (
+                                changePositions.map(({ top, index }) => {
+                                  const change = diffChanges[index];
+                                  if (!change) return null;
+                                  // Only hide if completely out of view
+                                  const containerHeight = diffContainerRef.current?.clientHeight || 2000;
+                                  if (top < -50 || top > containerHeight + 50) return null;
+
+                                  return (
+                                    <div
+                                      key={index}
+                                      className={styles.inlineChangeButtons}
+                                      style={{ top: `${Math.max(0, top)}px` }}
+                                    >
+                                      <span className={styles.inlineLineLabel}>L{change.modifiedStartLineNumber}</span>
+                                      <button
+                                        className={styles.inlineAcceptBtn}
+                                        onClick={() => handleAcceptChange(change)}
+                                        title={`Accept change at line ${change.modifiedStartLineNumber}`}
+                                      >
+                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                                          <polyline points="20 6 9 17 4 12" />
+                                        </svg>
+                                      </button>
+                                      <button
+                                        className={styles.inlineRejectBtn}
+                                        onClick={() => handleRejectChange(change)}
+                                        title={`Reject change at line ${change.modifiedStartLineNumber}`}
+                                      >
+                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                                          <line x1="18" y1="6" x2="6" y2="18" />
+                                          <line x1="6" y1="6" x2="18" y2="18" />
+                                        </svg>
+                                      </button>
+                                    </div>
+                                  );
+                                })
+                              ) : (
+                                // Fallback: Show buttons based on diffChanges directly if positions aren't calculated
+                                diffChanges.map((change, index) => (
+                                  <div
+                                    key={index}
+                                    className={styles.inlineChangeButtons}
+                                    style={{ top: `${(change.modifiedStartLineNumber - 1) * 20}px` }}
+                                                                      >
+                                    <span className={styles.inlineLineLabel}>L{change.modifiedStartLineNumber}</span>
+                                    <button
+                                      className={styles.inlineAcceptBtn}
+                                      onClick={() => handleAcceptChange(change)}
+                                      title={`Accept change at line ${change.modifiedStartLineNumber}`}
+                                    >
+                                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                                        <polyline points="20 6 9 17 4 12" />
+                                      </svg>
+                                    </button>
+                                    <button
+                                      className={styles.inlineRejectBtn}
+                                      onClick={() => handleRejectChange(change)}
+                                      title={`Reject change at line ${change.modifiedStartLineNumber}`}
+                                    >
+                                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                                        <line x1="18" y1="6" x2="6" y2="18" />
+                                        <line x1="6" y1="6" x2="18" y2="18" />
+                                      </svg>
+                                    </button>
+                                  </div>
+                                ))
+                              )}
+                            </div>
+                          )}
+                        </div>
                       ) : viewMode === 'conflict' ? (
                         <>
                           {isConflictedFile && (
