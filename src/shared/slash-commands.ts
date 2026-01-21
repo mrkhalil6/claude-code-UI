@@ -58,11 +58,6 @@ export const SLASH_COMMANDS: SlashCommand[] = [
     description: 'Show current session status',
     type: 'cli-local'
   },
-  {
-    name: '/permissions',
-    description: 'Show current permission settings',
-    type: 'cli-local'
-  },
 
   // CLI passthrough commands (sent to Claude as regular prompts - use carefully)
   {

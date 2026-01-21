@@ -5,7 +5,6 @@ import {
   Session,
   StartSessionOptions,
   CLIServiceEvent,
-  CLIPermissionRequiredEvent,
   CLIExitEvent,
   CLIErrorEvent,
   GitStatusResult,
@@ -58,20 +57,11 @@ const api = {
     sendMessage: (sessionId: string, message: string): Promise<void> =>
       ipcRenderer.invoke(IPC_CHANNELS.CLI_SEND_MESSAGE, { sessionId, message }),
 
-    grantPermission: (sessionId: string, toolUseId: string, scope: 'once' | 'session' | 'always'): Promise<void> =>
-      ipcRenderer.invoke(IPC_CHANNELS.CLI_GRANT_PERMISSION, { sessionId, toolUseId, scope }),
-
-    denyPermission: (sessionId: string, toolUseId: string): Promise<void> =>
-      ipcRenderer.invoke(IPC_CHANNELS.CLI_DENY_PERMISSION, { sessionId, toolUseId }),
-
     killSession: (sessionId: string): Promise<void> =>
       ipcRenderer.invoke(IPC_CHANNELS.CLI_KILL_SESSION, { sessionId }),
 
     setPlanMode: (sessionId: string, enabled: boolean): Promise<void> =>
       ipcRenderer.invoke(IPC_CHANNELS.CLI_SET_PLAN_MODE, { sessionId, enabled }),
-
-    allowTool: (sessionId: string, toolName: string): Promise<boolean> =>
-      ipcRenderer.invoke(IPC_CHANNELS.CLI_ALLOW_TOOL, { sessionId, toolName }),
 
     getModels: (): Promise<{ id: string; name: string }[]> =>
       ipcRenderer.invoke(IPC_CHANNELS.CLI_GET_MODELS),
@@ -110,12 +100,6 @@ const api = {
       return () => ipcRenderer.removeListener(IPC_CHANNELS.CLI_EVENT_RESULT, handler);
     },
 
-    onPermissionRequired: (callback: (data: CLIPermissionRequiredEvent) => void): CleanupFn => {
-      const handler = (_: IpcRendererEvent, data: CLIPermissionRequiredEvent) => callback(data);
-      ipcRenderer.on(IPC_CHANNELS.CLI_EVENT_PERMISSION, handler);
-      return () => ipcRenderer.removeListener(IPC_CHANNELS.CLI_EVENT_PERMISSION, handler);
-    },
-
     onError: (callback: (data: CLIErrorEvent) => void): CleanupFn => {
       const handler = (_: IpcRendererEvent, data: CLIErrorEvent) => callback(data);
       ipcRenderer.on(IPC_CHANNELS.CLI_EVENT_ERROR, handler);
@@ -151,32 +135,6 @@ const api = {
   app: {
     getVersion: (): Promise<string> =>
       ipcRenderer.invoke(IPC_CHANNELS.APP_GET_VERSION)
-  },
-
-  // ===== Permissions =====
-  permissions: {
-    getGlobal: (): Promise<Array<{ tool: string; allowed: boolean; scope: 'always' | 'ask' }>> =>
-      ipcRenderer.invoke(IPC_CHANNELS.PERMISSIONS_GET_GLOBAL),
-
-    setGlobal: (tool: string, allowed: boolean, scope: 'always' | 'ask'): Promise<Array<{ tool: string; allowed: boolean; scope: 'always' | 'ask' }>> =>
-      ipcRenderer.invoke(IPC_CHANNELS.PERMISSIONS_SET_GLOBAL, { tool, allowed, scope }),
-
-    removeGlobal: (tool: string): Promise<Array<{ tool: string; allowed: boolean; scope: 'always' | 'ask' }>> =>
-      ipcRenderer.invoke(IPC_CHANNELS.PERMISSIONS_REMOVE_GLOBAL, { tool }),
-
-    getAutoAllowed: (): Promise<string[]> =>
-      ipcRenderer.invoke(IPC_CHANNELS.PERMISSIONS_GET_AUTO_ALLOWED),
-
-    getKnownTools: (): Promise<string[]> =>
-      ipcRenderer.invoke(IPC_CHANNELS.PERMISSIONS_GET_KNOWN_TOOLS),
-
-    // Sync permissions to a specific session (combines global + session tools)
-    syncSession: (sessionId: string, sessionTools: string[]): Promise<boolean> =>
-      ipcRenderer.invoke(IPC_CHANNELS.PERMISSIONS_SYNC_SESSION, { sessionId, sessionTools }),
-
-    // Sync global permissions to all active sessions
-    syncAllSessions: (): Promise<{ synced: number }> =>
-      ipcRenderer.invoke(IPC_CHANNELS.PERMISSIONS_SYNC_ALL_SESSIONS)
   },
 
   // ===== MCP Servers =====

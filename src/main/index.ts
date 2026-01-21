@@ -4,7 +4,6 @@ import { registerIpcHandlers } from './ipc/handlers';
 import { ClaudeCliService } from './services/claude-cli.service';
 import { SessionLoaderService } from './services/session-loader.service';
 import { CredentialsService } from './services/credentials.service';
-import { PermissionsService } from './services/permissions.service';
 import { McpService } from './services/mcp.service';
 import { GitService } from './services/git.service';
 import { terminalService } from './services/terminal.service';
@@ -14,7 +13,6 @@ class Application {
   private cliService: ClaudeCliService;
   private sessionLoader: SessionLoaderService;
   private credentialsService: CredentialsService;
-  private permissionsService: PermissionsService;
   private mcpService: McpService;
   private gitService: GitService;
 
@@ -22,7 +20,6 @@ class Application {
     this.cliService = new ClaudeCliService();
     this.sessionLoader = new SessionLoaderService();
     this.credentialsService = new CredentialsService();
-    this.permissionsService = new PermissionsService();
     this.mcpService = new McpService();
     this.gitService = new GitService();
   }
@@ -39,10 +36,6 @@ class Application {
       console.warn('No Claude credentials found. User will need to authenticate.');
     }
 
-    // Load permissions
-    await this.permissionsService.load();
-    console.log('Permissions loaded');
-
     // Load MCP config
     await this.mcpService.load();
     console.log('MCP config loaded');
@@ -52,7 +45,6 @@ class Application {
       this.cliService,
       this.sessionLoader,
       this.credentialsService,
-      this.permissionsService,
       this.mcpService,
       this.gitService
     );

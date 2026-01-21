@@ -5,7 +5,6 @@ import { getClaudePath } from '../utils/paths';
 import {
   CLIEvent,
   CLIServiceEvent,
-  CLIPermissionRequiredEvent,
   CLIExitEvent,
   CLIErrorEvent,
   StartSessionOptions,
@@ -22,6 +21,7 @@ interface ActiveSession {
   isProcessing: boolean;
   allowedTools: Set<string>;  // Tools that have been granted permission
   model: string | null;  // Model to use (opus, sonnet, haiku)
+  pendingRetryMessage: string | null;  // Message to retry after current process finishes
 }
 
 export class ClaudeCliService extends EventEmitter {
@@ -63,7 +63,8 @@ export class ClaudeCliService extends EventEmitter {
       isPlanMode: options.permissionMode === 'plan',
       isProcessing: false,
       allowedTools: initialTools,
-      model: null
+      model: null,
+      pendingRetryMessage: null
     };
 
     if (options.resumeSessionId) {
@@ -85,7 +86,9 @@ export class ClaudeCliService extends EventEmitter {
     }
 
     if (session.isProcessing) {
-      console.warn(`Session ${sessionId} is already processing a message`);
+      // Store as pending retry - will be executed when current process finishes
+      console.log(`[sendMessage] Session ${sessionId} is busy, queuing message for retry after current process`);
+      session.pendingRetryMessage = message;
       return;
     }
 
@@ -105,10 +108,10 @@ export class ClaudeCliService extends EventEmitter {
     console.log(`Args: ${JSON.stringify(args)}`);
     console.log(`CWD: ${session.cwd}`);
 
-    // Use spawn with piped stdio - no shell needed
+    // Use spawn with piped stdio
     const childProcess = spawn(this.claudePath, args, {
       cwd: session.cwd,
-      stdio: ['inherit', 'pipe', 'pipe'],  // inherit stdin, pipe stdout/stderr
+      stdio: ['ignore', 'pipe', 'pipe'],  // ignore stdin (CLI in -p mode doesn't need it), pipe stdout/stderr
       env: {
         ...process.env,
         FORCE_COLOR: '0',
@@ -136,7 +139,8 @@ export class ClaudeCliService extends EventEmitter {
     const args = [
       '-p',
       '--verbose',
-      '--output-format', 'stream-json'
+      '--output-format', 'stream-json',
+      '--dangerously-skip-permissions'  // Bypass CLI permission checks - UI handles permissions
     ];
 
     // Resume existing conversation if we have CLI session ID
@@ -190,6 +194,7 @@ export class ClaudeCliService extends EventEmitter {
     session.allowedTools.add(toolPattern);
     console.log(`[allowTool] Tool '${toolName}' -> pattern '${toolPattern}' allowed for session ${sessionId}`);
     console.log(`[allowTool] Session now has allowed tools: ${Array.from(session.allowedTools).join(', ')}`);
+
     return true;
   }
 
@@ -319,6 +324,17 @@ export class ClaudeCliService extends EventEmitter {
 
       const exitEvent: CLIExitEvent = { sessionId, code, signal };
       this.emit('cli:exit', exitEvent);
+
+      // Check for pending retry message (permission was granted while processing)
+      if (session.pendingRetryMessage) {
+        const retryMessage = session.pendingRetryMessage;
+        session.pendingRetryMessage = null;
+        console.log(`[exit handler] Found pending retry message, executing retry...`);
+        // Use setImmediate to avoid recursion issues
+        setImmediate(() => {
+          this.sendMessage(sessionId, retryMessage);
+        });
+      }
     });
 
     proc.on('error', (error) => {
@@ -365,7 +381,7 @@ export class ClaudeCliService extends EventEmitter {
       case 'assistant':
         this.emit('cli:assistant', serviceEvent);
 
-        // Check for tool uses that might need permissions
+        // Check for tool uses and emit tool-use events for UI tracking
         const toolUses = event.message.content.filter(
           (c: AssistantContentBlock) => c.type === 'tool_use'
         );
@@ -384,52 +400,23 @@ export class ClaudeCliService extends EventEmitter {
 
       case 'user':
         this.emit('cli:user', serviceEvent);
-
-        // Check for permission denial in user event (tool_use_result is a string when permission denied)
-        if (typeof event.tool_use_result === 'string' && event.tool_use_result.includes('permission')) {
-          const content = event.message.content[0];
-          if (content && content.type === 'tool_result') {
-            const permissionEvent: CLIPermissionRequiredEvent = {
-              sessionId,
-              toolUseId: content.tool_use_id,
-              toolName: 'Unknown',
-              toolInput: {}
-            };
-            this.emit('cli:permission-required', permissionEvent);
-          }
-        }
         break;
 
       case 'result':
         this.emit('cli:result', serviceEvent);
 
+        // Handle ExitPlanMode in result event
         if (event.permission_denials && event.permission_denials.length > 0) {
-          console.log(`[handleCliEvent] Permission denials found: ${event.permission_denials.length}`);
           for (const denial of event.permission_denials) {
-            console.log(`[handleCliEvent] Permission denial: tool_name="${denial.tool_name}", tool_use_id="${denial.tool_use_id}"`);
-            console.log(`[handleCliEvent] Tool input:`, JSON.stringify(denial.tool_input).slice(0, 200));
-
-            // Special handling for ExitPlanMode - auto-approve and exit plan mode
             if (denial.tool_name === 'ExitPlanMode') {
               console.log(`[handleCliEvent] ExitPlanMode detected - auto-exiting plan mode`);
               const session = this.activeSessions.get(sessionId);
               if (session) {
                 session.isPlanMode = false;
-                // Add ExitPlanMode to allowed tools so it won't be denied again
-                session.allowedTools.add('ExitPlanMode');
               }
               // Emit special event for UI to handle
               this.emit('cli:plan-mode-exit', { sessionId });
-              continue; // Don't emit permission-required for ExitPlanMode
             }
-
-            const permissionEvent: CLIPermissionRequiredEvent = {
-              sessionId,
-              toolUseId: denial.tool_use_id,
-              toolName: denial.tool_name,
-              toolInput: denial.tool_input
-            };
-            this.emit('cli:permission-required', permissionEvent);
           }
         }
         break;
@@ -437,32 +424,6 @@ export class ClaudeCliService extends EventEmitter {
       default:
         this.emit('cli:unknown', serviceEvent);
     }
-  }
-
-  /**
-   * Grant permission for a tool use
-   */
-  grantPermission(sessionId: string, _toolUseId: string, _scope: 'once' | 'session' | 'always'): void {
-    const session = this.activeSessions.get(sessionId);
-    if (!session?.process) {
-      console.warn(`No active process for permission grant: ${sessionId}`);
-      return;
-    }
-
-    session.process.stdin?.write('y\n');
-  }
-
-  /**
-   * Deny permission for a tool use
-   */
-  denyPermission(sessionId: string, _toolUseId: string): void {
-    const session = this.activeSessions.get(sessionId);
-    if (!session?.process) {
-      console.warn(`No active process for permission denial: ${sessionId}`);
-      return;
-    }
-
-    session.process.stdin?.write('n\n');
   }
 
   /**

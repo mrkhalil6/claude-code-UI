@@ -2,10 +2,8 @@ import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { MessageList } from './MessageList';
 import { StreamingMessage } from './StreamingMessage';
 import { InputArea } from './InputArea';
-import { SessionPermissions } from './SessionPermissions';
 // TodoList moved to StatusBar
-import { PermissionDialog } from '../permissions';
-import { useStore, useChat, useSession, useUI, useChatActions, useUIActions, useSessionActions, usePermissions, usePermissionActions } from '../../store';
+import { useStore, useChat, useSession, useUI, useChatActions, useUIActions, useSessionActions } from '../../store';
 import { SlashCommand, SLASH_COMMANDS } from '../../../shared/slash-commands';
 import { TodoItem } from '../../store/slices/chat.slice';
 import styles from './ChatContainer.module.css';
@@ -16,12 +14,10 @@ export const ChatContainer: React.FC = () => {
   const { messages, isStreaming, streamingContent, streamingThinking, toolsInProgress, streamingBlocks } = useChat();
   const { activeSessionId, currentCwd, cliSessionId } = useSession();
   const { isPlanMode } = useUI();
-  const { pendingPermission } = usePermissions();
   const { setShowSettings } = useUIActions();
   const { addMessage, setIsStreaming, appendStreamingContent, appendStreamingThinking, finalizeStreamingMessage, clearStreaming, setLastUserMessage, addToolInProgress, updateToolStatus, setTodos } = useChatActions();
   const { setActiveSessionId, setCliSessionId, setCurrentCwd, clearSession } = useSessionActions();
   const { setConnectionStatus, setModelInfo, updateUsage, setIsPlanMode } = useUIActions();
-  const { setPendingPermission, mergeKnownTools } = usePermissionActions();
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
@@ -49,11 +45,6 @@ export const ChatContainer: React.FC = () => {
         // Also sync the cwd if available
         if (evt && evt.cwd) {
           setCurrentCwd(evt.cwd as string);
-        }
-        // Capture available tools from the CLI (includes MCP tools)
-        if (evt && evt.tools && Array.isArray(evt.tools)) {
-          console.log('[System Event] Received tools from CLI:', evt.tools);
-          mergeKnownTools(evt.tools as string[]);
         }
         // Capture model info and version
         if (evt && evt.model) {
@@ -208,24 +199,6 @@ export const ChatContainer: React.FC = () => {
       })
     );
 
-    cleanups.push(
-      window.claudeUI.cli.onPermissionRequired((data) => {
-        console.log('Permission required:', data);
-        // Get the current lastUserMessage from store for retry after permission grant
-        const currentLastMessage = useStore.getState().lastUserMessage;
-        console.log('Permission required - storing lastUserMessage for retry:', currentLastMessage);
-        setPendingPermission({
-          sessionId: data.sessionId,
-          toolUseId: data.toolUseId,
-          toolName: data.toolName,
-          toolInput: data.toolInput || {},
-          description: `Claude wants to use ${data.toolName}`,
-          timestamp: new Date().toISOString(),
-          retryMessage: currentLastMessage || undefined
-        });
-      })
-    );
-
     // Handle plan mode exit (when Claude uses ExitPlanMode tool)
     cleanups.push(
       window.claudeUI.cli.onPlanModeExit((data) => {
@@ -238,7 +211,7 @@ export const ChatContainer: React.FC = () => {
     return () => {
       cleanups.forEach(cleanup => cleanup());
     };
-  }, [setConnectionStatus, setIsStreaming, appendStreamingContent, appendStreamingThinking, finalizeStreamingMessage, clearStreaming, setPendingPermission, addToolInProgress, updateToolStatus, mergeKnownTools, setCliSessionId, setCurrentCwd, setTodos, setModelInfo, updateUsage, setIsPlanMode]);
+  }, [setConnectionStatus, setIsStreaming, appendStreamingContent, appendStreamingThinking, finalizeStreamingMessage, clearStreaming, addToolInProgress, updateToolStatus, setCliSessionId, setCurrentCwd, setTodos, setModelInfo, updateUsage, setIsPlanMode]);
 
   const handleSendMessage = useCallback(async (content: string) => {
     if (!content.trim()) return;
@@ -285,12 +258,6 @@ export const ChatContainer: React.FC = () => {
         });
 
         setActiveSessionId(sessionId);
-
-        // Sync session-level permissions (combines with global auto-allowed)
-        const sessionTools = useStore.getState().sessionAllowedTools;
-        if (sessionTools.length > 0) {
-          await window.claudeUI.permissions.syncSession(sessionId, sessionTools);
-        }
       } catch (err) {
         console.error('Failed to start session:', err);
         setConnectionStatus('error');
@@ -312,30 +279,6 @@ export const ChatContainer: React.FC = () => {
       setIsStreaming(false);
     }
   }, [activeSessionId, currentCwd, cliSessionId, isPlanMode, addMessage, setLastUserMessage, setCurrentCwd, setConnectionStatus, setActiveSessionId, setIsStreaming, clearStreaming]);
-
-  // Handle retry after permission is granted - resend the message without adding to chat again
-  const handleRetryAfterPermission = useCallback(async (message: string) => {
-    console.log('[handleRetryAfterPermission] called with message:', message?.slice(0, 50));
-    console.log('[handleRetryAfterPermission] activeSessionId:', activeSessionId);
-
-    if (!activeSessionId) {
-      console.error('[handleRetryAfterPermission] No activeSessionId, cannot retry');
-      return;
-    }
-
-    setIsStreaming(true);
-    clearStreaming();
-
-    try {
-      console.log('[handleRetryAfterPermission] Calling sendMessage...');
-      await window.claudeUI.cli.sendMessage(activeSessionId, message);
-      console.log('[handleRetryAfterPermission] sendMessage completed');
-    } catch (err) {
-      console.error('[handleRetryAfterPermission] Failed to retry message:', err);
-      setError('Failed to retry message. Please try again.');
-      setIsStreaming(false);
-    }
-  }, [activeSessionId, setIsStreaming, clearStreaming]);
 
   // Handle slash commands
   const handleSlashCommand = useCallback(async (command: SlashCommand, args: string) => {
@@ -574,40 +517,6 @@ export const ChatContainer: React.FC = () => {
           return;
         }
 
-        case '/permissions': {
-          try {
-            console.log('[/permissions] Fetching global permissions...');
-            const globalPerms = await window.claudeUI.permissions.getGlobal();
-            console.log('[/permissions] Got global permissions:', globalPerms);
-            const sessionTools = useStore.getState().sessionAllowedTools;
-            console.log('[/permissions] Session tools:', sessionTools);
-
-            const globalList = globalPerms.length > 0
-              ? globalPerms.map(p => `- **${p.tool}**: ${p.allowed ? 'Allowed' : 'Denied'} (${p.scope})`).join('\n')
-              : 'No global permissions set';
-
-            const sessionList = sessionTools.length > 0
-              ? sessionTools.map(t => `- ${t}`).join('\n')
-              : 'No session-specific tools allowed';
-
-            addMessage({
-              id: crypto.randomUUID(),
-              type: 'system',
-              content: `## Permissions\n\n### Global Permissions (${globalPerms.length})\n${globalList}\n\n### Session Allowed Tools (${sessionTools.length})\n${sessionList}\n\n*Go to Settings > Permissions to manage*`,
-              timestamp: new Date().toISOString()
-            });
-          } catch (err) {
-            console.error('[/permissions] Error:', err);
-            addMessage({
-              id: crypto.randomUUID(),
-              type: 'system',
-              content: `## Permissions\n\nFailed to load permissions: ${err}`,
-              timestamp: new Date().toISOString()
-            });
-          }
-          return;
-        }
-
         default:
           break;
       }
@@ -675,23 +584,13 @@ export const ChatContainer: React.FC = () => {
       </div>
 
       <div className={styles.inputWrapper}>
-        <div className={styles.inputToolbar}>
-          <SessionPermissions />
-        </div>
         <InputArea
           onSend={handleSendMessage}
           onSlashCommand={handleSlashCommand}
-          disabled={isStreaming || !!pendingPermission}
+          disabled={isStreaming}
           placeholder={isPlanMode ? 'Describe what you want to plan...' : 'Ask Claude anything...'}
         />
       </div>
-
-      {pendingPermission && (
-        <PermissionDialog
-          permission={pendingPermission}
-          onRetry={handleRetryAfterPermission}
-        />
-      )}
     </div>
   );
 };

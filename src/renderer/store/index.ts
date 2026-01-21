@@ -3,10 +3,9 @@ import { devtools, subscribeWithSelector } from 'zustand/middleware';
 import { immer } from 'zustand/middleware/immer';
 import { createSessionSlice, SessionSlice } from './slices/session.slice';
 import { createChatSlice, ChatSlice } from './slices/chat.slice';
-import { createPermissionSlice, PermissionSlice } from './slices/permission.slice';
 import { createUISlice, UISlice } from './slices/ui.slice';
 
-export type AppStore = SessionSlice & ChatSlice & PermissionSlice & UISlice;
+export type AppStore = SessionSlice & ChatSlice & UISlice;
 
 export const useStore = create<AppStore>()(
   devtools(
@@ -14,7 +13,6 @@ export const useStore = create<AppStore>()(
       immer((...args) => ({
         ...createSessionSlice(...args),
         ...createChatSlice(...args),
-        ...createPermissionSlice(...args),
         ...createUISlice(...args),
       }))
     ),
@@ -43,15 +41,6 @@ export const useChat = () => useStore((state) => ({
   streamingBlocks: state.streamingBlocks,
   lastUserMessage: state.lastUserMessage,
   todos: state.todos
-}));
-
-export const usePermissions = () => useStore((state) => ({
-  pendingPermission: state.pendingPermission,
-  permissionHistory: state.permissionHistory,
-  pendingFileChanges: state.pendingFileChanges,
-  globalPermissions: state.globalPermissions,
-  knownTools: state.knownTools,
-  sessionAllowedTools: state.sessionAllowedTools
 }));
 
 export const useUI = () => useStore((state) => ({
@@ -102,25 +91,6 @@ export const useChatActions = () => useStore((state) => ({
   setLastUserMessage: state.setLastUserMessage,
   setTodos: state.setTodos,
   clearTodos: state.clearTodos
-}));
-
-export const usePermissionActions = () => useStore((state) => ({
-  setPendingPermission: state.setPendingPermission,
-  addToPermissionHistory: state.addToPermissionHistory,
-  clearPermissionHistory: state.clearPermissionHistory,
-  addPendingFileChange: state.addPendingFileChange,
-  updateFileChangeStatus: state.updateFileChangeStatus,
-  removePendingFileChange: state.removePendingFileChange,
-  clearPendingFileChanges: state.clearPendingFileChanges,
-  // Global permissions
-  setGlobalPermissions: state.setGlobalPermissions,
-  setKnownTools: state.setKnownTools,
-  mergeKnownTools: state.mergeKnownTools,
-  // Session permissions
-  setSessionAllowedTools: state.setSessionAllowedTools,
-  addSessionAllowedTool: state.addSessionAllowedTool,
-  removeSessionAllowedTool: state.removeSessionAllowedTool,
-  clearSessionAllowedTools: state.clearSessionAllowedTools
 }));
 
 export const useUIActions = () => useStore((state) => ({

@@ -111,13 +111,6 @@ export interface CLIServiceEvent {
   event: CLIEvent;
 }
 
-export interface CLIPermissionRequiredEvent {
-  sessionId: string;
-  toolUseId: string;
-  toolName: string;
-  toolInput: Record<string, unknown>;
-}
-
 export interface CLIExitEvent {
   sessionId: string;
   code: number | null;

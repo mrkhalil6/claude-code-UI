@@ -82,3 +82,11 @@ export interface StartSessionOptions {
   model?: string;
   initialAllowedTools?: string[];  // Tools to auto-allow from global settings
 }
+
+export interface FileChange {
+  id: string;
+  filePath: string;
+  originalContent: string;
+  modifiedContent: string;
+  status: 'pending' | 'accepted' | 'rejected';
+}
