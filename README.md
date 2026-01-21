@@ -6,14 +6,53 @@ A modern desktop GUI wrapper for [Claude Code CLI](https://github.com/anthropics
 
 ## Features
 
-- **Chat Interface** - Clean, modern chat UI with markdown rendering and syntax highlighting
-- **Session History** - Browse and resume previous chat sessions from the sidebar
+### Chat Interface
 - **Real-time Streaming** - See Claude's responses as they're generated
+- **Markdown Rendering** - Beautiful formatting with syntax highlighting for code blocks
 - **Tool Call Display** - View tool inputs and results inline where they occur
-- **Permission Management** - Grant or deny tool permissions through a visual dialog
+- **Message Interruption** - Stop Claude mid-response when needed
+- **Session Renaming** - Double-click session names to rename them
+
+### Git Integration
+- **Visual Diff Viewer** - Side-by-side diff comparison using Monaco Editor
+- **Staging & Unstaging** - Stage/unstage individual files or all at once
+- **Commit Interface** - Write commit messages and commit directly from the UI
+- **Push/Pull** - Sync with remote repositories
+- **Stash Management** - Create, apply, and drop stashes
+- **Conflict Resolution** - Visual merge conflict resolution with "Accept Ours/Theirs" options
+
+### Integrated Terminal
+- **Full Terminal Emulation** - Powered by xterm.js with proper PTY support
+- **Resizable Panel** - Drag to resize the terminal height
+- **Theme Support** - Terminal theme matches the app theme
+
+### MCP Server Management
+- **Global MCP Servers** - Configure MCP servers in Settings (stored in `~/.claude.json`)
+- **Project MCP Servers** - Per-project MCP configuration via `.mcp.json`
+- **Multiple Transport Types** - Support for stdio, SSE, and HTTP transports
+- **Server Status** - View connection status for each MCP server
+
+### Appearance
+- **Light/Dark/System Theme** - Three theme modes with system preference detection
+- **Customizable UI** - Collapsible sidebar, resizable panels
+
+### Task Tracking
+- **Todo List** - Visual task progress tracking in the status bar
+- **Progress Indicator** - See completed/total tasks with progress bar
+- **Current Task Display** - Shows what Claude is currently working on
+
+### Model Selection
+- **Model Switcher** - Change models mid-session from the status bar
+- **Model Display** - See current model and token usage
+
+### Session Management
+- **Session History** - Browse and resume previous chat sessions from the sidebar
+- **Working Directory** - Each session tracks its working directory
+- **Session Persistence** - Sessions stored by Claude CLI in `~/.claude/projects/`
+
+### Developer Features
 - **Plan Mode** - Toggle plan mode for reviewing changes before execution
-- **Dark Theme** - Easy on the eyes with a carefully designed dark color scheme
-- **Cross-Platform** - Works on Windows, macOS, and Linux
+- **Permission Management** - Grant or deny tool permissions through a visual dialog
 
 ## Prerequisites
 
@@ -28,7 +67,6 @@ Before using Claude Code UI, you need:
    ```bash
    claude login
    ```
-   This creates credentials at `~/.claude/.credentials.json`
 
 ## Installation
 
@@ -49,14 +87,12 @@ Before using Claude Code UI, you need:
    ```bash
    npm run dev
    ```
-   This opens the app in development mode with hot reload.
 
 ### Building for Production
 
 Build a distributable package for your platform:
 
 ```bash
-# Build for your current platform
 npm run electron:build
 ```
 
@@ -73,20 +109,29 @@ The output will be in the `release/` directory:
 2. Select a working directory for the session
 3. Type your message and press Enter or click Send
 
-### Resuming a Session
+### Git Panel
 
-Click any session in the sidebar to load its history and continue the conversation. The session will resume from where you left off.
+Click the **Git icon** in the header to open the Git panel:
+- View all changed files grouped by staged/unstaged
+- Click a file to view its diff
+- Use the action buttons to stage, unstage, or discard changes
+- Write a commit message and commit staged changes
+- Push/pull to sync with remote
 
-### Tool Permissions
+### Terminal
 
-When Claude needs to use a tool (like reading/writing files), a permission dialog appears:
-- **Allow Once** - Grant permission for this single use
-- **Allow for Session** - Grant permission for the rest of the session
-- **Deny** - Reject the tool use
+Click the **terminal icon** in the status bar to toggle the integrated terminal. The terminal opens in the current working directory.
 
-### Plan Mode
+### Settings
 
-Toggle **Plan Mode** in the header to have Claude plan changes without executing them. This is useful for reviewing what Claude intends to do before making modifications.
+Click the **gear icon** in the header to access:
+- **Appearance** - Theme selection (Light/Dark/System)
+- **MCP Servers** - Add, edit, or remove global MCP servers
+- **About** - Version information
+
+### Changing Models
+
+Click the **model name** in the status bar to switch between available models (Opus, Sonnet, Haiku).
 
 ## Project Structure
 
@@ -97,7 +142,10 @@ claude-code-ui/
 │   │   ├── index.ts             # App entry point
 │   │   ├── services/
 │   │   │   ├── claude-cli.service.ts    # CLI subprocess manager
-│   │   │   └── session-loader.service.ts # Session history loader
+│   │   │   ├── git.service.ts           # Git operations
+│   │   │   ├── terminal.service.ts      # PTY terminal management
+│   │   │   ├── mcp.service.ts           # MCP server configuration
+│   │   │   └── session-loader.service.ts
 │   │   ├── ipc/
 │   │   │   └── handlers.ts      # IPC message handlers
 │   │   └── utils/
@@ -111,15 +159,16 @@ claude-code-ui/
 │   │   ├── main.tsx             # React entry point
 │   │   ├── App.tsx              # Root component
 │   │   ├── components/
-│   │   │   ├── layout/          # Layout components
-│   │   │   ├── chat/            # Chat UI components
-│   │   │   ├── sidebar/         # Session history sidebar
-│   │   │   ├── permissions/     # Permission dialogs
-│   │   │   ├── markdown/        # Markdown rendering
-│   │   │   └── common/          # Reusable UI components
+│   │   │   ├── layout/          # Header, Sidebar, StatusBar
+│   │   │   ├── chat/            # Chat UI, Messages, InputArea, TodoList
+│   │   │   ├── git/             # GitDiffPanel, GitFileList
+│   │   │   ├── terminal/        # TerminalPanel
+│   │   │   ├── settings/        # SettingsPanel, McpManager
+│   │   │   ├── diff/            # DiffViewer, DiffToolbar
+│   │   │   ├── markdown/        # MarkdownPreview, CodeBlock
+│   │   │   └── common/          # Button, Toggle, Modal, ThemeToggle
 │   │   ├── store/               # Zustand state management
-│   │   │   └── slices/          # State slices
-│   │   └── styles/              # Global styles & variables
+│   │   └── hooks/               # Custom React hooks
 │   │
 │   └── shared/                  # Shared types & constants
 │       └── types/               # TypeScript interfaces
@@ -149,7 +198,9 @@ claude-code-ui/
 - **TypeScript 5** - Type safety
 - **Vite 6** - Fast bundler with HMR
 - **Zustand** - Lightweight state management
-- **Monaco Editor** - Code diff viewing
+- **Monaco Editor** - Code editing and diff viewing
+- **xterm.js** - Terminal emulation
+- **node-pty** - Pseudo-terminal for shell integration
 - **react-markdown** - Markdown rendering
 
 ### How It Works
@@ -159,6 +210,8 @@ claude-code-ui/
 3. **React Components** display messages, tool calls, and handle user input
 4. **User Messages** are sent back to the CLI via stdin
 5. **Sessions** are stored by the CLI in `~/.claude/projects/`
+6. **Git Operations** are performed via spawned `git` commands
+7. **Terminal** uses node-pty to create a real PTY connected to the system shell
 
 ## Troubleshooting
 
@@ -172,16 +225,11 @@ claude --version
 ### "Not authenticated"
 Run `claude login` to authenticate with your Anthropic API key.
 
-### Windows: "nul" file created
-This is a known Claude Code CLI issue on Windows with Git Bash. Add to your project's `CLAUDE.md`:
-```markdown
-## Windows Instructions
-- Never use `> nul` for output redirection
-- Use `> /dev/null` instead
-```
-
 ### App not starting
 Check the developer console (Ctrl+Shift+I / Cmd+Option+I) for errors.
+
+### Git panel not loading
+Ensure you're in a valid git repository and `git` is available in your PATH.
 
 ## Contributing
 
@@ -199,4 +247,4 @@ MIT License - see [LICENSE](LICENSE) for details.
 ## Acknowledgments
 
 - [Anthropic](https://anthropic.com) for Claude and Claude Code CLI
-- The Electron and React communities
+- The Electron, React, and open-source communities
