@@ -104,6 +104,9 @@
 }
 
 .body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
   font-size: var(--font-size-md);
   line-height: 1.6;
 }

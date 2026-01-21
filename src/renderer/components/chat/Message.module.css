@@ -89,6 +89,9 @@
 }
 
 .body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
   font-size: var(--font-size-md);
   line-height: 1.6;
 }
@@ -101,7 +104,7 @@
 
 .tools {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
   gap: var(--spacing-sm);
   margin-top: var(--spacing-md);
 }
