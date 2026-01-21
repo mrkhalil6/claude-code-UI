@@ -1,6 +1,53 @@
 :root {
-  /* VS Code Dark+ inspired theme */
+  /* Spacing */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
 
+  /* Typography */
+  --font-family: 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-family-mono: 'Cascadia Code', 'Fira Code', 'JetBrains Mono', Consolas, monospace;
+  --font-size-xs: 11px;
+  --font-size-sm: 12px;
+  --font-size-md: 13px;
+  --font-size-lg: 14px;
+  --font-size-xl: 16px;
+  --font-size-2xl: 20px;
+  --line-height: 1.5;
+
+  /* Borders */
+  --border-radius-sm: 4px;
+  --border-radius-md: 6px;
+  --border-radius-lg: 8px;
+  --border-radius-xl: 12px;
+
+  /* Layout */
+  --sidebar-width: 280px;
+  --sidebar-min-width: 200px;
+  --sidebar-max-width: 400px;
+  --header-height: 48px;
+  --statusbar-height: 24px;
+  --input-height: 120px;
+
+  /* Transitions */
+  --transition-fast: 0.1s ease;
+  --transition-normal: 0.2s ease;
+  --transition-slow: 0.3s ease;
+
+  /* Z-index layers */
+  --z-sidebar: 10;
+  --z-header: 20;
+  --z-modal-backdrop: 100;
+  --z-modal: 110;
+  --z-tooltip: 120;
+  --z-notification: 130;
+}
+
+/* Dark theme (default) - VS Code Dark+ inspired */
+:root,
+[data-theme="dark"] {
   /* Background colors */
   --bg-primary: #1e1e1e;
   --bg-secondary: #252526;
@@ -52,53 +99,67 @@
   --diff-added-line: #2ea043;
   --diff-removed-line: #f85149;
 
-  /* Spacing */
-  --spacing-xs: 4px;
-  --spacing-sm: 8px;
-  --spacing-md: 16px;
-  --spacing-lg: 24px;
-  --spacing-xl: 32px;
-
-  /* Typography */
-  --font-family: 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-  --font-family-mono: 'Cascadia Code', 'Fira Code', 'JetBrains Mono', Consolas, monospace;
-  --font-size-xs: 11px;
-  --font-size-sm: 12px;
-  --font-size-md: 13px;
-  --font-size-lg: 14px;
-  --font-size-xl: 16px;
-  --font-size-2xl: 20px;
-  --line-height: 1.5;
-
-  /* Borders */
-  --border-radius-sm: 4px;
-  --border-radius-md: 6px;
-  --border-radius-lg: 8px;
-  --border-radius-xl: 12px;
-
   /* Shadows */
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
   --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.4);
   --shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.5);
+}
 
-  /* Layout */
-  --sidebar-width: 280px;
-  --sidebar-min-width: 200px;
-  --sidebar-max-width: 400px;
-  --header-height: 48px;
-  --statusbar-height: 24px;
-  --input-height: 120px;
+/* Light theme - VS Code Light+ inspired */
+[data-theme="light"] {
+  /* Background colors */
+  --bg-primary: #ffffff;
+  --bg-secondary: #f3f3f3;
+  --bg-tertiary: #e8e8e8;
+  --bg-input: #ffffff;
+  --bg-hover: #e8e8e8;
+  --bg-active: #d4d4d4;
+  --bg-selection: #add6ff;
+  --bg-sidebar: #f3f3f3;
+  --bg-header: #f8f8f8;
+  --bg-message-user: #f0f0f0;
+  --bg-message-assistant: #ffffff;
 
-  /* Transitions */
-  --transition-fast: 0.1s ease;
-  --transition-normal: 0.2s ease;
-  --transition-slow: 0.3s ease;
+  /* Text colors */
+  --text-primary: #1f1f1f;
+  --text-secondary: #616161;
+  --text-muted: #8b8b8b;
+  --text-link: #0066cc;
+  --text-error: #d32f2f;
+  --text-warning: #bf8700;
+  --text-success: #388e3c;
+  --text-inverse: #ffffff;
 
-  /* Z-index layers */
-  --z-sidebar: 10;
-  --z-header: 20;
-  --z-modal-backdrop: 100;
-  --z-modal: 110;
-  --z-tooltip: 120;
-  --z-notification: 130;
+  /* Border colors */
+  --border-primary: #d4d4d4;
+  --border-secondary: #c4c4c4;
+  --border-focus: #0066cc;
+
+  /* Accent colors */
+  --accent-primary: #0066cc;
+  --accent-hover: #0052a3;
+  --accent-active: #003d7a;
+  --accent-secondary: #5c3d99;
+
+  /* Syntax highlighting (light theme) */
+  --syntax-keyword: #0000ff;
+  --syntax-string: #a31515;
+  --syntax-number: #098658;
+  --syntax-comment: #008000;
+  --syntax-function: #795e26;
+  --syntax-variable: #001080;
+  --syntax-type: #267f99;
+
+  /* Diff colors (light theme) */
+  --diff-added-bg: rgba(35, 134, 54, 0.15);
+  --diff-added-gutter: rgba(35, 134, 54, 0.3);
+  --diff-removed-bg: rgba(248, 81, 73, 0.15);
+  --diff-removed-gutter: rgba(248, 81, 73, 0.3);
+  --diff-added-line: #22863a;
+  --diff-removed-line: #cb2431;
+
+  /* Shadows (lighter for light theme) */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.1);
+  --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.15);
+  --shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.2);
 }

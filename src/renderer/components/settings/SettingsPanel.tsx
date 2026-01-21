@@ -1,15 +1,18 @@
 import React, { useState } from 'react';
 import { PermissionsManager } from '../permissions';
 import { McpManager } from './McpManager';
+import { ThemeToggle } from '../common';
 import { useUI, useUIActions } from '../../store';
+import { useTheme } from '../../hooks/useTheme';
 import styles from './SettingsPanel.module.css';
 
-type SettingsTab = 'permissions' | 'mcp' | 'about';
+type SettingsTab = 'appearance' | 'permissions' | 'mcp' | 'about';
 
 export const SettingsPanel: React.FC = () => {
   const { showSettings } = useUI();
   const { setShowSettings } = useUIActions();
-  const [activeTab, setActiveTab] = useState<SettingsTab>('permissions');
+  const { themeMode, setThemeMode } = useTheme();
+  const [activeTab, setActiveTab] = useState<SettingsTab>('appearance');
 
   if (!showSettings) return null;
 
@@ -26,6 +29,16 @@ export const SettingsPanel: React.FC = () => {
         </div>
 
         <div className={styles.tabs}>
+          <button
+            className={`${styles.tab} ${activeTab === 'appearance' ? styles.activeTab : ''}`}
+            onClick={() => setActiveTab('appearance')}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <circle cx="12" cy="12" r="5" />
+              <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" />
+            </svg>
+            Appearance
+          </button>
           <button
             className={`${styles.tab} ${activeTab === 'permissions' ? styles.activeTab : ''}`}
             onClick={() => setActiveTab('permissions')}
@@ -61,6 +74,25 @@ export const SettingsPanel: React.FC = () => {
         </div>
 
         <div className={styles.content}>
+          {activeTab === 'appearance' && (
+            <section className={styles.section}>
+              <h3 className={styles.sectionTitle}>Theme</h3>
+              <div className={styles.settingRow}>
+                <div className={styles.settingInfo}>
+                  <span className={styles.settingLabel}>Color Theme</span>
+                  <span className={styles.settingDescription}>
+                    Choose light, dark, or match your system preference
+                  </span>
+                </div>
+                <ThemeToggle
+                  value={themeMode}
+                  onChange={setThemeMode}
+                  size="md"
+                />
+              </div>
+            </section>
+          )}
+
           {activeTab === 'permissions' && (
             <section className={styles.section}>
               <PermissionsManager type="global" />

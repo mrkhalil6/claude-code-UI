@@ -2,6 +2,8 @@ import React from 'react';
 import { DiffEditor } from '@monaco-editor/react';
 import { DiffToolbar } from './DiffToolbar';
 import { FileChange } from '../../../shared/types';
+import { useUI } from '../../store';
+import { getDiffEditorTheme } from '../../monaco-config';
 import styles from './DiffViewer.module.css';
 
 interface DiffViewerProps {
@@ -15,6 +17,8 @@ export const DiffViewer: React.FC<DiffViewerProps> = ({
   onAccept,
   onReject
 }) => {
+  const { resolvedTheme } = useUI();
+
   // Detect language from file extension
   const getLanguage = (filePath: string): string => {
     const ext = filePath.split('.').pop()?.toLowerCase();
@@ -63,7 +67,7 @@ export const DiffViewer: React.FC<DiffViewerProps> = ({
           language={getLanguage(change.filePath)}
           original={change.originalContent}
           modified={change.modifiedContent}
-          theme="vs-dark"
+          theme={getDiffEditorTheme(resolvedTheme)}
           options={{
             readOnly: true,
             renderSideBySide: true,

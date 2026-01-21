@@ -12,6 +12,9 @@ export interface UsageInfo {
   claudeCodeVersion: string;
 }
 
+export type ThemeMode = 'light' | 'dark' | 'system';
+export type ResolvedTheme = 'light' | 'dark';
+
 export interface UISlice {
   // State
   isPlanMode: boolean;
@@ -26,6 +29,8 @@ export interface UISlice {
   connectionStatus: 'disconnected' | 'connecting' | 'connected' | 'error';
   errorMessage: string | null;
   usage: UsageInfo;
+  themeMode: ThemeMode;
+  resolvedTheme: ResolvedTheme;
 
   // Actions
   setIsPlanMode: (planMode: boolean) => void;
@@ -45,6 +50,8 @@ export interface UISlice {
   setModelInfo: (modelName: string, contextWindow: number, maxOutputTokens: number, version: string) => void;
   updateUsage: (input: number, output: number, cacheRead: number, cacheCreation: number, cost: number) => void;
   resetUsage: () => void;
+  setThemeMode: (mode: ThemeMode) => void;
+  setResolvedTheme: (theme: ResolvedTheme) => void;
 }
 
 const initialUsage: UsageInfo = {
@@ -57,6 +64,16 @@ const initialUsage: UsageInfo = {
   cacheCreationTokens: 0,
   totalCost: 0,
   claudeCodeVersion: ''
+};
+
+const getInitialThemeMode = (): ThemeMode => {
+  if (typeof window !== 'undefined') {
+    const stored = localStorage.getItem('theme-mode');
+    if (stored === 'light' || stored === 'dark' || stored === 'system') {
+      return stored;
+    }
+  }
+  return 'system';
 };
 
 export const createUISlice: StateCreator<UISlice, [], [], UISlice> = (set) => ({
@@ -73,6 +90,8 @@ export const createUISlice: StateCreator<UISlice, [], [], UISlice> = (set) => ({
   connectionStatus: 'disconnected',
   errorMessage: null,
   usage: initialUsage,
+  themeMode: getInitialThemeMode(),
+  resolvedTheme: 'dark',
 
   // Actions
   setIsPlanMode: (planMode) => set({ isPlanMode: planMode }),
@@ -124,5 +143,14 @@ export const createUISlice: StateCreator<UISlice, [], [], UISlice> = (set) => ({
     }
   })),
 
-  resetUsage: () => set({ usage: initialUsage })
+  resetUsage: () => set({ usage: initialUsage }),
+
+  setThemeMode: (mode) => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('theme-mode', mode);
+    }
+    set({ themeMode: mode });
+  },
+
+  setResolvedTheme: (theme) => set({ resolvedTheme: theme })
 });

@@ -3,7 +3,8 @@ import { DiffEditor, Editor } from '@monaco-editor/react';
 import type { editor } from 'monaco-editor';
 import { GitFileList } from './GitFileList';
 import { GitStatusResult, GitFileDiff, GitStashEntry } from '../../../shared/types';
-import { useSession } from '../../store';
+import { useSession, useUI } from '../../store';
+import { getDiffEditorTheme } from '../../monaco-config';
 import styles from './GitDiffPanel.module.css';
 
 interface GitDiffPanelProps {
@@ -31,6 +32,7 @@ interface ConflictSection {
 
 export const GitDiffPanel: React.FC<GitDiffPanelProps> = ({ onClose }) => {
   const { currentCwd } = useSession();
+  const { resolvedTheme } = useUI();
   const [status, setStatus] = useState<GitStatusResult | null>(null);
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
   const [currentDiff, setCurrentDiff] = useState<GitFileDiff | null>(null);
@@ -981,7 +983,7 @@ export const GitDiffPanel: React.FC<GitDiffPanelProps> = ({ onClose }) => {
                             language={getLanguage(currentDiff.path)}
                             original={currentDiff.originalContent}
                             modified={currentDiff.modifiedContent}
-                            theme="vs-dark"
+                            theme={getDiffEditorTheme(resolvedTheme)}
                             onMount={handleDiffEditorMount}
                             options={{
                               readOnly: true,
@@ -1087,7 +1089,7 @@ export const GitDiffPanel: React.FC<GitDiffPanelProps> = ({ onClose }) => {
                             language={getLanguage(currentDiff.path)}
                             value={editedContent}
                             onChange={(value) => setEditedContent(value || '')}
-                            theme="vs-dark"
+                            theme={getMonacoTheme(resolvedTheme)}
                             options={{
                               minimap: { enabled: false },
                               scrollBeyondLastLine: false,
@@ -1103,7 +1105,7 @@ export const GitDiffPanel: React.FC<GitDiffPanelProps> = ({ onClose }) => {
                           language={getLanguage(currentDiff.path)}
                           value={editedContent}
                           onChange={(value) => setEditedContent(value || '')}
-                          theme="vs-dark"
+                          theme={getMonacoTheme(resolvedTheme)}
                           options={{
                             minimap: { enabled: false },
                             scrollBeyondLastLine: false,

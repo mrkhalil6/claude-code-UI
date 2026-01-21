@@ -1,0 +1,55 @@
+.container {
+  display: flex;
+  background-color: var(--bg-tertiary);
+  border-radius: var(--border-radius-md);
+  padding: 2px;
+  gap: 2px;
+}
+
+.option {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: var(--border-radius-sm);
+  background: transparent;
+  color: var(--text-secondary);
+  transition: all var(--transition-fast);
+  cursor: pointer;
+}
+
+.option:hover:not(.active) {
+  color: var(--text-primary);
+  background-color: var(--bg-hover);
+}
+
+.option.active {
+  background-color: var(--accent-primary);
+  color: white;
+}
+
+.option:focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 1px;
+}
+
+/* Sizes */
+.sm .option {
+  width: 28px;
+  height: 24px;
+}
+
+.sm .option svg {
+  width: 14px;
+  height: 14px;
+}
+
+.md .option {
+  width: 32px;
+  height: 28px;
+}
+
+.md .option svg {
+  width: 16px;
+  height: 16px;
+}

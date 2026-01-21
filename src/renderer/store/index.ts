@@ -66,7 +66,9 @@ export const useUI = () => useStore((state) => ({
   terminalHeight: state.terminalHeight,
   connectionStatus: state.connectionStatus,
   errorMessage: state.errorMessage,
-  usage: state.usage
+  usage: state.usage,
+  themeMode: state.themeMode,
+  resolvedTheme: state.resolvedTheme
 }));
 
 // Actions hooks
@@ -138,5 +140,7 @@ export const useUIActions = () => useStore((state) => ({
   setErrorMessage: state.setErrorMessage,
   setModelInfo: state.setModelInfo,
   updateUsage: state.updateUsage,
-  resetUsage: state.resetUsage
+  resetUsage: state.resetUsage,
+  setThemeMode: state.setThemeMode,
+  setResolvedTheme: state.setResolvedTheme
 }));

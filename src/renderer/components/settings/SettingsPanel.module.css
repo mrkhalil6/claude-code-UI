@@ -139,3 +139,30 @@
   color: var(--text-secondary) !important;
   margin-top: var(--spacing-sm) !important;
 }
+
+.settingRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-md);
+  background-color: var(--bg-secondary);
+  border-radius: var(--border-radius-md);
+  border: 1px solid var(--border-primary);
+}
+
+.settingInfo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.settingLabel {
+  font-size: var(--font-size-md);
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.settingDescription {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+}

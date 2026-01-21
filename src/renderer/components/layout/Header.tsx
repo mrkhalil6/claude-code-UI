@@ -1,12 +1,14 @@
 import React from 'react';
-import { Toggle } from '../common';
+import { Toggle, ThemeToggle } from '../common';
 import { useUI, useUIActions, useSession } from '../../store';
+import { useTheme } from '../../hooks/useTheme';
 import styles from './Header.module.css';
 
 export const Header: React.FC = () => {
   const { isPlanMode, connectionStatus } = useUI();
   const { togglePlanMode, toggleSidebar, setShowSettings, setShowGitDiff } = useUIActions();
   const { currentCwd, activeSessionId } = useSession();
+  const { themeMode, setThemeMode } = useTheme();
 
   const getStatusColor = () => {
     switch (connectionStatus) {
@@ -69,6 +71,12 @@ export const Header: React.FC = () => {
             size="sm"
           />
         </div>
+
+        <ThemeToggle
+          value={themeMode}
+          onChange={setThemeMode}
+          size="sm"
+        />
 
         <button
           className={styles.gitButton}
