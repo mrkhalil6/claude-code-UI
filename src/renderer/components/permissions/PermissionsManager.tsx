@@ -10,7 +10,7 @@ interface PermissionsManagerProps {
 
 export const PermissionsManager: React.FC<PermissionsManagerProps> = ({ type, onClose }) => {
   const { globalPermissions, knownTools, sessionAllowedTools } = usePermissions();
-  const { setGlobalPermissions, setKnownTools, addSessionAllowedTool, removeSessionAllowedTool } = usePermissionActions();
+  const { setGlobalPermissions, mergeKnownTools, addSessionAllowedTool, removeSessionAllowedTool } = usePermissionActions();
   const [loading, setLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
@@ -18,12 +18,13 @@ export const PermissionsManager: React.FC<PermissionsManagerProps> = ({ type, on
   useEffect(() => {
     const loadData = async () => {
       try {
-        const [permissions, tools] = await Promise.all([
+        const [permissions, defaultTools] = await Promise.all([
           window.claudeUI.permissions.getGlobal(),
           window.claudeUI.permissions.getKnownTools()
         ]);
         setGlobalPermissions(permissions);
-        setKnownTools(tools);
+        // Merge default tools with any already discovered (e.g., MCP tools)
+        mergeKnownTools(defaultTools);
       } catch (error) {
         console.error('Failed to load permissions:', error);
       } finally {
@@ -32,7 +33,7 @@ export const PermissionsManager: React.FC<PermissionsManagerProps> = ({ type, on
     };
 
     loadData();
-  }, [setGlobalPermissions, setKnownTools]);
+  }, [setGlobalPermissions, mergeKnownTools]);
 
   const handleGlobalPermissionChange = async (tool: string, allowed: boolean, scope: 'always' | 'ask') => {
     try {
@@ -71,12 +72,9 @@ export const PermissionsManager: React.FC<PermissionsManagerProps> = ({ type, on
   const handleRefresh = async () => {
     setIsRefreshing(true);
     try {
-      // Get the default tools from main process
+      // Get the default tools from main process and merge
       const defaultTools = await window.claudeUI.permissions.getKnownTools();
-
-      // Merge with any tools we've seen (keep MCP tools that were discovered)
-      const mergedTools = [...new Set([...defaultTools, ...knownTools])];
-      setKnownTools(mergedTools.sort());
+      mergeKnownTools(defaultTools);
     } catch (error) {
       console.error('Failed to refresh tools:', error);
     } finally {

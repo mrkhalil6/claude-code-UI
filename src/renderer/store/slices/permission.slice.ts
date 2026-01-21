@@ -32,6 +32,7 @@ export interface PermissionSlice {
   // Global permission actions
   setGlobalPermissions: (permissions: ToolPermission[]) => void;
   setKnownTools: (tools: string[]) => void;
+  mergeKnownTools: (tools: string[]) => void;
 
   // Session permission actions
   setSessionAllowedTools: (tools: string[]) => void;
@@ -77,6 +78,9 @@ export const createPermissionSlice: StateCreator<PermissionSlice, [], [], Permis
   // Global permission actions
   setGlobalPermissions: (permissions) => set({ globalPermissions: permissions }),
   setKnownTools: (tools) => set({ knownTools: tools }),
+  mergeKnownTools: (tools) => set((state) => ({
+    knownTools: [...new Set([...state.knownTools, ...tools])].sort()
+  })),
 
   // Session permission actions
   setSessionAllowedTools: (tools) => set({ sessionAllowedTools: tools }),

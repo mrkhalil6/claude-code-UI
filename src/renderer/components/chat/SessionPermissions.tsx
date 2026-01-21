@@ -11,21 +11,22 @@ export const SessionPermissions: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabType>('permissions');
   const dropdownRef = useRef<HTMLDivElement>(null);
   const { sessionAllowedTools, knownTools } = usePermissions();
-  const { addSessionAllowedTool, removeSessionAllowedTool, setKnownTools } = usePermissionActions();
+  const { addSessionAllowedTool, removeSessionAllowedTool, mergeKnownTools } = usePermissionActions();
   const { activeSessionId } = useSession();
 
-  // Load known tools on mount
+  // Load known tools on mount - merge with existing to preserve MCP tools
   useEffect(() => {
     const loadTools = async () => {
       try {
-        const tools = await window.claudeUI.permissions.getKnownTools();
-        setKnownTools(tools);
+        const defaultTools = await window.claudeUI.permissions.getKnownTools();
+        // Merge default tools with any already discovered (e.g., MCP tools from CLI)
+        mergeKnownTools(defaultTools);
       } catch (error) {
         console.error('Failed to load known tools:', error);
       }
     };
     loadTools();
-  }, [setKnownTools]);
+  }, [mergeKnownTools]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -67,15 +68,10 @@ export const SessionPermissions: React.FC = () => {
   const handleRefresh = async () => {
     setIsRefreshing(true);
     try {
-      // First, get the default tools from main process
+      // Get the default tools from main process and merge
       const defaultTools = await window.claudeUI.permissions.getKnownTools();
-
-      // Merge with any tools we've seen (keep MCP tools that were discovered)
-      const mergedTools = [...new Set([...defaultTools, ...knownTools])];
-      setKnownTools(mergedTools.sort());
-
-      // Note: Full refresh with MCP tools requires restarting the session
-      // The tools will be fully updated when the next session starts
+      mergeKnownTools(defaultTools);
+      // Note: MCP tools are discovered when sending messages to the CLI
     } catch (error) {
       console.error('Failed to refresh tools:', error);
     } finally {

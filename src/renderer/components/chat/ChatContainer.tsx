@@ -21,7 +21,7 @@ export const ChatContainer: React.FC = () => {
   const { addMessage, setIsStreaming, appendStreamingContent, appendStreamingThinking, finalizeStreamingMessage, clearStreaming, setLastUserMessage, addToolInProgress, updateToolStatus, setTodos } = useChatActions();
   const { setActiveSessionId, setCliSessionId, setCurrentCwd, clearSession } = useSessionActions();
   const { setConnectionStatus, setModelInfo, updateUsage } = useUIActions();
-  const { setPendingPermission, setKnownTools } = usePermissionActions();
+  const { setPendingPermission, mergeKnownTools } = usePermissionActions();
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
@@ -52,7 +52,8 @@ export const ChatContainer: React.FC = () => {
         }
         // Capture available tools from the CLI (includes MCP tools)
         if (evt && evt.tools && Array.isArray(evt.tools)) {
-          setKnownTools(evt.tools as string[]);
+          console.log('[System Event] Received tools from CLI:', evt.tools);
+          mergeKnownTools(evt.tools as string[]);
         }
         // Capture model info and version
         if (evt && evt.model) {
@@ -228,7 +229,7 @@ export const ChatContainer: React.FC = () => {
     return () => {
       cleanups.forEach(cleanup => cleanup());
     };
-  }, [setConnectionStatus, setIsStreaming, appendStreamingContent, appendStreamingThinking, finalizeStreamingMessage, clearStreaming, setPendingPermission, addToolInProgress, updateToolStatus, setKnownTools, setCliSessionId, setCurrentCwd, setTodos, setModelInfo, updateUsage]);
+  }, [setConnectionStatus, setIsStreaming, appendStreamingContent, appendStreamingThinking, finalizeStreamingMessage, clearStreaming, setPendingPermission, addToolInProgress, updateToolStatus, mergeKnownTools, setCliSessionId, setCurrentCwd, setTodos, setModelInfo, updateUsage]);
 
   const handleSendMessage = useCallback(async (content: string) => {
     if (!content.trim()) return;

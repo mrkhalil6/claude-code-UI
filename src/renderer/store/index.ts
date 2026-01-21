@@ -113,6 +113,7 @@ export const usePermissionActions = () => useStore((state) => ({
   // Global permissions
   setGlobalPermissions: state.setGlobalPermissions,
   setKnownTools: state.setKnownTools,
+  mergeKnownTools: state.mergeKnownTools,
   // Session permissions
   setSessionAllowedTools: state.setSessionAllowedTools,
   addSessionAllowedTool: state.addSessionAllowedTool,
