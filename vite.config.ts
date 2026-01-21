@@ -18,7 +18,7 @@ export default defineConfig({
         entry: 'src/main/index.ts',
         onstart(options) {
           // Use spawn instead of startup to avoid process kill issues on Windows
-          options.startup(['--no-sandbox']);
+          options.startup(['.', '--no-sandbox']);
         },
         vite: {
           build: {
