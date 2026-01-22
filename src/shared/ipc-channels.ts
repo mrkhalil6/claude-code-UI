@@ -83,7 +83,14 @@ export const IPC_CHANNELS = {
   TERMINAL_RESIZE: 'terminal:resize',
   TERMINAL_DESTROY: 'terminal:destroy',
   TERMINAL_DATA: 'terminal:data',
-  TERMINAL_EXIT: 'terminal:exit'
+  TERMINAL_EXIT: 'terminal:exit',
+
+  // Skills
+  SKILLS_LIST: 'skills:list',
+  SKILLS_GET: 'skills:get',
+  SKILLS_CREATE: 'skills:create',
+  SKILLS_UPDATE: 'skills:update',
+  SKILLS_DELETE: 'skills:delete'
 } as const;
 
 export type IpcChannel = typeof IPC_CHANNELS[keyof typeof IPC_CHANNELS];

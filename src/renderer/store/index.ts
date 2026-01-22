@@ -57,7 +57,8 @@ export const useUI = () => useStore((state) => ({
   errorMessage: state.errorMessage,
   usage: state.usage,
   themeMode: state.themeMode,
-  resolvedTheme: state.resolvedTheme
+  resolvedTheme: state.resolvedTheme,
+  availableSkills: state.availableSkills
 }));
 
 // Actions hooks
@@ -112,5 +113,7 @@ export const useUIActions = () => useStore((state) => ({
   updateUsage: state.updateUsage,
   resetUsage: state.resetUsage,
   setThemeMode: state.setThemeMode,
-  setResolvedTheme: state.setResolvedTheme
+  setResolvedTheme: state.setResolvedTheme,
+  setAvailableSkills: state.setAvailableSkills,
+  clearAvailableSkills: state.clearAvailableSkills
 }));

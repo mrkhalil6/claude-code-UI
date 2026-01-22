@@ -1,4 +1,5 @@
 import { StateCreator } from 'zustand';
+import { SlashCommand } from '../../../shared/slash-commands';
 
 export interface UsageInfo {
   modelName: string;
@@ -31,6 +32,7 @@ export interface UISlice {
   usage: UsageInfo;
   themeMode: ThemeMode;
   resolvedTheme: ResolvedTheme;
+  availableSkills: SlashCommand[];
 
   // Actions
   setIsPlanMode: (planMode: boolean) => void;
@@ -52,6 +54,8 @@ export interface UISlice {
   resetUsage: () => void;
   setThemeMode: (mode: ThemeMode) => void;
   setResolvedTheme: (theme: ResolvedTheme) => void;
+  setAvailableSkills: (skills: SlashCommand[]) => void;
+  clearAvailableSkills: () => void;
 }
 
 const initialUsage: UsageInfo = {
@@ -92,6 +96,7 @@ export const createUISlice: StateCreator<UISlice, [], [], UISlice> = (set) => ({
   usage: initialUsage,
   themeMode: getInitialThemeMode(),
   resolvedTheme: 'dark',
+  availableSkills: [],
 
   // Actions
   setIsPlanMode: (planMode) => set({ isPlanMode: planMode }),
@@ -152,5 +157,9 @@ export const createUISlice: StateCreator<UISlice, [], [], UISlice> = (set) => ({
     set({ themeMode: mode });
   },
 
-  setResolvedTheme: (theme) => set({ resolvedTheme: theme })
+  setResolvedTheme: (theme) => set({ resolvedTheme: theme }),
+
+  setAvailableSkills: (skills) => set({ availableSkills: skills }),
+
+  clearAvailableSkills: () => set({ availableSkills: [] })
 });

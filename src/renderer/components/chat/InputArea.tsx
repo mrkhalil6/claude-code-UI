@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Button } from '../common';
 import { filterCommands, parseSlashCommand, SlashCommand, SLASH_COMMANDS } from '../../../shared/slash-commands';
+import { useUI } from '../../store';
 import styles from './InputArea.module.css';
 
 interface InputAreaProps {
@@ -26,6 +27,7 @@ export const InputArea: React.FC<InputAreaProps> = ({
   const [showSuggestions, setShowSuggestions] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const suggestionsRef = useRef<HTMLDivElement>(null);
+  const { availableSkills } = useUI();
 
   // Auto-resize textarea
   useEffect(() => {
@@ -41,7 +43,7 @@ export const InputArea: React.FC<InputAreaProps> = ({
     const trimmed = value.trim();
 
     if (trimmed.startsWith('/') && !trimmed.includes(' ')) {
-      const filtered = filterCommands(trimmed);
+      const filtered = filterCommands(trimmed, availableSkills);
       setSuggestions(filtered);
       setShowSuggestions(filtered.length > 0);
       setSelectedIndex(0);
@@ -53,7 +55,7 @@ export const InputArea: React.FC<InputAreaProps> = ({
       setSuggestions([]);
       setShowSuggestions(false);
     }
-  }, [value]);
+  }, [value, availableSkills]);
 
   // Scroll selected item into view
   useEffect(() => {
@@ -74,7 +76,7 @@ export const InputArea: React.FC<InputAreaProps> = ({
   const handleSubmit = useCallback(() => {
     if (value.trim() && !disabled) {
       // Check if it's a slash command
-      const parsed = parseSlashCommand(value);
+      const parsed = parseSlashCommand(value, availableSkills);
 
       if (parsed && onSlashCommand) {
         onSlashCommand(parsed.command, parsed.args);
@@ -85,7 +87,7 @@ export const InputArea: React.FC<InputAreaProps> = ({
       onSend(value);
       setValue('');
     }
-  }, [value, disabled, onSend, onSlashCommand]);
+  }, [value, disabled, onSend, onSlashCommand, availableSkills]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     // Handle suggestions navigation
@@ -114,7 +116,7 @@ export const InputArea: React.FC<InputAreaProps> = ({
 
     // Show all commands when pressing / on empty input
     if (e.key === '/' && value === '') {
-      setSuggestions(SLASH_COMMANDS);
+      setSuggestions([...SLASH_COMMANDS, ...availableSkills]);
       setShowSuggestions(true);
       setSelectedIndex(0);
     }
@@ -149,8 +151,12 @@ export const InputArea: React.FC<InputAreaProps> = ({
               >
                 <span className={styles.commandName}>{cmd.name}</span>
                 <span className={styles.commandDesc}>{cmd.description}</span>
-                <span className={`${styles.commandType} ${cmd.type === 'local' || cmd.type === 'cli-local' ? styles.localType : styles.cliType}`}>
-                  {cmd.type === 'local' ? 'UI' : cmd.type === 'cli-local' ? 'Info' : 'Ask'}
+                <span className={`${styles.commandType} ${
+                    cmd.type === 'local' || cmd.type === 'cli-local' ? styles.localType
+                    : cmd.type === 'skill' ? styles.skillType
+                    : styles.cliType
+                  }`}>
+                  {cmd.type === 'local' ? 'UI' : cmd.type === 'cli-local' ? 'Info' : cmd.type === 'skill' ? 'Skill' : 'Ask'}
                 </span>
               </div>
             ))}

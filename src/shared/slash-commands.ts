@@ -5,7 +5,9 @@ export interface SlashCommand {
   // 'local' commands are handled by the UI
   // 'cli-local' commands are CLI commands we can handle locally (like /mcp, /doctor)
   // 'cli-passthrough' commands are sent as regular messages (not recommended)
-  type: 'local' | 'cli-local' | 'cli-passthrough';
+  // 'skill' commands are CLI skills that get sent as messages to the CLI
+  type: 'local' | 'cli-local' | 'cli-passthrough' | 'skill';
+  packageName?: string;  // For skills with package prefix (e.g., frontend-design:frontend-design)
 }
 
 export const SLASH_COMMANDS: SlashCommand[] = [
@@ -73,16 +75,33 @@ export const SLASH_COMMANDS: SlashCommand[] = [
 ];
 
 /**
+ * Parse CLI slash commands (skills) into SlashCommand objects
+ */
+export function parseCliSlashCommands(cliCommands: string[]): SlashCommand[] {
+  return cliCommands.map(cmd => {
+    const hasPackage = cmd.includes(':');
+    const [packageName, skillName] = hasPackage ? cmd.split(':') : [undefined, cmd];
+    return {
+      name: `/${skillName}`,
+      description: hasPackage ? `${packageName} skill` : 'CLI skill',
+      type: 'skill' as const,
+      packageName: hasPackage ? packageName : undefined
+    };
+  });
+}
+
+/**
  * Filter commands based on input
  */
-export function filterCommands(input: string): SlashCommand[] {
+export function filterCommands(input: string, additionalCommands: SlashCommand[] = []): SlashCommand[] {
   const trimmed = input.trim().toLowerCase();
 
   if (!trimmed.startsWith('/')) {
     return [];
   }
 
-  return SLASH_COMMANDS.filter(cmd =>
+  const allCommands = [...SLASH_COMMANDS, ...additionalCommands];
+  return allCommands.filter(cmd =>
     cmd.name.toLowerCase().startsWith(trimmed)
   );
 }
@@ -90,7 +109,7 @@ export function filterCommands(input: string): SlashCommand[] {
 /**
  * Check if input is a complete slash command
  */
-export function parseSlashCommand(input: string): { command: SlashCommand; args: string } | null {
+export function parseSlashCommand(input: string, additionalCommands: SlashCommand[] = []): { command: SlashCommand; args: string } | null {
   const trimmed = input.trim();
 
   if (!trimmed.startsWith('/')) {
@@ -101,7 +120,8 @@ export function parseSlashCommand(input: string): { command: SlashCommand; args:
   const cmdName = parts[0].toLowerCase();
   const args = parts.slice(1).join(' ');
 
-  const command = SLASH_COMMANDS.find(cmd => cmd.name.toLowerCase() === cmdName);
+  const allCommands = [...SLASH_COMMANDS, ...additionalCommands];
+  const command = allCommands.find(cmd => cmd.name.toLowerCase() === cmdName);
 
   if (command) {
     return { command, args };

@@ -8,15 +8,17 @@ import { SessionLoaderService } from '../services/session-loader.service';
 import { CredentialsService } from '../services/credentials.service';
 import { McpService, McpServer } from '../services/mcp.service';
 import { GitService } from '../services/git.service';
+import { SkillsService } from '../services/skills.service';
 import { terminalService } from '../services/terminal.service';
-import { StartSessionOptions } from '../../shared/types';
+import { StartSessionOptions, SkillPayload } from '../../shared/types';
 
 export function registerIpcHandlers(
   cliService: ClaudeCliService,
   sessionLoader: SessionLoaderService,
   _credentialsService: CredentialsService,
   mcpService: McpService,
-  gitService: GitService
+  gitService: GitService,
+  skillsService: SkillsService
 ): void {
   // ===== Session Management =====
 
@@ -418,6 +420,28 @@ export function registerIpcHandlers(
 
   ipcMain.handle(IPC_CHANNELS.TERMINAL_DESTROY, async (_, { id }: { id: string }) => {
     return terminalService.destroyTerminal(id);
+  });
+
+  // ===== Skills =====
+
+  ipcMain.handle(IPC_CHANNELS.SKILLS_LIST, async () => {
+    return skillsService.listSkills();
+  });
+
+  ipcMain.handle(IPC_CHANNELS.SKILLS_GET, async (_, { id }: { id: string }) => {
+    return skillsService.getSkill(id);
+  });
+
+  ipcMain.handle(IPC_CHANNELS.SKILLS_CREATE, async (_, { payload }: { payload: SkillPayload }) => {
+    return skillsService.createSkill(payload);
+  });
+
+  ipcMain.handle(IPC_CHANNELS.SKILLS_UPDATE, async (_, { payload }: { payload: SkillPayload }) => {
+    return skillsService.updateSkill(payload);
+  });
+
+  ipcMain.handle(IPC_CHANNELS.SKILLS_DELETE, async (_, { id }: { id: string }) => {
+    return skillsService.deleteSkill(id);
   });
 
   // ===== Session File Watching =====

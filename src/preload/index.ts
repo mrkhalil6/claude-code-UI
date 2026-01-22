@@ -14,7 +14,9 @@ import {
   GitPullResult,
   GitLogEntry,
   GitStashEntry,
-  GitStashResult
+  GitStashResult,
+  Skill,
+  SkillPayload
 } from '../shared/types';
 
 // MCP Server types
@@ -274,6 +276,24 @@ const api = {
       ipcRenderer.on(IPC_CHANNELS.TERMINAL_EXIT, handler);
       return () => ipcRenderer.removeListener(IPC_CHANNELS.TERMINAL_EXIT, handler);
     }
+  },
+
+  // ===== Skills =====
+  skills: {
+    list: (): Promise<Skill[]> =>
+      ipcRenderer.invoke(IPC_CHANNELS.SKILLS_LIST),
+
+    get: (id: string): Promise<Skill | null> =>
+      ipcRenderer.invoke(IPC_CHANNELS.SKILLS_GET, { id }),
+
+    create: (payload: SkillPayload): Promise<Skill> =>
+      ipcRenderer.invoke(IPC_CHANNELS.SKILLS_CREATE, { payload }),
+
+    update: (payload: SkillPayload): Promise<Skill> =>
+      ipcRenderer.invoke(IPC_CHANNELS.SKILLS_UPDATE, { payload }),
+
+    delete: (id: string): Promise<boolean> =>
+      ipcRenderer.invoke(IPC_CHANNELS.SKILLS_DELETE, { id })
   }
 };
 

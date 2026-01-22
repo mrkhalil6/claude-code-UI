@@ -4,7 +4,7 @@ import { StreamingMessage } from './StreamingMessage';
 import { InputArea } from './InputArea';
 // TodoList moved to StatusBar
 import { useStore, useChat, useSession, useUI, useChatActions, useUIActions, useSessionActions } from '../../store';
-import { SlashCommand, SLASH_COMMANDS } from '../../../shared/slash-commands';
+import { SlashCommand, SLASH_COMMANDS, parseCliSlashCommands } from '../../../shared/slash-commands';
 import { TodoItem } from '../../store/slices/chat.slice';
 import styles from './ChatContainer.module.css';
 
@@ -18,7 +18,7 @@ export const ChatContainer: React.FC = () => {
   const { setShowSettings } = useUIActions();
   const { addMessage, setIsStreaming, appendStreamingContent, appendStreamingThinking, finalizeStreamingMessage, clearStreaming, setLastUserMessage, addToolInProgress, updateToolStatus, setTodos } = useChatActions();
   const { setActiveSessionId, setCliSessionId, setCurrentCwd, clearSession } = useSessionActions();
-  const { setConnectionStatus, setModelInfo, updateUsage, setIsPlanMode } = useUIActions();
+  const { setConnectionStatus, setModelInfo, updateUsage, setIsPlanMode, setAvailableSkills, clearAvailableSkills } = useUIActions();
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
@@ -51,6 +51,11 @@ export const ChatContainer: React.FC = () => {
         if (evt && evt.model) {
           // Default context window values, will be updated from result event
           setModelInfo(evt.model as string, 200000, 64000, (evt.claude_code_version as string) || '');
+        }
+        // Capture available skills from CLI
+        if (evt && evt.slash_commands && Array.isArray(evt.slash_commands)) {
+          const skills = parseCliSlashCommands(evt.slash_commands as string[]);
+          setAvailableSkills(skills);
         }
       })
     );
@@ -239,7 +244,7 @@ export const ChatContainer: React.FC = () => {
     return () => {
       cleanups.forEach(cleanup => cleanup());
     };
-  }, [setConnectionStatus, setIsStreaming, appendStreamingContent, appendStreamingThinking, finalizeStreamingMessage, clearStreaming, addToolInProgress, updateToolStatus, setCliSessionId, setCurrentCwd, setTodos, setModelInfo, updateUsage, setIsPlanMode, addMessage]);
+  }, [setConnectionStatus, setIsStreaming, appendStreamingContent, appendStreamingThinking, finalizeStreamingMessage, clearStreaming, addToolInProgress, updateToolStatus, setCliSessionId, setCurrentCwd, setTodos, setModelInfo, updateUsage, setIsPlanMode, addMessage, setAvailableSkills]);
 
   const handleSendMessage = useCallback(async (content: string) => {
     if (!content.trim()) return;
@@ -369,6 +374,7 @@ export const ChatContainer: React.FC = () => {
           // Clear messages and reset session
           useStore.getState().clearMessages();
           clearSession();
+          clearAvailableSkills();
           return;
 
         case '/rename':
@@ -588,8 +594,19 @@ export const ChatContainer: React.FC = () => {
 
       // Send as regular message
       handleSendMessage(prompt);
+      return;
     }
-  }, [activeSessionId, cliSessionId, currentCwd, isPlanMode, messages.length, addMessage, setShowSettings, clearSession, handleSendMessage]);
+
+    // Handle skill commands - send as message to CLI (CLI handles skill expansion)
+    if (command.type === 'skill') {
+      // Reconstruct full command for CLI
+      const fullCommand = command.packageName
+        ? `/${command.packageName}:${command.name.slice(1)}${args ? ' ' + args : ''}`
+        : `${command.name}${args ? ' ' + args : ''}`;
+      handleSendMessage(fullCommand);
+      return;
+    }
+  }, [activeSessionId, cliSessionId, currentCwd, isPlanMode, messages.length, addMessage, setShowSettings, clearSession, clearAvailableSkills, handleSendMessage]);
 
   return (
     <div className={styles.container}>
