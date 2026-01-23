@@ -4,7 +4,7 @@ import { StreamingMessage } from './StreamingMessage';
 import { InputArea } from './InputArea';
 // TodoList moved to StatusBar
 import { useStore, useChat, useSession, useUI, useChatActions, useUIActions, useSessionActions } from '../../store';
-import { SlashCommand, SLASH_COMMANDS, parseCliSlashCommands } from '../../../shared/slash-commands';
+import { SlashCommand, parseCliSlashCommands } from '../../../shared/slash-commands';
 import { TodoItem } from '../../store/slices/chat.slice';
 import styles from './ChatContainer.module.css';
 
@@ -334,279 +334,132 @@ export const ChatContainer: React.FC = () => {
     }
   }, [activeSessionId, setIsStreaming]);
 
-  // Handle slash commands
+  // Handle UI-only commands (no CLI equivalent)
+  const handleUiOnlyCommand = useCallback((command: SlashCommand, _args: string) => {
+    switch (command.name) {
+      case '/clear':
+        useStore.getState().clearMessages();
+        addMessage({
+          id: crypto.randomUUID(),
+          type: 'system',
+          content: 'Conversation cleared.',
+          timestamp: new Date().toISOString()
+        });
+        break;
+
+      case '/settings':
+        setShowSettings(true);
+        break;
+
+      case '/new':
+        useStore.getState().clearMessages();
+        clearSession();
+        clearAvailableSkills();
+        break;
+
+      case '/status': {
+        const { usage } = useStore.getState();
+        const statusLines = [
+          `**Session ID:** ${activeSessionId || 'None'}`,
+          `**CLI Session:** ${cliSessionId || 'None'}`,
+          `**Working Directory:** ${currentCwd || 'Not set'}`,
+          `**Plan Mode:** ${isPlanMode ? 'Enabled' : 'Disabled'}`,
+          `**Messages:** ${messages.length}`,
+          `**Model:** ${usage?.modelName || 'Unknown'}`,
+          `**CLI Version:** ${usage?.claudeCodeVersion || 'Unknown'}`
+        ];
+        addMessage({
+          id: crypto.randomUUID(),
+          type: 'system',
+          content: `## Session Status\n\n${statusLines.join('\n')}`,
+          timestamp: new Date().toISOString()
+        });
+        break;
+      }
+
+      case '/model': {
+        const { usage } = useStore.getState();
+        addMessage({
+          id: crypto.randomUUID(),
+          type: 'system',
+          content: `## Current Model\n\n**Model:** ${usage?.modelName || 'Unknown'}\n**Context Window:** ${usage?.contextWindow?.toLocaleString() || 'Unknown'} tokens\n**Max Output:** ${usage?.maxOutputTokens?.toLocaleString() || 'Unknown'} tokens`,
+          timestamp: new Date().toISOString()
+        });
+        break;
+      }
+    }
+  }, [addMessage, setShowSettings, clearSession, clearAvailableSkills, activeSessionId, cliSessionId, currentCwd, isPlanMode, messages.length]);
+
+  // Execute a CLI command and display the result
+  const executeCliCommand = useCallback(async (command: SlashCommand, args: string) => {
+    // Need a working directory for CLI commands
+    const cwd = currentCwd || process.cwd?.() || '.';
+
+    // Show the command being executed
+    addMessage({
+      id: crypto.randomUUID(),
+      type: 'user',
+      content: `${command.name}${args ? ' ' + args : ''}`,
+      timestamp: new Date().toISOString()
+    });
+
+    try {
+      const result = await window.claudeUI.cli.executeCommand(
+        command.name.slice(1), // Remove leading slash
+        args,
+        cwd,
+        cliSessionId || undefined
+      );
+
+      console.log('[executeCliCommand] Result received:', {
+        success: result.success,
+        outputLength: result.output?.length,
+        hasNewlines: result.output?.includes('\n'),
+        firstChars: result.output?.substring(0, 100)
+      });
+
+      // Display the CLI response
+      addMessage({
+        id: crypto.randomUUID(),
+        type: 'system',
+        content: result.success
+          ? result.output || 'Command completed successfully.'
+          : `Error: ${result.error || 'Command failed'}`,
+        timestamp: new Date().toISOString()
+      });
+    } catch (err) {
+      console.error('Failed to execute CLI command:', err);
+      addMessage({
+        id: crypto.randomUUID(),
+        type: 'system',
+        content: `Failed to execute ${command.name}: ${err instanceof Error ? err.message : 'Unknown error'}`,
+        timestamp: new Date().toISOString()
+      });
+    }
+  }, [currentCwd, cliSessionId, addMessage]);
+
+  // Handle slash commands - simplified router
   const handleSlashCommand = useCallback(async (command: SlashCommand, args: string) => {
-    console.log('Slash command:', command.name, args);
+    console.log('Slash command:', command.name, args, 'type:', command.type);
 
-    // Handle local commands
-    if (command.type === 'local') {
-      switch (command.name) {
-        case '/clear':
-          // Clear messages from the store
-          useStore.getState().clearMessages();
-          // Add a system message to indicate the clear
-          addMessage({
-            id: crypto.randomUUID(),
-            type: 'system',
-            content: 'Conversation cleared.',
-            timestamp: new Date().toISOString()
-          });
-          return;
+    switch (command.type) {
+      case 'ui-only':
+        handleUiOnlyCommand(command, args);
+        break;
 
-        case '/help':
-          // Show help message with available commands
-          const helpText = SLASH_COMMANDS.map(cmd =>
-            `**${cmd.name}** - ${cmd.description}${cmd.usage ? ` (Usage: ${cmd.usage})` : ''}`
-          ).join('\n');
-          addMessage({
-            id: crypto.randomUUID(),
-            type: 'system',
-            content: `## Available Commands\n\n${helpText}`,
-            timestamp: new Date().toISOString()
-          });
-          return;
+      case 'cli-routed':
+        await executeCliCommand(command, args);
+        break;
 
-        case '/settings':
-          setShowSettings(true);
-          return;
-
-        case '/new':
-          // Clear messages and reset session
-          useStore.getState().clearMessages();
-          clearSession();
-          clearAvailableSkills();
-          return;
-
-        case '/rename':
-          // Validate we have an active session to rename
-          if (!cliSessionId) {
-            addMessage({
-              id: crypto.randomUUID(),
-              type: 'system',
-              content: 'No active session to rename. Start a chat first.',
-              timestamp: new Date().toISOString()
-            });
-            return;
-          }
-
-          // Validate we have a name provided
-          const newName = args.trim();
-          if (!newName) {
-            addMessage({
-              id: crypto.randomUUID(),
-              type: 'system',
-              content: 'Usage: /rename <new name>\n\nExample: /rename Fix authentication bug',
-              timestamp: new Date().toISOString()
-            });
-            return;
-          }
-
-          // Validate name length
-          if (newName.length > 100) {
-            addMessage({
-              id: crypto.randomUUID(),
-              type: 'system',
-              content: 'Session name must be 100 characters or less.',
-              timestamp: new Date().toISOString()
-            });
-            return;
-          }
-
-          try {
-            // Get the home directory and find the project for this session
-            const homeDir = await window.claudeUI.fs.getHomeDir();
-            const projects = await window.claudeUI.sessions.getAll();
-            let projectEncodedName: string | null = null;
-
-            for (const project of projects) {
-              const hasSession = project.sessions.some(s => s.id === cliSessionId);
-              if (hasSession) {
-                projectEncodedName = project.encodedName;
-                break;
-              }
-            }
-
-            if (!projectEncodedName) {
-              addMessage({
-                id: crypto.randomUUID(),
-                type: 'system',
-                content: 'Could not find the project for this session. The session may not have been saved yet.',
-                timestamp: new Date().toISOString()
-              });
-              return;
-            }
-
-            const fullProjectPath = `${homeDir}/.claude/projects/${projectEncodedName}`;
-            const success = await window.claudeUI.sessions.rename(fullProjectPath, cliSessionId, newName);
-
-            if (success) {
-              addMessage({
-                id: crypto.randomUUID(),
-                type: 'system',
-                content: `Session renamed to: **${newName}**`,
-                timestamp: new Date().toISOString()
-              });
-              // The file watcher will automatically trigger a sidebar refresh
-            } else {
-              addMessage({
-                id: crypto.randomUUID(),
-                type: 'system',
-                content: 'Failed to rename session. The session file may not exist yet (send a message first).',
-                timestamp: new Date().toISOString()
-              });
-            }
-          } catch (err) {
-            console.error('Failed to rename session:', err);
-            addMessage({
-              id: crypto.randomUUID(),
-              type: 'system',
-              content: `Failed to rename session: ${err instanceof Error ? err.message : 'Unknown error'}`,
-              timestamp: new Date().toISOString()
-            });
-          }
-          return;
-
-        default:
-          break;
-      }
+      case 'skill':
+        // Skills are sent as messages to the active CLI session
+        const fullCommand = command.packageName
+          ? `/${command.packageName}:${command.name.slice(1)}${args ? ' ' + args : ''}`
+          : `${command.name}${args ? ' ' + args : ''}`;
+        handleSendMessage(fullCommand);
+        break;
     }
-
-    // Handle CLI-local commands (we fetch info and display it)
-    if (command.type === 'cli-local') {
-      switch (command.name) {
-        case '/mcp': {
-          try {
-            // Get both global and project MCP servers
-            const globalServers = await window.claudeUI.mcp.getGlobalServers();
-            const projectServers = currentCwd
-              ? await window.claudeUI.mcp.getProjectServers(currentCwd)
-              : {};
-
-            const formatServer = (name: string, server: { type?: string; url?: string; command?: string; args?: string[] }) => {
-              if (server.type === 'sse' && server.url) {
-                return `- **${name}** (SSE): \`${server.url}\``;
-              } else if (server.type === 'http' && server.url) {
-                return `- **${name}** (HTTP): \`${server.url}\``;
-              } else {
-                return `- **${name}** (stdio): \`${server.command}${server.args ? ' ' + server.args.join(' ') : ''}\``;
-              }
-            };
-
-            const globalNames = Object.keys(globalServers);
-            const projectNames = Object.keys(projectServers);
-
-            let content = '## MCP Servers\n\n';
-
-            if (globalNames.length === 0 && projectNames.length === 0) {
-              content += 'No MCP servers configured.\n\n';
-              content += '- **Global servers**: Go to *Settings > MCP Servers*\n';
-              content += '- **Project servers**: Click the lock icon and select *MCP Servers* tab';
-            } else {
-              if (globalNames.length > 0) {
-                content += '### Global (all projects)\n';
-                content += globalNames.map(name => formatServer(name, globalServers[name])).join('\n');
-                content += '\n\n';
-              }
-
-              if (projectNames.length > 0) {
-                content += '### Project-specific\n';
-                content += projectNames.map(name => formatServer(name, projectServers[name])).join('\n');
-                content += '\n\n';
-              }
-
-              content += '*Manage global servers in Settings > MCP Servers*\n';
-              content += '*Manage project servers via lock icon > MCP Servers tab*';
-            }
-
-            addMessage({
-              id: crypto.randomUUID(),
-              type: 'system',
-              content,
-              timestamp: new Date().toISOString()
-            });
-          } catch (err) {
-            addMessage({
-              id: crypto.randomUUID(),
-              type: 'system',
-              content: '## MCP Servers\n\nFailed to load MCP servers.',
-              timestamp: new Date().toISOString()
-            });
-          }
-          return;
-        }
-
-        case '/status': {
-          const statusInfo = [
-            `**Session ID:** ${activeSessionId || 'None'}`,
-            `**CLI Session:** ${cliSessionId || 'None'}`,
-            `**Working Directory:** ${currentCwd || 'Not set'}`,
-            `**Plan Mode:** ${isPlanMode ? 'Enabled' : 'Disabled'}`,
-            `**Messages:** ${messages.length}`
-          ].join('\n');
-          addMessage({
-            id: crypto.randomUUID(),
-            type: 'system',
-            content: `## Session Status\n\n${statusInfo}`,
-            timestamp: new Date().toISOString()
-          });
-          return;
-        }
-
-        case '/model': {
-          addMessage({
-            id: crypto.randomUUID(),
-            type: 'system',
-            content: '## Current Model\n\nModel selection is determined by your Claude CLI configuration.\nUse `claude config` in terminal to change the model.',
-            timestamp: new Date().toISOString()
-          });
-          return;
-        }
-
-        case '/cost': {
-          addMessage({
-            id: crypto.randomUUID(),
-            type: 'system',
-            content: '## Cost Information\n\nToken usage and cost tracking is available in the Claude CLI.\nRun `claude` in terminal to see detailed usage stats.',
-            timestamp: new Date().toISOString()
-          });
-          return;
-        }
-
-        default:
-          break;
-      }
-    }
-
-    // Handle CLI passthrough commands - send as a prompt to Claude
-    if (command.type === 'cli-passthrough') {
-      // Convert command to a natural language prompt
-      let prompt = '';
-      switch (command.name) {
-        case '/compact':
-          prompt = 'Please provide a brief summary of our conversation so far.';
-          break;
-        case '/review':
-          prompt = 'Please review our conversation and highlight key points, decisions made, and any pending items.';
-          break;
-        default:
-          prompt = `${command.name.slice(1)} ${args}`.trim();
-      }
-
-      // Send as regular message
-      handleSendMessage(prompt);
-      return;
-    }
-
-    // Handle skill commands - send as message to CLI (CLI handles skill expansion)
-    if (command.type === 'skill') {
-      // Reconstruct full command for CLI
-      const fullCommand = command.packageName
-        ? `/${command.packageName}:${command.name.slice(1)}${args ? ' ' + args : ''}`
-        : `${command.name}${args ? ' ' + args : ''}`;
-      handleSendMessage(fullCommand);
-      return;
-    }
-  }, [activeSessionId, cliSessionId, currentCwd, isPlanMode, messages.length, addMessage, setShowSettings, clearSession, clearAvailableSkills, handleSendMessage]);
+  }, [handleUiOnlyCommand, executeCliCommand, handleSendMessage]);
 
   return (
     <div className={styles.container}>

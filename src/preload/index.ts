@@ -76,6 +76,10 @@ const api = {
     setModel: (sessionId: string, model: string): Promise<boolean> =>
       ipcRenderer.invoke(IPC_CHANNELS.CLI_SET_MODEL, { sessionId, model }),
 
+    // Execute a CLI slash command and return the result
+    executeCommand: (command: string, args: string, cwd: string, sessionId?: string): Promise<{ success: boolean; output: string; error?: string }> =>
+      ipcRenderer.invoke(IPC_CHANNELS.CLI_EXECUTE_COMMAND, { command, args, cwd, sessionId }),
+
     // Event listeners
     onSystem: (callback: (data: CLIServiceEvent) => void): CleanupFn => {
       const handler = (_: IpcRendererEvent, data: CLIServiceEvent) => callback(data);

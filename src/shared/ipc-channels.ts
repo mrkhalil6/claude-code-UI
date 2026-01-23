@@ -17,6 +17,9 @@ export const IPC_CHANNELS = {
   CLI_GET_MODELS: 'cli:getModels',
   CLI_SET_MODEL: 'cli:setModel',
 
+  // CLI Commands (for routing slash commands to CLI)
+  CLI_EXECUTE_COMMAND: 'cli:executeCommand',
+
   // CLI Events (Main -> Renderer)
   CLI_EVENT_SYSTEM: 'cli:event:system',
   CLI_EVENT_STREAM: 'cli:event:stream',

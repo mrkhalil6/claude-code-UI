@@ -16,9 +16,13 @@ export const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({ content }) => 
         components={{
           code({ node, className, children, ...props }) {
             const match = /language-(\w+)/.exec(className || '');
-            const isInline = !match && !className;
+            const content = String(children).replace(/\n$/, '');
 
-            if (isInline) {
+            // Detect if this is a code block (has newlines or language) vs inline code
+            const hasNewlines = content.includes('\n');
+            const isCodeBlock = match || className || hasNewlines;
+
+            if (!isCodeBlock) {
               return (
                 <code className={styles.inlineCode} {...props}>
                   {children}
@@ -29,7 +33,7 @@ export const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({ content }) => 
             return (
               <CodeBlock
                 language={match ? match[1] : 'text'}
-                value={String(children).replace(/\n$/, '')}
+                value={content}
               />
             );
           },

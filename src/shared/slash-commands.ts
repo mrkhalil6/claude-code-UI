@@ -2,75 +2,83 @@ export interface SlashCommand {
   name: string;
   description: string;
   usage?: string;
-  // 'local' commands are handled by the UI
-  // 'cli-local' commands are CLI commands we can handle locally (like /mcp, /doctor)
-  // 'cli-passthrough' commands are sent as regular messages (not recommended)
-  // 'skill' commands are CLI skills that get sent as messages to the CLI
-  type: 'local' | 'cli-local' | 'cli-passthrough' | 'skill';
+  // 'ui-only' commands are handled entirely by the UI (no CLI equivalent)
+  // 'cli-routed' commands are sent to the CLI and the response is displayed
+  // 'skill' commands are CLI skills that get sent as messages to the CLI session
+  type: 'ui-only' | 'cli-routed' | 'skill';
   packageName?: string;  // For skills with package prefix (e.g., frontend-design:frontend-design)
 }
 
 export const SLASH_COMMANDS: SlashCommand[] = [
-  // Local commands (handled by UI)
+  // UI-only commands (must stay in UI, no CLI equivalent)
   {
     name: '/clear',
     description: 'Clear the current conversation',
-    type: 'local'
-  },
-  {
-    name: '/help',
-    description: 'Show available commands',
-    type: 'local'
+    type: 'ui-only'
   },
   {
     name: '/settings',
     description: 'Open settings panel',
-    type: 'local'
+    type: 'ui-only'
   },
   {
     name: '/new',
     description: 'Start a new chat session',
-    type: 'local'
-  },
-  {
-    name: '/rename',
-    description: 'Rename the current chat session',
-    usage: '/rename <new name>',
-    type: 'local'
-  },
-
-  // CLI-local commands (CLI commands we handle in UI)
-  {
-    name: '/mcp',
-    description: 'Show MCP server status',
-    type: 'cli-local'
-  },
-  {
-    name: '/cost',
-    description: 'Show token usage and cost for this session',
-    type: 'cli-local'
-  },
-  {
-    name: '/model',
-    description: 'Show current model',
-    type: 'cli-local'
+    type: 'ui-only'
   },
   {
     name: '/status',
     description: 'Show current session status',
-    type: 'cli-local'
+    type: 'ui-only'
+  },
+  {
+    name: '/model',
+    description: 'Show current model',
+    type: 'ui-only'
   },
 
-  // CLI passthrough commands (sent to Claude as regular prompts - use carefully)
+  // CLI-routed commands via subcommands (not skills)
+  {
+    name: '/help',
+    description: 'Show available commands',
+    type: 'cli-routed'
+  },
+  {
+    name: '/mcp',
+    description: 'Show MCP server status',
+    type: 'cli-routed'
+  },
+  {
+    name: '/doctor',
+    description: 'Check CLI health and configuration',
+    type: 'cli-routed'
+  },
+
+  // CLI-routed commands via skills (work with -p mode)
+  {
+    name: '/cost',
+    description: 'Show token usage and cost for this session',
+    type: 'cli-routed'
+  },
   {
     name: '/compact',
-    description: 'Ask Claude to summarize the conversation',
-    type: 'cli-passthrough'
+    description: 'Compact conversation to save context',
+    type: 'cli-routed'
+  },
+  {
+    name: '/context',
+    description: 'Show context usage',
+    type: 'cli-routed'
+  },
+  {
+    name: '/init',
+    description: 'Initialize project configuration',
+    type: 'cli-routed'
   },
   {
     name: '/review',
-    description: 'Ask Claude to review the conversation',
-    type: 'cli-passthrough'
+    description: 'Review conversation and changes',
+    type: 'cli-routed'
   }
 ];
 

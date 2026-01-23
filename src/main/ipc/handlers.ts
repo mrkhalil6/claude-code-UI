@@ -4,6 +4,7 @@ import { homedir } from 'os';
 import { spawn } from 'child_process';
 import { IPC_CHANNELS } from '../../shared/ipc-channels';
 import { ClaudeCliService } from '../services/claude-cli.service';
+import { CliCommandService } from '../services/cli-command.service';
 import { SessionLoaderService } from '../services/session-loader.service';
 import { CredentialsService } from '../services/credentials.service';
 import { McpService, McpServer } from '../services/mcp.service';
@@ -78,6 +79,16 @@ export function registerIpcHandlers(
     console.log(`[IPC] CLI_SET_MODEL called: session=${sessionId}, model=${model}`);
     const result = cliService.setModel(sessionId, model);
     console.log(`[IPC] CLI_SET_MODEL result: ${result}`);
+    return result;
+  });
+
+  // ===== CLI Command Execution =====
+  const cliCommandService = new CliCommandService();
+
+  ipcMain.handle(IPC_CHANNELS.CLI_EXECUTE_COMMAND, async (_, { command, args, cwd, sessionId }: { command: string; args: string; cwd: string; sessionId?: string }) => {
+    console.log(`[IPC] CLI_EXECUTE_COMMAND called: command=/${command}, args=${args}, cwd=${cwd}`);
+    const result = await cliCommandService.executeCommand(command, args, cwd, sessionId);
+    console.log(`[IPC] CLI_EXECUTE_COMMAND result: success=${result.success}`);
     return result;
   });
 
