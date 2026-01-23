@@ -90,7 +90,13 @@ export const IPC_CHANNELS = {
   SKILLS_GET: 'skills:get',
   SKILLS_CREATE: 'skills:create',
   SKILLS_UPDATE: 'skills:update',
-  SKILLS_DELETE: 'skills:delete'
+  SKILLS_DELETE: 'skills:delete',
+
+  // Hooks
+  HOOKS_LIST: 'hooks:list',
+  HOOKS_ADD: 'hooks:add',
+  HOOKS_UPDATE: 'hooks:update',
+  HOOKS_DELETE: 'hooks:delete'
 } as const;
 
 export type IpcChannel = typeof IPC_CHANNELS[keyof typeof IPC_CHANNELS];

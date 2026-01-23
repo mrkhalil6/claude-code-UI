@@ -9,8 +9,9 @@ import { CredentialsService } from '../services/credentials.service';
 import { McpService, McpServer } from '../services/mcp.service';
 import { GitService } from '../services/git.service';
 import { SkillsService } from '../services/skills.service';
+import { HooksService } from '../services/hooks.service';
 import { terminalService } from '../services/terminal.service';
-import { StartSessionOptions, SkillPayload } from '../../shared/types';
+import { StartSessionOptions, SkillPayload, HookPayload } from '../../shared/types';
 
 export function registerIpcHandlers(
   cliService: ClaudeCliService,
@@ -18,7 +19,8 @@ export function registerIpcHandlers(
   _credentialsService: CredentialsService,
   mcpService: McpService,
   gitService: GitService,
-  skillsService: SkillsService
+  skillsService: SkillsService,
+  hooksService: HooksService
 ): void {
   // ===== Session Management =====
 
@@ -442,6 +444,25 @@ export function registerIpcHandlers(
 
   ipcMain.handle(IPC_CHANNELS.SKILLS_DELETE, async (_, { id }: { id: string }) => {
     return skillsService.deleteSkill(id);
+  });
+
+  // ===== Hooks =====
+
+  ipcMain.handle(IPC_CHANNELS.HOOKS_LIST, async () => {
+    await hooksService.loadHooks();
+    return hooksService.getHooks();
+  });
+
+  ipcMain.handle(IPC_CHANNELS.HOOKS_ADD, async (_, { payload }: { payload: HookPayload }) => {
+    return hooksService.addHook(payload);
+  });
+
+  ipcMain.handle(IPC_CHANNELS.HOOKS_UPDATE, async (_, { payload }: { payload: HookPayload }) => {
+    return hooksService.updateHook(payload);
+  });
+
+  ipcMain.handle(IPC_CHANNELS.HOOKS_DELETE, async (_, { id }: { id: string }) => {
+    return hooksService.removeHook(id);
   });
 
   // ===== Session File Watching =====

@@ -7,6 +7,7 @@ import { CredentialsService } from './services/credentials.service';
 import { McpService } from './services/mcp.service';
 import { GitService } from './services/git.service';
 import { SkillsService } from './services/skills.service';
+import { HooksService } from './services/hooks.service';
 import { terminalService } from './services/terminal.service';
 
 class Application {
@@ -17,6 +18,7 @@ class Application {
   private mcpService: McpService;
   private gitService: GitService;
   private skillsService: SkillsService;
+  private hooksService: HooksService;
 
   constructor() {
     this.cliService = new ClaudeCliService();
@@ -25,6 +27,7 @@ class Application {
     this.mcpService = new McpService();
     this.gitService = new GitService();
     this.skillsService = new SkillsService();
+    this.hooksService = new HooksService();
   }
 
   async initialize(): Promise<void> {
@@ -50,7 +53,8 @@ class Application {
       this.credentialsService,
       this.mcpService,
       this.gitService,
-      this.skillsService
+      this.skillsService,
+      this.hooksService
     );
 
     // Create the main window

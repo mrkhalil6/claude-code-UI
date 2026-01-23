@@ -16,7 +16,9 @@ import {
   GitStashEntry,
   GitStashResult,
   Skill,
-  SkillPayload
+  SkillPayload,
+  HookWithId,
+  HookPayload
 } from '../shared/types';
 
 // MCP Server types
@@ -294,6 +296,21 @@ const api = {
 
     delete: (id: string): Promise<boolean> =>
       ipcRenderer.invoke(IPC_CHANNELS.SKILLS_DELETE, { id })
+  },
+
+  // ===== Hooks =====
+  hooks: {
+    list: (): Promise<HookWithId[]> =>
+      ipcRenderer.invoke(IPC_CHANNELS.HOOKS_LIST),
+
+    add: (payload: HookPayload): Promise<HookWithId> =>
+      ipcRenderer.invoke(IPC_CHANNELS.HOOKS_ADD, { payload }),
+
+    update: (payload: HookPayload): Promise<HookWithId> =>
+      ipcRenderer.invoke(IPC_CHANNELS.HOOKS_UPDATE, { payload }),
+
+    delete: (id: string): Promise<boolean> =>
+      ipcRenderer.invoke(IPC_CHANNELS.HOOKS_DELETE, { id })
   }
 };
 

@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { McpManager } from './McpManager';
 import { SkillsManager } from './SkillsManager';
+import { HooksManager } from './HooksManager';
 import { ThemeToggle } from '../common';
 import { useUI, useUIActions } from '../../store';
 import { useTheme } from '../../hooks/useTheme';
 import styles from './SettingsPanel.module.css';
 
-type SettingsTab = 'appearance' | 'mcp' | 'skills' | 'about';
+type SettingsTab = 'appearance' | 'mcp' | 'skills' | 'hooks' | 'about';
 
 export const SettingsPanel: React.FC = () => {
   const { showSettings } = useUI();
@@ -60,6 +61,16 @@ export const SettingsPanel: React.FC = () => {
             Skills
           </button>
           <button
+            className={`${styles.tab} ${activeTab === 'hooks' ? styles.activeTab : ''}`}
+            onClick={() => setActiveTab('hooks')}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+              <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+            </svg>
+            Hooks
+          </button>
+          <button
             className={`${styles.tab} ${activeTab === 'about' ? styles.activeTab : ''}`}
             onClick={() => setActiveTab('about')}
           >
@@ -101,6 +112,12 @@ export const SettingsPanel: React.FC = () => {
           {activeTab === 'skills' && (
             <section className={styles.section}>
               <SkillsManager />
+            </section>
+          )}
+
+          {activeTab === 'hooks' && (
+            <section className={styles.section}>
+              <HooksManager />
             </section>
           )}
 
