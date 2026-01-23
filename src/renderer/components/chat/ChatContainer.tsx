@@ -447,12 +447,19 @@ export const ChatContainer: React.FC = () => {
         handleUiOnlyCommand(command, args);
         break;
 
-      case 'cli-routed':
+      case 'cli-subcommand':
+        // Commands that use CLI subcommands (claude --help, claude mcp list, etc.)
+        await executeCliCommand(command, args);
+        break;
+
+      case 'cli-skill':
+        // Built-in CLI skills - execute via -p mode with session context
+        // This actually runs the command (compaction, etc.)
         await executeCliCommand(command, args);
         break;
 
       case 'skill':
-        // Skills are sent as messages to the active CLI session
+        // Dynamically loaded skills - send as messages to active CLI session
         const fullCommand = command.packageName
           ? `/${command.packageName}:${command.name.slice(1)}${args ? ' ' + args : ''}`
           : `${command.name}${args ? ' ' + args : ''}`;

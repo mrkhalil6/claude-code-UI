@@ -3,9 +3,10 @@ export interface SlashCommand {
   description: string;
   usage?: string;
   // 'ui-only' commands are handled entirely by the UI (no CLI equivalent)
-  // 'cli-routed' commands are sent to the CLI and the response is displayed
-  // 'skill' commands are CLI skills that get sent as messages to the CLI session
-  type: 'ui-only' | 'cli-routed' | 'skill';
+  // 'cli-subcommand' commands use CLI subcommands (e.g., `claude --help`, `claude mcp list`)
+  // 'cli-skill' commands are CLI skills sent as messages to the active session
+  // 'skill' commands are dynamically loaded CLI skills
+  type: 'ui-only' | 'cli-subcommand' | 'cli-skill' | 'skill';
   packageName?: string;  // For skills with package prefix (e.g., frontend-design:frontend-design)
 }
 
@@ -37,48 +38,58 @@ export const SLASH_COMMANDS: SlashCommand[] = [
     type: 'ui-only'
   },
 
-  // CLI-routed commands via subcommands (not skills)
+  // CLI subcommands (use `claude <subcommand>`, no active session needed)
   {
     name: '/help',
     description: 'Show available commands',
-    type: 'cli-routed'
+    type: 'cli-subcommand'
   },
   {
     name: '/mcp',
     description: 'Show MCP server status',
-    type: 'cli-routed'
+    type: 'cli-subcommand'
   },
   {
     name: '/doctor',
-    description: 'Check CLI health and configuration',
-    type: 'cli-routed'
+    description: 'Check CLI health (opens terminal)',
+    type: 'cli-subcommand'
+  },
+  {
+    name: '/login',
+    description: 'Log in to Anthropic (opens terminal)',
+    type: 'cli-subcommand'
+  },
+  {
+    name: '/logout',
+    description: 'Log out from Anthropic (opens terminal)',
+    type: 'cli-subcommand'
   },
 
-  // CLI-routed commands via skills (work with -p mode)
+  // CLI skills (sent as messages to active session)
   {
     name: '/cost',
     description: 'Show token usage and cost for this session',
-    type: 'cli-routed'
+    type: 'cli-skill'
   },
   {
     name: '/compact',
     description: 'Compact conversation to save context',
-    type: 'cli-routed'
+    type: 'cli-skill'
   },
   {
     name: '/context',
     description: 'Show context usage',
-    type: 'cli-routed'
+    type: 'cli-skill'
   },
   {
     name: '/init',
     description: 'Initialize project configuration',
-    type: 'cli-routed'
+    type: 'cli-skill'
   },
   {
     name: '/review',
     description: 'Review conversation and changes',
-    type: 'cli-routed'
+    type: 'cli-skill'
   }
 ];
 

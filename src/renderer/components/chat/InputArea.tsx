@@ -153,10 +153,10 @@ export const InputArea: React.FC<InputAreaProps> = ({
                 <span className={styles.commandDesc}>{cmd.description}</span>
                 <span className={`${styles.commandType} ${
                     cmd.type === 'ui-only' ? styles.localType
-                    : cmd.type === 'skill' ? styles.skillType
+                    : (cmd.type === 'skill' || cmd.type === 'cli-skill') ? styles.skillType
                     : styles.cliType
                   }`}>
-                  {cmd.type === 'ui-only' ? 'UI' : cmd.type === 'skill' ? 'Skill' : 'CLI'}
+                  {cmd.type === 'ui-only' ? 'UI' : (cmd.type === 'skill' || cmd.type === 'cli-skill') ? 'Skill' : 'CLI'}
                 </span>
               </div>
             ))}

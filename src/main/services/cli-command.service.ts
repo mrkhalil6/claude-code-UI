@@ -114,12 +114,20 @@ export class CliCommandService {
   ): Promise<CommandResult> | null {
     // Map of built-in commands to their CLI subcommand equivalents
     // These commands don't work as skills in -p mode, so we use CLI subcommands
-    // Only include commands that actually exist as CLI subcommands
+    // Only include commands that actually exist as CLI subcommands and work non-interactively
     const builtinCommands: Record<string, { subcommand: string[] }> = {
       'help': { subcommand: ['--help'] },
       'mcp': { subcommand: args ? ['mcp', ...args.split(' ').filter(a => a)] : ['mcp', 'list'] },
-      'doctor': { subcommand: ['doctor'] },
     };
+
+    // Commands that need a terminal
+    const terminalOnlyCommands = ['doctor', 'login', 'logout'];
+    if (terminalOnlyCommands.includes(command)) {
+      return Promise.resolve({
+        success: true,
+        output: `The \`/${command}\` command requires an interactive terminal.\n\nPlease run it directly in your terminal:\n\`\`\`\nclaude ${command}\n\`\`\``
+      });
+    }
 
     const builtin = builtinCommands[command];
     if (!builtin) {
@@ -143,33 +151,67 @@ export class CliCommandService {
         windowsHide: true
       });
 
+      console.log(`[CliCommandService] Process spawned with PID: ${proc.pid}`);
+
       const stdoutLines: string[] = [];
       const stderrLines: string[] = [];
+      let resolved = false;
+
+      // Timeout after 30 seconds
+      const timeout = setTimeout(() => {
+        if (!resolved) {
+          console.log(`[CliCommandService] Builtin command timed out after 30s`);
+          proc.kill();
+          resolved = true;
+          resolve({
+            success: false,
+            output: stdoutLines.join('') || stderrLines.join('') || '',
+            error: 'Command timed out'
+          });
+        }
+      }, 30000);
 
       proc.stdout?.on('data', (chunk: Buffer) => {
-        stdoutLines.push(chunk.toString());
+        const text = chunk.toString();
+        console.log(`[CliCommandService] Builtin stdout chunk (${text.length} chars): ${text.substring(0, 200)}`);
+        stdoutLines.push(text);
       });
 
       proc.stderr?.on('data', (chunk: Buffer) => {
-        stderrLines.push(chunk.toString());
+        const text = chunk.toString();
+        console.log(`[CliCommandService] Builtin stderr chunk (${text.length} chars): ${text.substring(0, 200)}`);
+        stderrLines.push(text);
+      });
+
+      proc.on('spawn', () => {
+        console.log(`[CliCommandService] Process spawned successfully`);
       });
 
       proc.on('error', (error) => {
         console.error(`[CliCommandService] Process error:`, error);
-        resolve({
-          success: false,
-          output: '',
-          error: error.message
-        });
+        clearTimeout(timeout);
+        if (!resolved) {
+          resolved = true;
+          resolve({
+            success: false,
+            output: '',
+            error: error.message
+          });
+        }
       });
 
       proc.on('close', (code) => {
+        clearTimeout(timeout);
+        if (resolved) return;
+        resolved = true;
+
         const stdout = stdoutLines.join('');
         const stderr = stderrLines.join('');
 
         console.log(`[CliCommandService] Builtin command exited with code: ${code}`);
-        console.log(`[CliCommandService] Raw stdout length: ${stdout.length}`);
-        console.log(`[CliCommandService] Has newlines: ${stdout.includes('\n')}, Has CR: ${stdout.includes('\r')}`);
+        console.log(`[CliCommandService] stdout length: ${stdout.length}, stderr length: ${stderr.length}`);
+        console.log(`[CliCommandService] stdout: ${stdout.substring(0, 300)}`);
+        console.log(`[CliCommandService] stderr: ${stderr.substring(0, 300)}`);
 
         // For built-in commands, stdout is plain text (not JSON)
         // Normalize line endings (Windows uses \r\n)

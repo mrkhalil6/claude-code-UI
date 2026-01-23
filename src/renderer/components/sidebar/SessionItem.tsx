@@ -6,6 +6,24 @@ import { ChatMessage, ToolUseDisplay, ContentBlock } from '../../store/slices/ch
 import { SelectedSession } from '../layout/Sidebar';
 import styles from './SessionItem.module.css';
 
+/**
+ * Clean CLI internal tags from text content
+ */
+function cleanCliTags(text: string): string {
+  if (!text) return '';
+  return text
+    .replace(/<local-command-stdout>/g, '')
+    .replace(/<\/local-command-stdout>/g, '')
+    .replace(/<local-command-stderr>/g, '')
+    .replace(/<\/local-command-stderr>/g, '')
+    .replace(/<command-name>.*?<\/command-name>/g, '')
+    .replace(/<command-message>.*?<\/command-message>/g, '')
+    .replace(/<command-args>.*?<\/command-args>/g, '')
+    .replace(/<local-command-caveat>.*?<\/local-command-caveat>/gs, '')
+    .replace(/<system-reminder>[\s\S]*?<\/system-reminder>/g, '')
+    .trim();
+}
+
 interface SessionItemProps {
   session: SessionSummary;
   projectPath: string;
@@ -156,16 +174,18 @@ export const SessionItem: React.FC<SessionItemProps> = memo(({
             return {
               id: msg.uuid,
               type: msg.type as 'user' | 'assistant',
-              content,
+              content: cleanCliTags(content),
               timestamp: msg.timestamp
             };
           }
 
-          // Extract text content
-          const textContent = content
-            .filter((c): c is { type: 'text'; text: string } => c.type === 'text')
-            .map(c => c.text)
-            .join('\n');
+          // Extract text content and clean CLI tags
+          const textContent = cleanCliTags(
+            content
+              .filter((c): c is { type: 'text'; text: string } => c.type === 'text')
+              .map(c => c.text)
+              .join('\n')
+          );
 
           // For assistant messages, build contentBlocks and toolUses
           if (msg.type === 'assistant') {
@@ -174,7 +194,10 @@ export const SessionItem: React.FC<SessionItemProps> = memo(({
 
             for (const block of content) {
               if (block.type === 'text' && 'text' in block) {
-                contentBlocks.push({ type: 'text', text: block.text });
+                const cleanedText = cleanCliTags(block.text);
+                if (cleanedText) {
+                  contentBlocks.push({ type: 'text', text: cleanedText });
+                }
               } else if (block.type === 'tool_use' && 'id' in block && 'name' in block) {
                 const toolId = block.id as string;
                 const resultInfo = toolResults.get(toolId);
