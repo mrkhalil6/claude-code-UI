@@ -1,14 +1,35 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import { Toggle, ThemeToggle } from '../common';
 import { useUI, useUIActions, useSession } from '../../store';
 import { useTheme } from '../../hooks/useTheme';
 import styles from './Header.module.css';
 
 export const Header: React.FC = () => {
-  const { isPlanMode, connectionStatus } = useUI();
-  const { togglePlanMode, toggleSidebar, setShowSettings, setShowGitDiff } = useUIActions();
+  const { isPlanMode, connectionStatus, showClaudePty, claudePtySessionId, showTerminal } = useUI();
+  const { togglePlanMode, toggleSidebar, setShowSettings, setShowGitDiff, openClaudePtySession, closeClaudePtySession, toggleTerminal } = useUIActions();
   const { currentCwd, activeSessionId } = useSession();
   const { themeMode, setThemeMode } = useTheme();
+
+  // Open interactive Claude terminal
+  const handleOpenClaudePty = useCallback(async () => {
+    if (showClaudePty && claudePtySessionId) {
+      // Already open, close it
+      closeClaudePtySession();
+      return;
+    }
+
+    // Get working directory
+    let cwd = currentCwd;
+    if (!cwd) {
+      const selectedDir = await window.claudeUI.fs.selectDirectory();
+      if (!selectedDir) return;
+      cwd = selectedDir;
+    }
+
+    // Generate session ID and open
+    const sessionId = `claude-pty-${Date.now()}`;
+    openClaudePtySession(sessionId);
+  }, [showClaudePty, claudePtySessionId, currentCwd, openClaudePtySession, closeClaudePtySession]);
 
   const getStatusColor = () => {
     switch (connectionStatus) {
@@ -77,6 +98,32 @@ export const Header: React.FC = () => {
           onChange={setThemeMode}
           size="sm"
         />
+
+        <button
+          className={`${styles.terminalButton} ${showClaudePty ? styles.active : ''}`}
+          onClick={handleOpenClaudePty}
+          aria-label="Interactive Claude Terminal"
+          title={showClaudePty ? "Close Interactive Terminal" : "Open Interactive Claude Terminal"}
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <polyline points="4 17 10 11 4 5" />
+            <line x1="12" y1="19" x2="20" y2="19" />
+          </svg>
+          {showClaudePty && <span className={styles.activeIndicator} />}
+        </button>
+
+        <button
+          className={`${styles.terminalButton} ${showTerminal ? styles.active : ''}`}
+          onClick={toggleTerminal}
+          aria-label="Shell Terminal"
+          title={showTerminal ? "Close Shell Terminal" : "Open Shell Terminal"}
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <rect x="2" y="4" width="20" height="16" rx="2" />
+            <path d="M6 8l4 4-4 4" />
+            <line x1="12" y1="16" x2="18" y2="16" />
+          </svg>
+        </button>
 
         <button
           className={styles.gitButton}

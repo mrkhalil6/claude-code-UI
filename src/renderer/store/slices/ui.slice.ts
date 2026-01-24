@@ -27,6 +27,11 @@ export interface UISlice {
   showGitDiff: boolean;
   showTerminal: boolean;
   terminalHeight: number;
+  // Claude PTY (Interactive Terminal)
+  showClaudePty: boolean;
+  claudePtyHeight: number;
+  claudePtySessionId: string | null;
+  claudePtyNeedsInteraction: boolean;
   connectionStatus: 'disconnected' | 'connecting' | 'connected' | 'error';
   errorMessage: string | null;
   usage: UsageInfo;
@@ -47,6 +52,13 @@ export interface UISlice {
   setShowTerminal: (show: boolean) => void;
   toggleTerminal: () => void;
   setTerminalHeight: (height: number) => void;
+  // Claude PTY Actions
+  setShowClaudePty: (show: boolean) => void;
+  setClaudePtyHeight: (height: number) => void;
+  setClaudePtySessionId: (id: string | null) => void;
+  setClaudePtyNeedsInteraction: (needs: boolean) => void;
+  openClaudePtySession: (sessionId: string) => void;
+  closeClaudePtySession: () => void;
   setConnectionStatus: (status: UISlice['connectionStatus']) => void;
   setErrorMessage: (message: string | null) => void;
   setModelInfo: (modelName: string, contextWindow: number, maxOutputTokens: number, version: string) => void;
@@ -91,6 +103,11 @@ export const createUISlice: StateCreator<UISlice, [], [], UISlice> = (set) => ({
   showGitDiff: false,
   showTerminal: false,
   terminalHeight: 300,
+  // Claude PTY initial state
+  showClaudePty: false,
+  claudePtyHeight: 350,
+  claudePtySessionId: null,
+  claudePtyNeedsInteraction: false,
   connectionStatus: 'disconnected',
   errorMessage: null,
   usage: initialUsage,
@@ -122,6 +139,27 @@ export const createUISlice: StateCreator<UISlice, [], [], UISlice> = (set) => ({
   toggleTerminal: () => set((state) => ({ showTerminal: !state.showTerminal })),
 
   setTerminalHeight: (height) => set({ terminalHeight: height }),
+
+  // Claude PTY Actions
+  setShowClaudePty: (show) => set({ showClaudePty: show }),
+
+  setClaudePtyHeight: (height) => set({ claudePtyHeight: height }),
+
+  setClaudePtySessionId: (id) => set({ claudePtySessionId: id }),
+
+  setClaudePtyNeedsInteraction: (needs) => set({ claudePtyNeedsInteraction: needs }),
+
+  openClaudePtySession: (sessionId) => set({
+    showClaudePty: true,
+    claudePtySessionId: sessionId,
+    claudePtyNeedsInteraction: false,
+  }),
+
+  closeClaudePtySession: () => set({
+    showClaudePty: false,
+    claudePtySessionId: null,
+    claudePtyNeedsInteraction: false,
+  }),
 
   setConnectionStatus: (status) => set({ connectionStatus: status }),
 

@@ -99,7 +99,18 @@ export const IPC_CHANNELS = {
   HOOKS_LIST: 'hooks:list',
   HOOKS_ADD: 'hooks:add',
   HOOKS_UPDATE: 'hooks:update',
-  HOOKS_DELETE: 'hooks:delete'
+  HOOKS_DELETE: 'hooks:delete',
+
+  // Claude PTY (Interactive Terminal)
+  CLAUDE_PTY_CREATE: 'claudePty:create',
+  CLAUDE_PTY_WRITE: 'claudePty:write',
+  CLAUDE_PTY_SEND_COMMAND: 'claudePty:sendCommand',
+  CLAUDE_PTY_INTERRUPT: 'claudePty:interrupt',
+  CLAUDE_PTY_RESIZE: 'claudePty:resize',
+  CLAUDE_PTY_DESTROY: 'claudePty:destroy',
+  CLAUDE_PTY_DATA: 'claudePty:data',
+  CLAUDE_PTY_EXIT: 'claudePty:exit',
+  CLAUDE_PTY_INTERACTION: 'claudePty:interaction'
 } as const;
 
 export type IpcChannel = typeof IPC_CHANNELS[keyof typeof IPC_CHANNELS];
