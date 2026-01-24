@@ -11,7 +11,7 @@ import styles from './Layout.module.css';
 export const Layout: React.FC = () => {
   const { showGitDiff, showTerminal, showClaudePty, claudePtySessionId } = useUI();
   const { setShowGitDiff, closeClaudePtySession, setClaudePtyNeedsInteraction, setShowClaudePty } = useUIActions();
-  const { activeProjectPath, currentCwd } = useSession();
+  const { activeProjectPath, currentCwd, cliSessionId } = useSession();
 
   // Listen for Claude PTY interaction events to auto-show the terminal
   useEffect(() => {
@@ -46,6 +46,7 @@ export const Layout: React.FC = () => {
               sessionId={claudePtySessionId}
               cwd={currentCwd || activeProjectPath || '.'}
               onClose={closeClaudePtySession}
+              resumeSessionId={cliSessionId || undefined}
             />
           )}
         </main>

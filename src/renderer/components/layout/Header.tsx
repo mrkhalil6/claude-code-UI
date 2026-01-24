@@ -7,8 +7,11 @@ import styles from './Header.module.css';
 export const Header: React.FC = () => {
   const { isPlanMode, connectionStatus, showClaudePty, claudePtySessionId, showTerminal } = useUI();
   const { togglePlanMode, toggleSidebar, setShowSettings, setShowGitDiff, openClaudePtySession, closeClaudePtySession, toggleTerminal } = useUIActions();
-  const { currentCwd, activeSessionId } = useSession();
+  const { currentCwd, activeSessionId, cliSessionId } = useSession();
   const { themeMode, setThemeMode } = useTheme();
+
+  // Check if there's an existing conversation to resume
+  const hasExistingSession = !!cliSessionId;
 
   // Open interactive Claude terminal
   const handleOpenClaudePty = useCallback(async () => {
@@ -100,16 +103,21 @@ export const Header: React.FC = () => {
         />
 
         <button
-          className={`${styles.terminalButton} ${showClaudePty ? styles.active : ''}`}
+          className={`${styles.terminalButton} ${showClaudePty ? styles.active : ''} ${hasExistingSession ? styles.hasSession : ''}`}
           onClick={handleOpenClaudePty}
           aria-label="Interactive Claude Terminal"
-          title={showClaudePty ? "Close Interactive Terminal" : "Open Interactive Claude Terminal"}
+          title={showClaudePty
+            ? "Close Interactive Terminal"
+            : hasExistingSession
+              ? `Open Interactive Terminal (Resume session)`
+              : "Open Interactive Claude Terminal"}
         >
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <polyline points="4 17 10 11 4 5" />
             <line x1="12" y1="19" x2="20" y2="19" />
           </svg>
           {showClaudePty && <span className={styles.activeIndicator} />}
+          {!showClaudePty && hasExistingSession && <span className={styles.sessionIndicatorDot} />}
         </button>
 
         <button
