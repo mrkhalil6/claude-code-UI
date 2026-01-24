@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Header } from './Header';
 import { Sidebar } from './Sidebar';
 import { StatusBar } from './StatusBar';
@@ -10,8 +10,11 @@ import styles from './Layout.module.css';
 
 export const Layout: React.FC = () => {
   const { showGitDiff, showTerminal, showClaudePty, claudePtySessionId } = useUI();
-  const { setShowGitDiff, closeClaudePtySession, setClaudePtyNeedsInteraction, setShowClaudePty } = useUIActions();
+  const { setShowGitDiff, closeClaudePtySession, setClaudePtyNeedsInteraction, setShowClaudePty, setClaudePtySessionId } = useUIActions();
   const { activeProjectPath, currentCwd, cliSessionId } = useSession();
+
+  // Track previous cliSessionId to detect changes
+  const prevCliSessionIdRef = useRef<string | null>(null);
 
   // Listen for Claude PTY interaction events to auto-show the terminal
   useEffect(() => {
@@ -27,6 +30,29 @@ export const Layout: React.FC = () => {
 
     return cleanup;
   }, [claudePtySessionId, setClaudePtyNeedsInteraction, setShowClaudePty]);
+
+  // When the selected chat changes (cliSessionId), restart the terminal to resume the new conversation
+  useEffect(() => {
+    // Skip on initial mount
+    if (prevCliSessionIdRef.current === null) {
+      prevCliSessionIdRef.current = cliSessionId;
+      return;
+    }
+
+    // Check if cliSessionId actually changed
+    if (prevCliSessionIdRef.current !== cliSessionId && showClaudePty && claudePtySessionId) {
+      console.log(`[Layout] Chat changed from ${prevCliSessionIdRef.current} to ${cliSessionId}, restarting terminal`);
+
+      // Destroy the old PTY session
+      window.claudeUI.claudePty.destroy(claudePtySessionId).catch(console.error);
+
+      // Create a new PTY session ID
+      const newSessionId = `claude-pty-${Date.now()}`;
+      setClaudePtySessionId(newSessionId);
+    }
+
+    prevCliSessionIdRef.current = cliSessionId;
+  }, [cliSessionId, showClaudePty, claudePtySessionId, setClaudePtySessionId]);
 
   return (
     <div className={styles.layout}>
