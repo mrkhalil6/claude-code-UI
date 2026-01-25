@@ -124,7 +124,8 @@ export const Header: React.FC = () => {
           />
         </div>
 
-        {hasPlan && currentSessionSlug && (
+        {/* Only show plan button when: 1) plan exists, 2) has a session slug, 3) has an active CLI session */}
+        {hasPlan && currentSessionSlug && cliSessionId && (
           <button
             className={`${styles.planButton} ${showPlanPanel ? styles.active : ''}`}
             onClick={handleViewPlan}

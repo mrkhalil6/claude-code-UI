@@ -15,6 +15,21 @@ export interface TodoItem {
   activeForm: string;  // Present tense description shown when in_progress
 }
 
+// Option for AskUserQuestion
+export interface AskUserOption {
+  label: string;
+  description?: string;
+}
+
+// Pending question from Claude's AskUserQuestion tool
+export interface PendingUserQuestion {
+  toolUseId: string;
+  question: string;
+  header?: string;
+  options?: AskUserOption[];
+  multiSelect?: boolean;
+}
+
 // Content block types for preserving order of text and tool calls
 export type ContentBlock =
   | { type: 'text'; text: string }
@@ -40,6 +55,7 @@ export interface ChatSlice {
   streamingBlocks: ContentBlock[];  // Ordered blocks during streaming
   lastUserMessage: string | null;  // For retrying after permission grant
   todos: TodoItem[];  // Current todo list from Claude's TodoWrite
+  pendingUserQuestion: PendingUserQuestion | null;  // Question awaiting user response
 
   // Actions
   setMessages: (messages: ChatMessage[]) => void;
@@ -58,6 +74,7 @@ export interface ChatSlice {
   setLastUserMessage: (message: string | null) => void;
   setTodos: (todos: TodoItem[]) => void;
   clearTodos: () => void;
+  setPendingUserQuestion: (question: PendingUserQuestion | null) => void;
 }
 
 export const createChatSlice: StateCreator<ChatSlice, [], [], ChatSlice> = (set, get) => ({
@@ -70,6 +87,7 @@ export const createChatSlice: StateCreator<ChatSlice, [], [], ChatSlice> = (set,
   streamingBlocks: [],
   lastUserMessage: null,
   todos: [],
+  pendingUserQuestion: null,
 
   // Actions
   setMessages: (messages) => set({ messages }),
@@ -190,5 +208,7 @@ export const createChatSlice: StateCreator<ChatSlice, [], [], ChatSlice> = (set,
 
   setTodos: (todos) => set({ todos }),
 
-  clearTodos: () => set({ todos: [] })
+  clearTodos: () => set({ todos: [] }),
+
+  setPendingUserQuestion: (question) => set({ pendingUserQuestion: question })
 });
