@@ -2,21 +2,22 @@ import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { MessageList } from './MessageList';
 import { StreamingMessage } from './StreamingMessage';
 import { InputArea } from './InputArea';
+import { AskUserPrompt } from './AskUserPrompt';
 // TodoList moved to StatusBar
 import { useStore, useChat, useSession, useUI, useChatActions, useUIActions, useSessionActions } from '../../store';
 import { SlashCommand, parseCliSlashCommands } from '../../../shared/slash-commands';
-import { TodoItem } from '../../store/slices/chat.slice';
+import { TodoItem, AskUserOption } from '../../store/slices/chat.slice';
 import styles from './ChatContainer.module.css';
 
 export const ChatContainer: React.FC = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const wasInterruptedRef = useRef(false);  // Track intentional interrupts
   const [error, setError] = useState<string | null>(null);
-  const { messages, isStreaming, streamingContent, streamingThinking, toolsInProgress, streamingBlocks } = useChat();
+  const { messages, isStreaming, streamingContent, streamingThinking, toolsInProgress, streamingBlocks, pendingUserQuestion } = useChat();
   const { activeSessionId, currentCwd, cliSessionId } = useSession();
   const { isPlanMode } = useUI();
   const { setShowSettings, openClaudePtySession } = useUIActions();
-  const { addMessage, setIsStreaming, appendStreamingContent, appendStreamingThinking, finalizeStreamingMessage, clearStreaming, setLastUserMessage, addToolInProgress, updateToolStatus, setTodos } = useChatActions();
+  const { addMessage, setIsStreaming, appendStreamingContent, appendStreamingThinking, finalizeStreamingMessage, clearStreaming, setLastUserMessage, addToolInProgress, updateToolStatus, setTodos, setPendingUserQuestion } = useChatActions();
   const { setActiveSessionId, setCliSessionId, setCurrentCwd, clearSession } = useSessionActions();
   const { setConnectionStatus, setModelInfo, updateUsage, setIsPlanMode, setAvailableSkills, clearAvailableSkills } = useUIActions();
 
@@ -102,6 +103,29 @@ export const ChatContainer: React.FC = () => {
               if (block.name === 'TodoWrite' && block.input && Array.isArray(block.input.todos)) {
                 const todos = block.input.todos as TodoItem[];
                 setTodos(todos);
+              }
+
+              // Handle AskUserQuestion tool - show prompt to user
+              if (block.name === 'AskUserQuestion' && block.input) {
+                const input = block.input as {
+                  questions?: Array<{
+                    question: string;
+                    header?: string;
+                    options?: Array<{ label: string; description?: string }>;
+                    multiSelect?: boolean;
+                  }>;
+                };
+
+                if (input.questions && input.questions.length > 0) {
+                  const q = input.questions[0]; // Handle first question
+                  setPendingUserQuestion({
+                    toolUseId: block.id,
+                    question: q.question,
+                    header: q.header,
+                    options: q.options as AskUserOption[] | undefined,
+                    multiSelect: q.multiSelect
+                  });
+                }
               }
 
               // Add tool use to display
@@ -244,7 +268,7 @@ export const ChatContainer: React.FC = () => {
     return () => {
       cleanups.forEach(cleanup => cleanup());
     };
-  }, [setConnectionStatus, setIsStreaming, appendStreamingContent, appendStreamingThinking, finalizeStreamingMessage, clearStreaming, addToolInProgress, updateToolStatus, setCliSessionId, setCurrentCwd, setTodos, setModelInfo, updateUsage, setIsPlanMode, addMessage, setAvailableSkills]);
+  }, [setConnectionStatus, setIsStreaming, appendStreamingContent, appendStreamingThinking, finalizeStreamingMessage, clearStreaming, addToolInProgress, updateToolStatus, setCliSessionId, setCurrentCwd, setTodos, setModelInfo, updateUsage, setIsPlanMode, addMessage, setAvailableSkills, setPendingUserQuestion]);
 
   const handleSendMessage = useCallback(async (content: string) => {
     if (!content.trim()) return;
@@ -333,6 +357,43 @@ export const ChatContainer: React.FC = () => {
       setIsStreaming(false);
     }
   }, [activeSessionId, setIsStreaming]);
+
+  // Handle AskUserQuestion answer
+  const handleUserQuestionAnswer = useCallback((answer: string) => {
+    // Clear the pending question
+    setPendingUserQuestion(null);
+
+    // Add the user's answer as a message (visible in chat)
+    addMessage({
+      id: crypto.randomUUID(),
+      type: 'user',
+      content: answer,
+      timestamp: new Date().toISOString()
+    });
+
+    // Send the answer to CLI - it will resume the session
+    if (activeSessionId) {
+      setIsStreaming(true);
+      clearStreaming();
+      window.claudeUI.cli.sendMessage(activeSessionId, answer).catch((err) => {
+        console.error('Failed to send answer:', err);
+        setError('Failed to send answer. Please try again.');
+        setIsStreaming(false);
+      });
+    }
+  }, [activeSessionId, setPendingUserQuestion, addMessage, setIsStreaming, clearStreaming]);
+
+  // Handle AskUserQuestion cancel
+  const handleUserQuestionCancel = useCallback(() => {
+    setPendingUserQuestion(null);
+    handleInterrupt();
+    addMessage({
+      id: crypto.randomUUID(),
+      type: 'system',
+      content: '*Question skipped — you can continue the conversation.*',
+      timestamp: new Date().toISOString()
+    });
+  }, [setPendingUserQuestion, handleInterrupt, addMessage]);
 
   // Handle UI-only commands (no CLI equivalent)
   const handleUiOnlyCommand = useCallback((command: SlashCommand, _args: string) => {
@@ -542,6 +603,18 @@ export const ChatContainer: React.FC = () => {
 
         <div ref={messagesEndRef} />
       </div>
+
+      {/* AskUserQuestion prompt overlay */}
+      {pendingUserQuestion && (
+        <AskUserPrompt
+          question={pendingUserQuestion.question}
+          header={pendingUserQuestion.header}
+          options={pendingUserQuestion.options}
+          multiSelect={pendingUserQuestion.multiSelect}
+          onAnswer={handleUserQuestionAnswer}
+          onCancel={handleUserQuestionCancel}
+        />
+      )}
 
       <div className={styles.inputWrapper}>
         <InputArea

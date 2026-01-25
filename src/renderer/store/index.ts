@@ -42,7 +42,8 @@ export const useChat = () => useStore((state) => ({
   toolsInProgress: state.toolsInProgress,
   streamingBlocks: state.streamingBlocks,
   lastUserMessage: state.lastUserMessage,
-  todos: state.todos
+  todos: state.todos,
+  pendingUserQuestion: state.pendingUserQuestion
 }));
 
 export const useUI = () => useStore((state) => ({
@@ -104,7 +105,8 @@ export const useChatActions = () => useStore((state) => ({
   finalizeStreamingMessage: state.finalizeStreamingMessage,
   setLastUserMessage: state.setLastUserMessage,
   setTodos: state.setTodos,
-  clearTodos: state.clearTodos
+  clearTodos: state.clearTodos,
+  setPendingUserQuestion: state.setPendingUserQuestion
 }));
 
 export const useUIActions = () => useStore((state) => ({
