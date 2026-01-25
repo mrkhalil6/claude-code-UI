@@ -11,6 +11,26 @@ import {
   AssistantContentBlock
 } from '../../shared/types';
 
+// Tools allowed in plan mode (read-only + plan management)
+// In plan mode, we don't use --dangerously-skip-permissions
+// Instead, we explicitly allow only these safe tools
+const PLAN_MODE_ALLOWED_TOOLS = [
+  // Read-only file tools
+  'Read', 'Glob', 'Grep',
+  // Web tools (read-only)
+  'WebFetch', 'WebSearch',
+  // Task management (for planning)
+  'Task', 'TaskList', 'TaskGet', 'TaskCreate', 'TaskUpdate',
+  // Plan mode tools
+  'EnterPlanMode', 'ExitPlanMode', 'AskUserQuestion',
+  // Safe bash patterns (read-only commands)
+  'Bash(git status*)', 'Bash(git log*)', 'Bash(git diff*)',
+  'Bash(git branch*)', 'Bash(ls*)', 'Bash(pwd)',
+  'Bash(cat*)', 'Bash(head*)', 'Bash(tail*)', 'Bash(find*)',
+  'Bash(which*)', 'Bash(node --version*)', 'Bash(npm --version*)',
+  'Bash(npm list*)'
+];
+
 interface ActiveSession {
   process: ChildProcess | null;
   readline: Interface | null;
@@ -139,8 +159,7 @@ export class ClaudeCliService extends EventEmitter {
     const args = [
       '-p',
       '--verbose',
-      '--output-format', 'stream-json',
-      '--dangerously-skip-permissions'  // Bypass CLI permission checks - UI handles permissions
+      '--output-format', 'stream-json'
     ];
 
     // Resume existing conversation if we have CLI session ID
@@ -150,23 +169,30 @@ export class ClaudeCliService extends EventEmitter {
     }
 
     if (session.isPlanMode) {
+      // Plan mode: use --permission-mode plan and only allow read-safe tools
+      // DO NOT use --dangerously-skip-permissions as it bypasses all permission checks
       args.push('--permission-mode', 'plan');
+      const planToolsStr = PLAN_MODE_ALLOWED_TOOLS.join(',');
+      args.push(`--allowedTools=${planToolsStr}`);
+      console.log(`[buildArgs] Plan mode enabled with allowed tools: ${planToolsStr}`);
+    } else {
+      // Normal mode: skip all permissions (UI removed permission handling)
+      args.push('--dangerously-skip-permissions');
+      console.log(`[buildArgs] Normal mode - skipping all permissions`);
+
+      // Add any session-specific allowed tools (for compatibility)
+      if (session.allowedTools.size > 0) {
+        const toolsArray = Array.from(session.allowedTools);
+        const toolsStr = toolsArray.join(',');
+        args.push(`--allowedTools=${toolsStr}`);
+        console.log(`[buildArgs] Adding session allowed tools: ${toolsStr}`);
+      }
     }
 
     // Add model if set
     if (session.model) {
       args.push('--model', session.model);
       console.log(`[buildArgs] Using model: ${session.model}`);
-    }
-
-    // Add allowed tools - use = syntax to prevent greedy argument parsing
-    if (session.allowedTools.size > 0) {
-      const toolsArray = Array.from(session.allowedTools);
-      const toolsStr = toolsArray.join(',');
-      args.push(`--allowedTools=${toolsStr}`);
-      console.log(`[buildArgs] Adding allowed tools: ${toolsStr}`);
-    } else {
-      console.log(`[buildArgs] No allowed tools for this session`);
     }
 
     // Add the message as the final positional argument
