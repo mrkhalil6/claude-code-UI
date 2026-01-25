@@ -29,7 +29,9 @@ export const useSession = () => useStore((state) => ({
   activeProjectPath: state.activeProjectPath,
   currentCwd: state.currentCwd,
   isLoadingSessions: state.isLoadingSessions,
-  isLoadingSession: state.isLoadingSession
+  isLoadingSession: state.isLoadingSession,
+  // Convenience accessor for current session slug
+  currentSessionSlug: state.activeSession?.metadata?.slug || null
 }));
 
 export const useChat = () => useStore((state) => ({
@@ -53,12 +55,23 @@ export const useUI = () => useStore((state) => ({
   showGitDiff: state.showGitDiff,
   showTerminal: state.showTerminal,
   terminalHeight: state.terminalHeight,
+  // Claude PTY state
+  showClaudePty: state.showClaudePty,
+  claudePtyHeight: state.claudePtyHeight,
+  claudePtySessionId: state.claudePtySessionId,
+  claudePtyNeedsInteraction: state.claudePtyNeedsInteraction,
+  claudePtySubcommand: state.claudePtySubcommand,
+  claudePtySubcommandArgs: state.claudePtySubcommandArgs,
+  claudePtySendAsSlashCommand: state.claudePtySendAsSlashCommand,
   connectionStatus: state.connectionStatus,
   errorMessage: state.errorMessage,
   usage: state.usage,
   themeMode: state.themeMode,
   resolvedTheme: state.resolvedTheme,
-  availableSkills: state.availableSkills
+  availableSkills: state.availableSkills,
+  // Plan Panel
+  showPlanPanel: state.showPlanPanel,
+  activePlanSlug: state.activePlanSlug
 }));
 
 // Actions hooks
@@ -107,6 +120,13 @@ export const useUIActions = () => useStore((state) => ({
   setShowTerminal: state.setShowTerminal,
   toggleTerminal: state.toggleTerminal,
   setTerminalHeight: state.setTerminalHeight,
+  // Claude PTY actions
+  setShowClaudePty: state.setShowClaudePty,
+  setClaudePtyHeight: state.setClaudePtyHeight,
+  setClaudePtySessionId: state.setClaudePtySessionId,
+  setClaudePtyNeedsInteraction: state.setClaudePtyNeedsInteraction,
+  openClaudePtySession: state.openClaudePtySession,
+  closeClaudePtySession: state.closeClaudePtySession,
   setConnectionStatus: state.setConnectionStatus,
   setErrorMessage: state.setErrorMessage,
   setModelInfo: state.setModelInfo,
@@ -115,5 +135,8 @@ export const useUIActions = () => useStore((state) => ({
   setThemeMode: state.setThemeMode,
   setResolvedTheme: state.setResolvedTheme,
   setAvailableSkills: state.setAvailableSkills,
-  clearAvailableSkills: state.clearAvailableSkills
+  clearAvailableSkills: state.clearAvailableSkills,
+  // Plan Panel actions
+  openPlanPanel: state.openPlanPanel,
+  closePlanPanel: state.closePlanPanel
 }));

@@ -15,7 +15,7 @@ export const ChatContainer: React.FC = () => {
   const { messages, isStreaming, streamingContent, streamingThinking, toolsInProgress, streamingBlocks } = useChat();
   const { activeSessionId, currentCwd, cliSessionId } = useSession();
   const { isPlanMode } = useUI();
-  const { setShowSettings } = useUIActions();
+  const { setShowSettings, openClaudePtySession } = useUIActions();
   const { addMessage, setIsStreaming, appendStreamingContent, appendStreamingThinking, finalizeStreamingMessage, clearStreaming, setLastUserMessage, addToolInProgress, updateToolStatus, setTodos } = useChatActions();
   const { setActiveSessionId, setCliSessionId, setCurrentCwd, clearSession } = useSessionActions();
   const { setConnectionStatus, setModelInfo, updateUsage, setIsPlanMode, setAvailableSkills, clearAvailableSkills } = useUIActions();
@@ -438,35 +438,69 @@ export const ChatContainer: React.FC = () => {
     }
   }, [currentCwd, cliSessionId, addMessage]);
 
+  // Handle interactive commands - open PTY terminal
+  const handleInteractiveCommand = useCallback((command: SlashCommand, args: string) => {
+    // Show the command being executed
+    addMessage({
+      id: crypto.randomUUID(),
+      type: 'system',
+      content: `Opening interactive terminal for **${command.name}**...`,
+      timestamp: new Date().toISOString()
+    });
+
+    // Get the CLI command (e.g., 'doctor', 'login', 'logout')
+    const cliCommand = command.cliCommand || command.name.slice(1);
+    const subcommandArgs = args ? args.split(/\s+/) : undefined;
+
+    // Generate a unique session ID and open the PTY terminal
+    const ptySessionId = `claude-pty-${Date.now()}`;
+    // Pass sendAsSlashCommand to determine if we should send /command to REPL
+    openClaudePtySession(ptySessionId, cliCommand, subcommandArgs, command.sendAsSlashCommand);
+  }, [addMessage, openClaudePtySession]);
+
   // Handle slash commands - simplified router
   const handleSlashCommand = useCallback(async (command: SlashCommand, args: string) => {
-    console.log('Slash command:', command.name, args, 'type:', command.type);
+    console.log('[handleSlashCommand] Command:', command.name, 'Type:', command.type, 'Args:', args, 'Full command object:', command);
 
     switch (command.type) {
       case 'ui-only':
+        console.log('[handleSlashCommand] Routing to UI-only handler');
         handleUiOnlyCommand(command, args);
+        break;
+
+      case 'interactive':
+        // Commands that need a real terminal (doctor, login, logout, config, etc.)
+        console.log('[handleSlashCommand] Routing to interactive handler, cliCommand:', command.cliCommand);
+        handleInteractiveCommand(command, args);
         break;
 
       case 'cli-subcommand':
         // Commands that use CLI subcommands (claude --help, claude mcp list, etc.)
+        console.log('[handleSlashCommand] Routing to CLI subcommand');
         await executeCliCommand(command, args);
         break;
 
       case 'cli-skill':
         // Built-in CLI skills - execute via -p mode with session context
         // This actually runs the command (compaction, etc.)
+        console.log('[handleSlashCommand] Routing to CLI skill');
         await executeCliCommand(command, args);
         break;
 
       case 'skill':
         // Dynamically loaded skills - send as messages to active CLI session
+        console.log('[handleSlashCommand] Routing to skill (send as message)');
         const fullCommand = command.packageName
           ? `/${command.packageName}:${command.name.slice(1)}${args ? ' ' + args : ''}`
           : `${command.name}${args ? ' ' + args : ''}`;
         handleSendMessage(fullCommand);
         break;
+
+      default:
+        console.warn('[handleSlashCommand] Unknown command type:', command.type, '- sending as message');
+        handleSendMessage(`${command.name}${args ? ' ' + args : ''}`);
     }
-  }, [handleUiOnlyCommand, executeCliCommand, handleSendMessage]);
+  }, [handleUiOnlyCommand, handleInteractiveCommand, executeCliCommand, handleSendMessage]);
 
   return (
     <div className={styles.container}>

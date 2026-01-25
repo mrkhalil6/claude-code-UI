@@ -18,7 +18,8 @@ import {
   Skill,
   SkillPayload,
   HookWithId,
-  HookPayload
+  HookPayload,
+  PlanInfo
 } from '../shared/types';
 
 // MCP Server types
@@ -51,6 +52,18 @@ const api = {
       ipcRenderer.on(IPC_CHANNELS.SESSIONS_CHANGED, handler);
       return () => ipcRenderer.removeListener(IPC_CHANNELS.SESSIONS_CHANGED, handler);
     }
+  },
+
+  // ===== Plan =====
+  plan: {
+    get: (slug: string): Promise<PlanInfo | null> =>
+      ipcRenderer.invoke(IPC_CHANNELS.PLAN_GET, { slug }),
+
+    exists: (slug: string): Promise<boolean> =>
+      ipcRenderer.invoke(IPC_CHANNELS.PLAN_EXISTS, { slug }),
+
+    save: (slug: string, content: string): Promise<{ success: boolean; error?: string }> =>
+      ipcRenderer.invoke(IPC_CHANNELS.PLAN_SAVE, { slug, content })
   },
 
   // ===== CLI Control =====
@@ -315,6 +328,58 @@ const api = {
 
     delete: (id: string): Promise<boolean> =>
       ipcRenderer.invoke(IPC_CHANNELS.HOOKS_DELETE, { id })
+  },
+
+  // ===== Claude PTY (Interactive Terminal) =====
+  claudePty: {
+    create: (id: string, options: {
+      cwd: string;
+      cols?: number;
+      rows?: number;
+      resumeSessionId?: string;
+      permissionMode?: 'default' | 'plan';
+      model?: string;
+      allowedTools?: string[];
+      subcommand?: string;
+      subcommandArgs?: string[];
+      sendAsSlashCommand?: boolean;
+    }): Promise<{ id: string; pid: number }> =>
+      ipcRenderer.invoke(IPC_CHANNELS.CLAUDE_PTY_CREATE, { id, options }),
+
+    write: (id: string, data: string): void => {
+      ipcRenderer.send(IPC_CHANNELS.CLAUDE_PTY_WRITE, { id, data });
+    },
+
+    sendCommand: (id: string, command: string): Promise<boolean> =>
+      ipcRenderer.invoke(IPC_CHANNELS.CLAUDE_PTY_SEND_COMMAND, { id, command }),
+
+    interrupt: (id: string): Promise<boolean> =>
+      ipcRenderer.invoke(IPC_CHANNELS.CLAUDE_PTY_INTERRUPT, { id }),
+
+    resize: (id: string, cols: number, rows: number): void => {
+      ipcRenderer.send(IPC_CHANNELS.CLAUDE_PTY_RESIZE, { id, cols, rows });
+    },
+
+    destroy: (id: string): Promise<boolean> =>
+      ipcRenderer.invoke(IPC_CHANNELS.CLAUDE_PTY_DESTROY, { id }),
+
+    onData: (callback: (data: { id: string; data: string }) => void): CleanupFn => {
+      const handler = (_: IpcRendererEvent, data: { id: string; data: string }) => callback(data);
+      ipcRenderer.on(IPC_CHANNELS.CLAUDE_PTY_DATA, handler);
+      return () => ipcRenderer.removeListener(IPC_CHANNELS.CLAUDE_PTY_DATA, handler);
+    },
+
+    onExit: (callback: (data: { id: string; exitCode: number; signal?: number }) => void): CleanupFn => {
+      const handler = (_: IpcRendererEvent, data: { id: string; exitCode: number; signal?: number }) => callback(data);
+      ipcRenderer.on(IPC_CHANNELS.CLAUDE_PTY_EXIT, handler);
+      return () => ipcRenderer.removeListener(IPC_CHANNELS.CLAUDE_PTY_EXIT, handler);
+    },
+
+    onInteraction: (callback: (data: { id: string; needsInteraction: boolean }) => void): CleanupFn => {
+      const handler = (_: IpcRendererEvent, data: { id: string; needsInteraction: boolean }) => callback(data);
+      ipcRenderer.on(IPC_CHANNELS.CLAUDE_PTY_INTERACTION, handler);
+      return () => ipcRenderer.removeListener(IPC_CHANNELS.CLAUDE_PTY_INTERACTION, handler);
+    }
   }
 };
 

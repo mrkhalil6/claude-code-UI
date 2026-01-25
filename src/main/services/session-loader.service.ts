@@ -1,13 +1,15 @@
 import { readdir, readFile, stat, unlink, writeFile } from 'fs/promises';
+import { existsSync } from 'fs';
 import { join, basename } from 'path';
 import { watch, FSWatcher } from 'chokidar';
-import { getSessionsPath, decodeProjectPath } from '../utils/paths';
+import { getSessionsPath, getPlansPath, decodeProjectPath } from '../utils/paths';
 import {
   Session,
   SessionMessage,
   SessionSummary,
   ProjectWithSessions,
-  ContentBlock
+  ContentBlock,
+  PlanInfo
 } from '../../shared/types';
 
 export class SessionLoaderService {
@@ -129,6 +131,9 @@ export class SessionLoaderService {
       }
     }
 
+    // Check if plan file exists for this slug
+    const hasPlan = slug ? existsSync(join(getPlansPath(), `${slug}.md`)) : false;
+
     return {
       id: sessionId,
       title: slug || title || sessionId.slice(0, 8),
@@ -136,7 +141,8 @@ export class SessionLoaderService {
       messageCount: lines.length,
       lastModified: stats.mtime.toISOString(),
       createdAt: stats.birthtime.toISOString(),
-      preview: firstUserMessage.slice(0, 200)
+      preview: firstUserMessage.slice(0, 200),
+      hasPlan
     };
   }
 
@@ -287,6 +293,61 @@ export class SessionLoaderService {
     } catch (error) {
       console.error(`Failed to rename session ${sessionId}:`, error);
       return false;
+    }
+  }
+
+  /**
+   * Check if a plan file exists for a given slug and return its path
+   */
+  getPlanFilePath(slug: string): string | null {
+    if (!slug) return null;
+    const planPath = join(getPlansPath(), `${slug}.md`);
+    return existsSync(planPath) ? planPath : null;
+  }
+
+  /**
+   * Get plan content and metadata for a given slug
+   */
+  async getPlanInfo(slug: string): Promise<PlanInfo | null> {
+    const filePath = this.getPlanFilePath(slug);
+    if (!filePath) return null;
+
+    try {
+      const content = await readFile(filePath, 'utf-8');
+      const stats = await stat(filePath);
+
+      return {
+        slug,
+        filePath,
+        content,
+        lastModified: stats.mtime.toISOString()
+      };
+    } catch (error) {
+      console.error(`Failed to get plan info for slug ${slug}:`, error);
+      return null;
+    }
+  }
+
+  /**
+   * Save plan content for a given slug
+   */
+  async savePlan(slug: string, content: string): Promise<{ success: boolean; error?: string }> {
+    if (!slug) {
+      return { success: false, error: 'No slug provided' };
+    }
+
+    const filePath = join(getPlansPath(), `${slug}.md`);
+
+    try {
+      await writeFile(filePath, content, 'utf-8');
+      console.log(`Saved plan for slug ${slug}`);
+      return { success: true };
+    } catch (error) {
+      console.error(`Failed to save plan for slug ${slug}:`, error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to save plan'
+      };
     }
   }
 }

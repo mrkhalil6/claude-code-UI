@@ -6,6 +6,14 @@ export interface SessionSummary {
   lastModified: string;
   createdAt: string;
   preview: string;
+  hasPlan?: boolean;
+}
+
+export interface PlanInfo {
+  slug: string;
+  filePath: string;
+  content: string;
+  lastModified: string;
 }
 
 export interface Session {

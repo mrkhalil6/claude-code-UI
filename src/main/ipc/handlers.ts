@@ -12,6 +12,7 @@ import { GitService } from '../services/git.service';
 import { SkillsService } from '../services/skills.service';
 import { HooksService } from '../services/hooks.service';
 import { terminalService } from '../services/terminal.service';
+import { claudePtyService, ClaudePtyOptions } from '../services/claude-pty.service';
 import { StartSessionOptions, SkillPayload, HookPayload } from '../../shared/types';
 
 export function registerIpcHandlers(
@@ -61,6 +62,20 @@ export function registerIpcHandlers(
 
   ipcMain.handle(IPC_CHANNELS.CLI_SET_PLAN_MODE, async (_, { sessionId, enabled }: { sessionId: string; enabled: boolean }) => {
     cliService.setPlanMode(sessionId, enabled);
+  });
+
+  // ===== Plan =====
+
+  ipcMain.handle(IPC_CHANNELS.PLAN_GET, async (_, { slug }: { slug: string }) => {
+    return sessionLoader.getPlanInfo(slug);
+  });
+
+  ipcMain.handle(IPC_CHANNELS.PLAN_EXISTS, async (_, { slug }: { slug: string }) => {
+    return sessionLoader.getPlanFilePath(slug) !== null;
+  });
+
+  ipcMain.handle(IPC_CHANNELS.PLAN_SAVE, async (_, { slug, content }: { slug: string; content: string }) => {
+    return sessionLoader.savePlan(slug, content);
   });
 
   // ===== CLI Models =====
@@ -485,5 +500,31 @@ export function registerIpcHandlers(
         win.webContents.send(IPC_CHANNELS.SESSIONS_CHANGED, { event, path });
       }
     });
+  });
+
+  // ===== Claude PTY (Interactive Terminal) =====
+
+  ipcMain.handle(IPC_CHANNELS.CLAUDE_PTY_CREATE, async (_, { id, options }: { id: string; options: ClaudePtyOptions }) => {
+    return claudePtyService.createSession(id, options);
+  });
+
+  ipcMain.on(IPC_CHANNELS.CLAUDE_PTY_WRITE, (_, { id, data }: { id: string; data: string }) => {
+    claudePtyService.write(id, data);
+  });
+
+  ipcMain.handle(IPC_CHANNELS.CLAUDE_PTY_SEND_COMMAND, async (_, { id, command }: { id: string; command: string }) => {
+    return claudePtyService.sendCommand(id, command);
+  });
+
+  ipcMain.handle(IPC_CHANNELS.CLAUDE_PTY_INTERRUPT, async (_, { id }: { id: string }) => {
+    return claudePtyService.interrupt(id);
+  });
+
+  ipcMain.on(IPC_CHANNELS.CLAUDE_PTY_RESIZE, (_, { id, cols, rows }: { id: string; cols: number; rows: number }) => {
+    claudePtyService.resize(id, cols, rows);
+  });
+
+  ipcMain.handle(IPC_CHANNELS.CLAUDE_PTY_DESTROY, async (_, { id }: { id: string }) => {
+    return claudePtyService.destroy(id);
   });
 }

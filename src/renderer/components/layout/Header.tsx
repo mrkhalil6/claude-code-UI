@@ -1,14 +1,66 @@
-import React from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Toggle, ThemeToggle } from '../common';
 import { useUI, useUIActions, useSession } from '../../store';
 import { useTheme } from '../../hooks/useTheme';
 import styles from './Header.module.css';
 
 export const Header: React.FC = () => {
-  const { isPlanMode, connectionStatus } = useUI();
-  const { togglePlanMode, toggleSidebar, setShowSettings, setShowGitDiff } = useUIActions();
-  const { currentCwd, activeSessionId } = useSession();
+  const { isPlanMode, connectionStatus, showClaudePty, claudePtySessionId, showTerminal, showPlanPanel } = useUI();
+  const { togglePlanMode, toggleSidebar, setShowSettings, setShowGitDiff, openClaudePtySession, closeClaudePtySession, toggleTerminal, openPlanPanel, closePlanPanel } = useUIActions();
+  const { currentCwd, activeSessionId, cliSessionId, currentSessionSlug } = useSession();
   const { themeMode, setThemeMode } = useTheme();
+  const [hasPlan, setHasPlan] = useState(false);
+
+  // Check if there's an existing conversation to resume
+  const hasExistingSession = !!cliSessionId;
+
+  // Check if current session has a plan
+  useEffect(() => {
+    const checkPlan = async () => {
+      if (!currentSessionSlug) {
+        setHasPlan(false);
+        return;
+      }
+      try {
+        const exists = await window.claudeUI.plan.exists(currentSessionSlug);
+        setHasPlan(exists);
+      } catch {
+        setHasPlan(false);
+      }
+    };
+    checkPlan();
+  }, [currentSessionSlug]);
+
+  // Handle plan button click
+  const handleViewPlan = useCallback(() => {
+    if (!currentSessionSlug) return;
+    if (showPlanPanel) {
+      closePlanPanel();
+    } else {
+      openPlanPanel(currentSessionSlug);
+    }
+  }, [currentSessionSlug, showPlanPanel, openPlanPanel, closePlanPanel]);
+
+  // Open interactive Claude terminal
+  const handleOpenClaudePty = useCallback(async () => {
+    if (showClaudePty && claudePtySessionId) {
+      // Already open, close it
+      closeClaudePtySession();
+      return;
+    }
+
+    // Get working directory
+    let cwd = currentCwd;
+    if (!cwd) {
+      const selectedDir = await window.claudeUI.fs.selectDirectory();
+      if (!selectedDir) return;
+      cwd = selectedDir;
+    }
+
+    // Generate session ID and open
+    const sessionId = `claude-pty-${Date.now()}`;
+    openClaudePtySession(sessionId);
+  }, [showClaudePty, claudePtySessionId, currentCwd, openClaudePtySession, closeClaudePtySession]);
 
   const getStatusColor = () => {
     switch (connectionStatus) {
@@ -72,11 +124,59 @@ export const Header: React.FC = () => {
           />
         </div>
 
+        {hasPlan && currentSessionSlug && (
+          <button
+            className={`${styles.planButton} ${showPlanPanel ? styles.active : ''}`}
+            onClick={handleViewPlan}
+            aria-label="View Plan"
+            title={showPlanPanel ? "Close Plan" : "View Implementation Plan"}
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+              <polyline points="14 2 14 8 20 8" />
+              <line x1="16" y1="13" x2="8" y2="13" />
+              <line x1="16" y1="17" x2="8" y2="17" />
+              <polyline points="10 9 9 9 8 9" />
+            </svg>
+          </button>
+        )}
+
         <ThemeToggle
           value={themeMode}
           onChange={setThemeMode}
           size="sm"
         />
+
+        <button
+          className={`${styles.terminalButton} ${showClaudePty ? styles.active : ''} ${hasExistingSession ? styles.hasSession : ''}`}
+          onClick={handleOpenClaudePty}
+          aria-label="Interactive Claude Terminal"
+          title={showClaudePty
+            ? "Close Interactive Terminal"
+            : hasExistingSession
+              ? `Open Interactive Terminal (Resume session)`
+              : "Open Interactive Claude Terminal"}
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <polyline points="4 17 10 11 4 5" />
+            <line x1="12" y1="19" x2="20" y2="19" />
+          </svg>
+          {showClaudePty && <span className={styles.activeIndicator} />}
+          {!showClaudePty && hasExistingSession && <span className={styles.sessionIndicatorDot} />}
+        </button>
+
+        <button
+          className={`${styles.terminalButton} ${showTerminal ? styles.active : ''}`}
+          onClick={toggleTerminal}
+          aria-label="Shell Terminal"
+          title={showTerminal ? "Close Shell Terminal" : "Open Shell Terminal"}
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <rect x="2" y="4" width="20" height="16" rx="2" />
+            <path d="M6 8l4 4-4 4" />
+            <line x1="12" y1="16" x2="18" y2="16" />
+          </svg>
+        </button>
 
         <button
           className={styles.gitButton}

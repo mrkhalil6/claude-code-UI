@@ -27,12 +27,23 @@ export interface UISlice {
   showGitDiff: boolean;
   showTerminal: boolean;
   terminalHeight: number;
+  // Claude PTY (Interactive Terminal)
+  showClaudePty: boolean;
+  claudePtyHeight: number;
+  claudePtySessionId: string | null;
+  claudePtyNeedsInteraction: boolean;
+  claudePtySubcommand: string | null;
+  claudePtySubcommandArgs: string[] | null;
+  claudePtySendAsSlashCommand: boolean | null;
   connectionStatus: 'disconnected' | 'connecting' | 'connected' | 'error';
   errorMessage: string | null;
   usage: UsageInfo;
   themeMode: ThemeMode;
   resolvedTheme: ResolvedTheme;
   availableSkills: SlashCommand[];
+  // Plan Panel
+  showPlanPanel: boolean;
+  activePlanSlug: string | null;
 
   // Actions
   setIsPlanMode: (planMode: boolean) => void;
@@ -47,6 +58,13 @@ export interface UISlice {
   setShowTerminal: (show: boolean) => void;
   toggleTerminal: () => void;
   setTerminalHeight: (height: number) => void;
+  // Claude PTY Actions
+  setShowClaudePty: (show: boolean) => void;
+  setClaudePtyHeight: (height: number) => void;
+  setClaudePtySessionId: (id: string | null) => void;
+  setClaudePtyNeedsInteraction: (needs: boolean) => void;
+  openClaudePtySession: (sessionId: string, subcommand?: string, subcommandArgs?: string[], sendAsSlashCommand?: boolean) => void;
+  closeClaudePtySession: () => void;
   setConnectionStatus: (status: UISlice['connectionStatus']) => void;
   setErrorMessage: (message: string | null) => void;
   setModelInfo: (modelName: string, contextWindow: number, maxOutputTokens: number, version: string) => void;
@@ -56,6 +74,9 @@ export interface UISlice {
   setResolvedTheme: (theme: ResolvedTheme) => void;
   setAvailableSkills: (skills: SlashCommand[]) => void;
   clearAvailableSkills: () => void;
+  // Plan Panel Actions
+  openPlanPanel: (slug: string) => void;
+  closePlanPanel: () => void;
 }
 
 const initialUsage: UsageInfo = {
@@ -91,12 +112,23 @@ export const createUISlice: StateCreator<UISlice, [], [], UISlice> = (set) => ({
   showGitDiff: false,
   showTerminal: false,
   terminalHeight: 300,
+  // Claude PTY initial state
+  showClaudePty: false,
+  claudePtyHeight: 350,
+  claudePtySessionId: null,
+  claudePtyNeedsInteraction: false,
+  claudePtySubcommand: null,
+  claudePtySubcommandArgs: null,
+  claudePtySendAsSlashCommand: null,
   connectionStatus: 'disconnected',
   errorMessage: null,
   usage: initialUsage,
   themeMode: getInitialThemeMode(),
   resolvedTheme: 'dark',
   availableSkills: [],
+  // Plan Panel initial state
+  showPlanPanel: false,
+  activePlanSlug: null,
 
   // Actions
   setIsPlanMode: (planMode) => set({ isPlanMode: planMode }),
@@ -122,6 +154,33 @@ export const createUISlice: StateCreator<UISlice, [], [], UISlice> = (set) => ({
   toggleTerminal: () => set((state) => ({ showTerminal: !state.showTerminal })),
 
   setTerminalHeight: (height) => set({ terminalHeight: height }),
+
+  // Claude PTY Actions
+  setShowClaudePty: (show) => set({ showClaudePty: show }),
+
+  setClaudePtyHeight: (height) => set({ claudePtyHeight: height }),
+
+  setClaudePtySessionId: (id) => set({ claudePtySessionId: id }),
+
+  setClaudePtyNeedsInteraction: (needs) => set({ claudePtyNeedsInteraction: needs }),
+
+  openClaudePtySession: (sessionId, subcommand, subcommandArgs, sendAsSlashCommand) => set({
+    showClaudePty: true,
+    claudePtySessionId: sessionId,
+    claudePtyNeedsInteraction: false,
+    claudePtySubcommand: subcommand || null,
+    claudePtySubcommandArgs: subcommandArgs || null,
+    claudePtySendAsSlashCommand: sendAsSlashCommand ?? null,
+  }),
+
+  closeClaudePtySession: () => set({
+    showClaudePty: false,
+    claudePtySessionId: null,
+    claudePtyNeedsInteraction: false,
+    claudePtySubcommand: null,
+    claudePtySubcommandArgs: null,
+    claudePtySendAsSlashCommand: null,
+  }),
 
   setConnectionStatus: (status) => set({ connectionStatus: status }),
 
@@ -161,5 +220,10 @@ export const createUISlice: StateCreator<UISlice, [], [], UISlice> = (set) => ({
 
   setAvailableSkills: (skills) => set({ availableSkills: skills }),
 
-  clearAvailableSkills: () => set({ availableSkills: [] })
+  clearAvailableSkills: () => set({ availableSkills: [] }),
+
+  // Plan Panel Actions
+  openPlanPanel: (slug) => set({ showPlanPanel: true, activePlanSlug: slug }),
+
+  closePlanPanel: () => set({ showPlanPanel: false, activePlanSlug: null })
 });
