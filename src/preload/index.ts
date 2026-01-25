@@ -327,6 +327,9 @@ const api = {
       permissionMode?: 'default' | 'plan';
       model?: string;
       allowedTools?: string[];
+      subcommand?: string;
+      subcommandArgs?: string[];
+      sendAsSlashCommand?: boolean;
     }): Promise<{ id: string; pid: number }> =>
       ipcRenderer.invoke(IPC_CHANNELS.CLAUDE_PTY_CREATE, { id, options }),
 

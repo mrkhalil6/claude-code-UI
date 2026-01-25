@@ -22,6 +22,11 @@ interface ClaudePtyTerminalProps {
   permissionMode?: 'default' | 'plan';
   model?: string;
   allowedTools?: string[];
+  // For running specific CLI subcommands (e.g., 'doctor', 'login')
+  subcommand?: string;
+  subcommandArgs?: string[];
+  // If true, start REPL and send /command instead of CLI arg
+  sendAsSlashCommand?: boolean;
 }
 
 export function ClaudePtyTerminal({
@@ -32,6 +37,9 @@ export function ClaudePtyTerminal({
   permissionMode,
   model,
   allowedTools,
+  subcommand,
+  subcommandArgs,
+  sendAsSlashCommand,
 }: ClaudePtyTerminalProps) {
   const terminalRef = useRef<HTMLDivElement>(null);
   const xtermRef = useRef<Terminal | null>(null);
@@ -46,17 +54,39 @@ export function ClaudePtyTerminal({
   const { claudePtyHeight, resolvedTheme } = useUI();
   const { setClaudePtyHeight } = useUIActions();
 
+  // Track the current session to detect changes
+  const currentPtySessionRef = useRef<string | null>(null);
+
   // Initialize terminal and create PTY session
   useEffect(() => {
     if (!terminalRef.current) return;
 
-    // Skip if xterm already exists (shouldn't happen, but just in case)
-    if (xtermRef.current) {
+    // Check if we need to restart due to session/subcommand change
+    const needsRestart = currentPtySessionRef.current !== null &&
+                         currentPtySessionRef.current !== sessionId;
+
+    if (needsRestart) {
+      console.log(`[ClaudePtyTerminal] Session changed from ${currentPtySessionRef.current} to ${sessionId}, restarting`);
+      // Destroy the old PTY session
+      if (currentPtySessionRef.current) {
+        window.claudeUI.claudePty.destroy(currentPtySessionRef.current).catch(console.error);
+      }
+      // Dispose old xterm
+      if (xtermRef.current) {
+        xtermRef.current.dispose();
+        xtermRef.current = null;
+      }
+      fitAddonRef.current = null;
+      sessionCreatedRef.current = false;
+    }
+
+    // Skip if xterm already exists and we don't need restart
+    if (xtermRef.current && !needsRestart) {
       console.log(`[ClaudePtyTerminal] Skipping xterm init - already exists`);
       return;
     }
 
-    console.log(`[ClaudePtyTerminal] Initializing xterm for session ${sessionId}`);
+    console.log(`[ClaudePtyTerminal] Initializing xterm for session ${sessionId}${subcommand ? ` (subcommand: ${subcommand})` : ''}`);
 
     // Create xterm.js terminal
     const terminal = new Terminal({
@@ -81,7 +111,7 @@ export function ClaudePtyTerminal({
     const cols = terminal.cols;
     const rows = terminal.rows;
 
-    window.claudeUI.claudePty.create(sessionId, {
+    const createOptions = {
       cwd,
       cols,
       rows,
@@ -89,10 +119,17 @@ export function ClaudePtyTerminal({
       permissionMode,
       model,
       allowedTools,
-    }).then(({ pid }) => {
-      console.log(`[ClaudePtyTerminal] PTY session ${sessionId} ready with PID ${pid}`);
+      subcommand,
+      subcommandArgs,
+      sendAsSlashCommand,
+    };
+    console.log(`[ClaudePtyTerminal] Creating session ${sessionId} with options:`, JSON.stringify(createOptions, null, 2));
+
+    window.claudeUI.claudePty.create(sessionId, createOptions).then(({ pid }) => {
+      console.log(`[ClaudePtyTerminal] PTY session ${sessionId} ready with PID ${pid}${subcommand ? ` (subcommand: ${subcommand})` : ''}`);
       setIsConnected(true);
       sessionCreatedRef.current = true;
+      currentPtySessionRef.current = sessionId;
     }).catch((err) => {
       console.error('[ClaudePtyTerminal] Failed to create session:', err);
       terminal.writeln('\x1b[31mFailed to create Claude session\x1b[0m');
@@ -119,7 +156,7 @@ export function ClaudePtyTerminal({
     return () => {
       resizeObserver.disconnect();
     };
-  }, [sessionId, cwd, resumeSessionId, permissionMode, model, allowedTools, resolvedTheme]);
+  }, [sessionId, cwd, resumeSessionId, permissionMode, model, allowedTools, subcommand, subcommandArgs, sendAsSlashCommand, resolvedTheme]);
 
   // Update theme when it changes
   useEffect(() => {

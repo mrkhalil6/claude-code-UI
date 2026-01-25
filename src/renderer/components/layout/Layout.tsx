@@ -9,7 +9,7 @@ import { useUI, useUIActions, useSession } from '../../store';
 import styles from './Layout.module.css';
 
 export const Layout: React.FC = () => {
-  const { showGitDiff, showTerminal, showClaudePty, claudePtySessionId } = useUI();
+  const { showGitDiff, showTerminal, showClaudePty, claudePtySessionId, claudePtySubcommand, claudePtySubcommandArgs, claudePtySendAsSlashCommand } = useUI();
   const { setShowGitDiff, closeClaudePtySession, setClaudePtyNeedsInteraction, setShowClaudePty, setClaudePtySessionId } = useUIActions();
   const { activeProjectPath, currentCwd, cliSessionId } = useSession();
 
@@ -72,7 +72,10 @@ export const Layout: React.FC = () => {
               sessionId={claudePtySessionId}
               cwd={currentCwd || activeProjectPath || '.'}
               onClose={closeClaudePtySession}
-              resumeSessionId={cliSessionId || undefined}
+              resumeSessionId={claudePtySubcommand ? undefined : (cliSessionId || undefined)}
+              subcommand={claudePtySubcommand || undefined}
+              subcommandArgs={claudePtySubcommandArgs || undefined}
+              sendAsSlashCommand={claudePtySendAsSlashCommand ?? undefined}
             />
           )}
         </main>

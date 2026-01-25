@@ -32,6 +32,9 @@ export interface UISlice {
   claudePtyHeight: number;
   claudePtySessionId: string | null;
   claudePtyNeedsInteraction: boolean;
+  claudePtySubcommand: string | null;
+  claudePtySubcommandArgs: string[] | null;
+  claudePtySendAsSlashCommand: boolean | null;
   connectionStatus: 'disconnected' | 'connecting' | 'connected' | 'error';
   errorMessage: string | null;
   usage: UsageInfo;
@@ -57,7 +60,7 @@ export interface UISlice {
   setClaudePtyHeight: (height: number) => void;
   setClaudePtySessionId: (id: string | null) => void;
   setClaudePtyNeedsInteraction: (needs: boolean) => void;
-  openClaudePtySession: (sessionId: string) => void;
+  openClaudePtySession: (sessionId: string, subcommand?: string, subcommandArgs?: string[], sendAsSlashCommand?: boolean) => void;
   closeClaudePtySession: () => void;
   setConnectionStatus: (status: UISlice['connectionStatus']) => void;
   setErrorMessage: (message: string | null) => void;
@@ -108,6 +111,9 @@ export const createUISlice: StateCreator<UISlice, [], [], UISlice> = (set) => ({
   claudePtyHeight: 350,
   claudePtySessionId: null,
   claudePtyNeedsInteraction: false,
+  claudePtySubcommand: null,
+  claudePtySubcommandArgs: null,
+  claudePtySendAsSlashCommand: null,
   connectionStatus: 'disconnected',
   errorMessage: null,
   usage: initialUsage,
@@ -149,16 +155,22 @@ export const createUISlice: StateCreator<UISlice, [], [], UISlice> = (set) => ({
 
   setClaudePtyNeedsInteraction: (needs) => set({ claudePtyNeedsInteraction: needs }),
 
-  openClaudePtySession: (sessionId) => set({
+  openClaudePtySession: (sessionId, subcommand, subcommandArgs, sendAsSlashCommand) => set({
     showClaudePty: true,
     claudePtySessionId: sessionId,
     claudePtyNeedsInteraction: false,
+    claudePtySubcommand: subcommand || null,
+    claudePtySubcommandArgs: subcommandArgs || null,
+    claudePtySendAsSlashCommand: sendAsSlashCommand ?? null,
   }),
 
   closeClaudePtySession: () => set({
     showClaudePty: false,
     claudePtySessionId: null,
     claudePtyNeedsInteraction: false,
+    claudePtySubcommand: null,
+    claudePtySubcommandArgs: null,
+    claudePtySendAsSlashCommand: null,
   }),
 
   setConnectionStatus: (status) => set({ connectionStatus: status }),

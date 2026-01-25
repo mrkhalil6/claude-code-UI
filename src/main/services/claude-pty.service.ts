@@ -22,6 +22,11 @@ export interface ClaudePtyOptions {
   permissionMode?: 'default' | 'plan';
   model?: string;
   allowedTools?: string[];
+  // For running specific CLI subcommands (e.g., 'doctor')
+  subcommand?: string;
+  subcommandArgs?: string[];
+  // If true, start REPL and send the command as a slash command (e.g., /logout)
+  sendAsSlashCommand?: boolean;
 }
 
 interface ClaudePtySession {
@@ -94,25 +99,46 @@ export class ClaudePtyService extends EventEmitter {
     // Build Claude arguments
     const claudeArgs: string[] = [];
 
-    // Resume existing session if provided
-    if (options.resumeSessionId) {
-      claudeArgs.push('--resume', options.resumeSessionId);
-    }
+    console.log(`[ClaudePty] Options received:`, JSON.stringify(options, null, 2));
 
-    // Set permission mode
-    if (options.permissionMode === 'plan') {
-      claudeArgs.push('--permission-mode', 'plan');
-    }
+    // Determine if we need to send a slash command after REPL starts
+    const slashCommandToSend = options.sendAsSlashCommand && options.subcommand
+      ? `/${options.subcommand}`
+      : null;
 
-    // Set model if specified
-    if (options.model) {
-      claudeArgs.push('--model', options.model);
-    }
+    // If running a subcommand that's a valid CLI arg (not sendAsSlashCommand), add it
+    if (options.subcommand && !options.sendAsSlashCommand) {
+      console.log(`[ClaudePty] Running CLI subcommand: ${options.subcommand}`);
+      claudeArgs.push(options.subcommand);
+      if (options.subcommandArgs && options.subcommandArgs.length > 0) {
+        claudeArgs.push(...options.subcommandArgs);
+      }
+    } else if (slashCommandToSend) {
+      console.log(`[ClaudePty] Will send slash command to REPL: ${slashCommandToSend}`);
+      // Start in REPL mode, will send slash command after it's ready
+    } else {
+      console.log(`[ClaudePty] Running in REPL mode (no subcommand)`);
+      // Normal REPL mode - add session/permission options
+      // Resume existing session if provided
+      if (options.resumeSessionId) {
+        claudeArgs.push('--resume', options.resumeSessionId);
+      }
 
-    // Add allowed tools
-    if (options.allowedTools && options.allowedTools.length > 0) {
-      const toolsStr = options.allowedTools.join(',');
-      claudeArgs.push(`--allowedTools=${toolsStr}`);
+      // Set permission mode
+      if (options.permissionMode === 'plan') {
+        claudeArgs.push('--permission-mode', 'plan');
+      }
+
+      // Set model if specified
+      if (options.model) {
+        claudeArgs.push('--model', options.model);
+      }
+
+      // Add allowed tools
+      if (options.allowedTools && options.allowedTools.length > 0) {
+        const toolsStr = options.allowedTools.join(',');
+        claudeArgs.push(`--allowedTools=${toolsStr}`);
+      }
     }
 
     // Environment for proper terminal behavior
@@ -125,9 +151,10 @@ export class ClaudePtyService extends EventEmitter {
       CLAUDE_INTERACTIVE: '1',
     };
 
-    console.log(`[ClaudePty] Creating session ${id}`);
+    console.log(`[ClaudePty] ========== Creating session ${id} ==========`);
     console.log(`[ClaudePty] Executable: ${this.claudePath}`);
     console.log(`[ClaudePty] Args: ${JSON.stringify(claudeArgs)}`);
+    console.log(`[ClaudePty] Full command: ${this.claudePath} ${claudeArgs.join(' ')}`);
     console.log(`[ClaudePty] CWD: ${workingDir}`);
 
     // Spawn Claude directly using node-pty (no shell wrapper needed)
@@ -153,10 +180,50 @@ export class ClaudePtyService extends EventEmitter {
 
     this.sessions.set(id, session);
 
+    // Track whether we've sent the pending slash command
+    let slashCommandSent = false;
+
     // Forward PTY data to renderer
     ptyProcess.onData((data) => {
       // Update last output buffer (keep last 2000 chars for pattern matching)
       session.lastOutput = (session.lastOutput + data).slice(-2000);
+
+      // Debug: log received data when waiting for slash command
+      if (slashCommandToSend && !slashCommandSent) {
+        console.log(`[ClaudePty] Received data (waiting for REPL): ${JSON.stringify(data.substring(0, 200))}`);
+      }
+
+      // If we need to send a slash command and REPL is ready, send it
+      // Look for the Claude REPL prompt - check for various indicators
+      if (slashCommandToSend && !slashCommandSent) {
+        // Check if REPL is ready - look for the input prompt
+        // Claude REPL shows a prompt when ready for input
+        // Common patterns: ">", "claude>", prompt indicators, or just any substantial output
+        const lastChunk = session.lastOutput;
+        const isReplReady = lastChunk.includes('>') ||
+                           lastChunk.includes('Tips:') ||
+                           lastChunk.includes('help') ||
+                           lastChunk.includes('What') ||
+                           lastChunk.includes('Claude') ||
+                           lastChunk.includes('ready') ||
+                           // Check for ANSI escape sequences that indicate rendering is happening
+                           (lastChunk.length > 100 && /\x1b\[/.test(lastChunk));
+        if (isReplReady) {
+          slashCommandSent = true;
+          console.log(`[ClaudePty] REPL ready detected, sending slash command: ${slashCommandToSend}`);
+          // 2 second delay to ensure REPL is fully ready
+          setTimeout(() => {
+            console.log(`[ClaudePty] Writing slash command now: ${slashCommandToSend}`);
+            // Write command first
+            ptyProcess.write(slashCommandToSend);
+            // Then send Enter key separately after a small delay
+            setTimeout(() => {
+              console.log(`[ClaudePty] Sending Enter key`);
+              ptyProcess.write('\x0d');  // Carriage return (Enter key)
+            }, 100);
+          }, 2000);
+        }
+      }
 
       // Check for interaction patterns
       const needsInteraction = this.detectInteraction(session.lastOutput);
@@ -178,6 +245,10 @@ export class ClaudePtyService extends EventEmitter {
     });
 
     console.log(`[ClaudePty] Created session ${id} with PID ${ptyProcess.pid}`);
+
+    // Send debug info to the renderer for visibility
+    const debugInfo = `[DEBUG] Command: ${this.claudePath} ${claudeArgs.join(' ')}\r\n`;
+    this.emitToRenderer(IPC_CHANNELS.CLAUDE_PTY_DATA, { id, data: debugInfo });
 
     return { id, pid: ptyProcess.pid };
   }

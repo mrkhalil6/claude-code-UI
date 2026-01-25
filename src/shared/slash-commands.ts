@@ -6,8 +6,14 @@ export interface SlashCommand {
   // 'cli-subcommand' commands use CLI subcommands (e.g., `claude --help`, `claude mcp list`)
   // 'cli-skill' commands are CLI skills sent as messages to the active session
   // 'skill' commands are dynamically loaded CLI skills
-  type: 'ui-only' | 'cli-subcommand' | 'cli-skill' | 'skill';
+  // 'interactive' commands need to run in the PTY terminal (e.g., /doctor, /login, /model)
+  type: 'ui-only' | 'cli-subcommand' | 'cli-skill' | 'skill' | 'interactive';
   packageName?: string;  // For skills with package prefix (e.g., frontend-design:frontend-design)
+  // The actual CLI command to run (for interactive commands)
+  cliCommand?: string;
+  // If true, the command should be sent as a slash command to the REPL (e.g., /logout)
+  // rather than as a CLI subcommand (e.g., claude logout)
+  sendAsSlashCommand?: boolean;
 }
 
 export const SLASH_COMMANDS: SlashCommand[] = [
@@ -49,20 +55,37 @@ export const SLASH_COMMANDS: SlashCommand[] = [
     description: 'Show MCP server status',
     type: 'cli-subcommand'
   },
+
+  // Interactive commands (open PTY terminal)
+  // Some commands are valid CLI subcommands (e.g., `claude doctor`)
+  // Others must be sent as slash commands to the REPL (e.g., `/logout`)
   {
     name: '/doctor',
     description: 'Check CLI health (opens terminal)',
-    type: 'cli-subcommand'
+    type: 'interactive',
+    cliCommand: 'doctor',
+    sendAsSlashCommand: false  // `claude doctor` is a valid CLI subcommand
   },
   {
     name: '/login',
     description: 'Log in to Anthropic (opens terminal)',
-    type: 'cli-subcommand'
+    type: 'interactive',
+    cliCommand: 'login',
+    sendAsSlashCommand: true  // Must send as /login to REPL
   },
   {
     name: '/logout',
     description: 'Log out from Anthropic (opens terminal)',
-    type: 'cli-subcommand'
+    type: 'interactive',
+    cliCommand: 'logout',
+    sendAsSlashCommand: true  // Must send as /logout to REPL
+  },
+  {
+    name: '/config',
+    description: 'Configure Claude settings (opens terminal)',
+    type: 'interactive',
+    cliCommand: 'config',
+    sendAsSlashCommand: true  // Must send as /config to REPL
   },
 
   // CLI skills (sent as messages to active session)
