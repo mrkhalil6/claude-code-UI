@@ -41,6 +41,9 @@ export interface UISlice {
   themeMode: ThemeMode;
   resolvedTheme: ResolvedTheme;
   availableSkills: SlashCommand[];
+  // Plan Panel
+  showPlanPanel: boolean;
+  activePlanSlug: string | null;
 
   // Actions
   setIsPlanMode: (planMode: boolean) => void;
@@ -71,6 +74,9 @@ export interface UISlice {
   setResolvedTheme: (theme: ResolvedTheme) => void;
   setAvailableSkills: (skills: SlashCommand[]) => void;
   clearAvailableSkills: () => void;
+  // Plan Panel Actions
+  openPlanPanel: (slug: string) => void;
+  closePlanPanel: () => void;
 }
 
 const initialUsage: UsageInfo = {
@@ -120,6 +126,9 @@ export const createUISlice: StateCreator<UISlice, [], [], UISlice> = (set) => ({
   themeMode: getInitialThemeMode(),
   resolvedTheme: 'dark',
   availableSkills: [],
+  // Plan Panel initial state
+  showPlanPanel: false,
+  activePlanSlug: null,
 
   // Actions
   setIsPlanMode: (planMode) => set({ isPlanMode: planMode }),
@@ -211,5 +220,10 @@ export const createUISlice: StateCreator<UISlice, [], [], UISlice> = (set) => ({
 
   setAvailableSkills: (skills) => set({ availableSkills: skills }),
 
-  clearAvailableSkills: () => set({ availableSkills: [] })
+  clearAvailableSkills: () => set({ availableSkills: [] }),
+
+  // Plan Panel Actions
+  openPlanPanel: (slug) => set({ showPlanPanel: true, activePlanSlug: slug }),
+
+  closePlanPanel: () => set({ showPlanPanel: false, activePlanSlug: null })
 });

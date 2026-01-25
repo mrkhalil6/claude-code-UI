@@ -5,12 +5,13 @@ import { StatusBar } from './StatusBar';
 import { ChatContainer } from '../chat/ChatContainer';
 import { GitDiffPanel } from '../git';
 import { TerminalPanel, ClaudePtyTerminal } from '../terminal';
+import { PlanPanel } from '../plan';
 import { useUI, useUIActions, useSession } from '../../store';
 import styles from './Layout.module.css';
 
 export const Layout: React.FC = () => {
-  const { showGitDiff, showTerminal, showClaudePty, claudePtySessionId, claudePtySubcommand, claudePtySubcommandArgs, claudePtySendAsSlashCommand } = useUI();
-  const { setShowGitDiff, closeClaudePtySession, setClaudePtyNeedsInteraction, setShowClaudePty, setClaudePtySessionId } = useUIActions();
+  const { showGitDiff, showTerminal, showClaudePty, claudePtySessionId, claudePtySubcommand, claudePtySubcommandArgs, claudePtySendAsSlashCommand, showPlanPanel, activePlanSlug } = useUI();
+  const { setShowGitDiff, closeClaudePtySession, setClaudePtyNeedsInteraction, setShowClaudePty, setClaudePtySessionId, closePlanPanel } = useUIActions();
   const { activeProjectPath, currentCwd, cliSessionId } = useSession();
 
   // Track previous cliSessionId to detect changes
@@ -85,6 +86,10 @@ export const Layout: React.FC = () => {
 
       {showGitDiff && (
         <GitDiffPanel onClose={() => setShowGitDiff(false)} />
+      )}
+
+      {showPlanPanel && activePlanSlug && (
+        <PlanPanel slug={activePlanSlug} onClose={closePlanPanel} />
       )}
     </div>
   );

@@ -110,10 +110,28 @@
   opacity: 0.8;
 }
 
+.metaRight {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
 .count {
   padding: 1px 4px;
   background-color: var(--bg-tertiary);
   border-radius: var(--border-radius-sm);
+}
+
+.planIndicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent-primary);
+  opacity: 0.8;
+}
+
+.planIndicator:hover {
+  opacity: 1;
 }
 
 .editButton {

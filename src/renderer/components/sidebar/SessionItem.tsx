@@ -42,7 +42,7 @@ export const SessionItem: React.FC<SessionItemProps> = memo(({
   onToggleSelection
 }) => {
   const { cliSessionId } = useSession();
-  const { setActiveSessionId, setCliSessionId, setActiveProjectPath, setCurrentCwd, setIsLoadingSession } = useSessionActions();
+  const { setActiveSession, setActiveSessionId, setActiveProjectPath, setCurrentCwd, setIsLoadingSession } = useSessionActions();
   const { setMessages, clearMessages } = useChatActions();
   const { setConnectionStatus } = useUIActions();
 
@@ -129,10 +129,11 @@ export const SessionItem: React.FC<SessionItemProps> = memo(({
         session.id
       );
 
-      // Don't set activeSessionId (it's for main process communication)
-      // Only set cliSessionId for sidebar highlighting
-      setActiveSessionId(null);  // Clear so new session will be created on next message
-      setCliSessionId(loadedSession.id);  // For sidebar highlighting
+      // Set activeSession so components can access metadata (like slug for plan detection)
+      setActiveSession(loadedSession);
+      // Clear activeSessionId so new CLI session will be created on next message
+      setActiveSessionId(null);
+      // cliSessionId is set by setActiveSession, but we keep it for sidebar highlighting
       setActiveProjectPath(projectPath);
       setCurrentCwd(loadedSession.metadata.cwd);
 
@@ -310,7 +311,17 @@ export const SessionItem: React.FC<SessionItemProps> = memo(({
         </div>
         <div className={styles.meta}>
           <span className={styles.date}>{formatDate(session.lastModified)}</span>
-          <span className={styles.count}>{session.messageCount}</span>
+          <div className={styles.metaRight}>
+            {session.hasPlan && (
+              <span className={styles.planIndicator} title="Has implementation plan">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                  <polyline points="14 2 14 8 20 8" />
+                </svg>
+              </span>
+            )}
+            <span className={styles.count}>{session.messageCount}</span>
+          </div>
         </div>
       </button>
       {!isSelectMode && !isEditing && (

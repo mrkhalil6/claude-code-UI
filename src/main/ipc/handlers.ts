@@ -64,6 +64,16 @@ export function registerIpcHandlers(
     cliService.setPlanMode(sessionId, enabled);
   });
 
+  // ===== Plan =====
+
+  ipcMain.handle(IPC_CHANNELS.PLAN_GET, async (_, { slug }: { slug: string }) => {
+    return sessionLoader.getPlanInfo(slug);
+  });
+
+  ipcMain.handle(IPC_CHANNELS.PLAN_EXISTS, async (_, { slug }: { slug: string }) => {
+    return sessionLoader.getPlanFilePath(slug) !== null;
+  });
+
   // ===== CLI Models =====
 
   ipcMain.handle(IPC_CHANNELS.CLI_GET_MODELS, async (): Promise<{ id: string; name: string }[]> => {

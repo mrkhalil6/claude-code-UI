@@ -18,7 +18,8 @@ import {
   Skill,
   SkillPayload,
   HookWithId,
-  HookPayload
+  HookPayload,
+  PlanInfo
 } from '../shared/types';
 
 // MCP Server types
@@ -51,6 +52,15 @@ const api = {
       ipcRenderer.on(IPC_CHANNELS.SESSIONS_CHANGED, handler);
       return () => ipcRenderer.removeListener(IPC_CHANNELS.SESSIONS_CHANGED, handler);
     }
+  },
+
+  // ===== Plan =====
+  plan: {
+    get: (slug: string): Promise<PlanInfo | null> =>
+      ipcRenderer.invoke(IPC_CHANNELS.PLAN_GET, { slug }),
+
+    exists: (slug: string): Promise<boolean> =>
+      ipcRenderer.invoke(IPC_CHANNELS.PLAN_EXISTS, { slug })
   },
 
   // ===== CLI Control =====

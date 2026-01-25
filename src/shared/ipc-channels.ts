@@ -17,6 +17,10 @@ export const IPC_CHANNELS = {
   CLI_GET_MODELS: 'cli:getModels',
   CLI_SET_MODEL: 'cli:setModel',
 
+  // Plan
+  PLAN_GET: 'plan:get',
+  PLAN_EXISTS: 'plan:exists',
+
   // CLI Commands (for routing slash commands to CLI)
   CLI_EXECUTE_COMMAND: 'cli:executeCommand',
 

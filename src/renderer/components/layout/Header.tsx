@@ -1,17 +1,45 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Toggle, ThemeToggle } from '../common';
 import { useUI, useUIActions, useSession } from '../../store';
 import { useTheme } from '../../hooks/useTheme';
 import styles from './Header.module.css';
 
 export const Header: React.FC = () => {
-  const { isPlanMode, connectionStatus, showClaudePty, claudePtySessionId, showTerminal } = useUI();
-  const { togglePlanMode, toggleSidebar, setShowSettings, setShowGitDiff, openClaudePtySession, closeClaudePtySession, toggleTerminal } = useUIActions();
-  const { currentCwd, activeSessionId, cliSessionId } = useSession();
+  const { isPlanMode, connectionStatus, showClaudePty, claudePtySessionId, showTerminal, showPlanPanel } = useUI();
+  const { togglePlanMode, toggleSidebar, setShowSettings, setShowGitDiff, openClaudePtySession, closeClaudePtySession, toggleTerminal, openPlanPanel, closePlanPanel } = useUIActions();
+  const { currentCwd, activeSessionId, cliSessionId, currentSessionSlug } = useSession();
   const { themeMode, setThemeMode } = useTheme();
+  const [hasPlan, setHasPlan] = useState(false);
 
   // Check if there's an existing conversation to resume
   const hasExistingSession = !!cliSessionId;
+
+  // Check if current session has a plan
+  useEffect(() => {
+    const checkPlan = async () => {
+      if (!currentSessionSlug) {
+        setHasPlan(false);
+        return;
+      }
+      try {
+        const exists = await window.claudeUI.plan.exists(currentSessionSlug);
+        setHasPlan(exists);
+      } catch {
+        setHasPlan(false);
+      }
+    };
+    checkPlan();
+  }, [currentSessionSlug]);
+
+  // Handle plan button click
+  const handleViewPlan = useCallback(() => {
+    if (!currentSessionSlug) return;
+    if (showPlanPanel) {
+      closePlanPanel();
+    } else {
+      openPlanPanel(currentSessionSlug);
+    }
+  }, [currentSessionSlug, showPlanPanel, openPlanPanel, closePlanPanel]);
 
   // Open interactive Claude terminal
   const handleOpenClaudePty = useCallback(async () => {
@@ -95,6 +123,23 @@ export const Header: React.FC = () => {
             size="sm"
           />
         </div>
+
+        {hasPlan && currentSessionSlug && (
+          <button
+            className={`${styles.planButton} ${showPlanPanel ? styles.active : ''}`}
+            onClick={handleViewPlan}
+            aria-label="View Plan"
+            title={showPlanPanel ? "Close Plan" : "View Implementation Plan"}
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+              <polyline points="14 2 14 8 20 8" />
+              <line x1="16" y1="13" x2="8" y2="13" />
+              <line x1="16" y1="17" x2="8" y2="17" />
+              <polyline points="10 9 9 9 8 9" />
+            </svg>
+          </button>
+        )}
 
         <ThemeToggle
           value={themeMode}

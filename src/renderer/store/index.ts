@@ -29,7 +29,9 @@ export const useSession = () => useStore((state) => ({
   activeProjectPath: state.activeProjectPath,
   currentCwd: state.currentCwd,
   isLoadingSessions: state.isLoadingSessions,
-  isLoadingSession: state.isLoadingSession
+  isLoadingSession: state.isLoadingSession,
+  // Convenience accessor for current session slug
+  currentSessionSlug: state.activeSession?.metadata?.slug || null
 }));
 
 export const useChat = () => useStore((state) => ({
@@ -66,7 +68,10 @@ export const useUI = () => useStore((state) => ({
   usage: state.usage,
   themeMode: state.themeMode,
   resolvedTheme: state.resolvedTheme,
-  availableSkills: state.availableSkills
+  availableSkills: state.availableSkills,
+  // Plan Panel
+  showPlanPanel: state.showPlanPanel,
+  activePlanSlug: state.activePlanSlug
 }));
 
 // Actions hooks
@@ -130,5 +135,8 @@ export const useUIActions = () => useStore((state) => ({
   setThemeMode: state.setThemeMode,
   setResolvedTheme: state.setResolvedTheme,
   setAvailableSkills: state.setAvailableSkills,
-  clearAvailableSkills: state.clearAvailableSkills
+  clearAvailableSkills: state.clearAvailableSkills,
+  // Plan Panel actions
+  openPlanPanel: state.openPlanPanel,
+  closePlanPanel: state.closePlanPanel
 }));
