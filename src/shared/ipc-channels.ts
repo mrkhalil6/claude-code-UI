@@ -20,6 +20,7 @@ export const IPC_CHANNELS = {
   // Plan
   PLAN_GET: 'plan:get',
   PLAN_EXISTS: 'plan:exists',
+  PLAN_SAVE: 'plan:save',
 
   // CLI Commands (for routing slash commands to CLI)
   CLI_EXECUTE_COMMAND: 'cli:executeCommand',

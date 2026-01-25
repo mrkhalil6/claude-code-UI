@@ -60,7 +60,10 @@ const api = {
       ipcRenderer.invoke(IPC_CHANNELS.PLAN_GET, { slug }),
 
     exists: (slug: string): Promise<boolean> =>
-      ipcRenderer.invoke(IPC_CHANNELS.PLAN_EXISTS, { slug })
+      ipcRenderer.invoke(IPC_CHANNELS.PLAN_EXISTS, { slug }),
+
+    save: (slug: string, content: string): Promise<{ success: boolean; error?: string }> =>
+      ipcRenderer.invoke(IPC_CHANNELS.PLAN_SAVE, { slug, content })
   },
 
   // ===== CLI Control =====

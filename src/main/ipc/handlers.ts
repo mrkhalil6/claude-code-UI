@@ -74,6 +74,10 @@ export function registerIpcHandlers(
     return sessionLoader.getPlanFilePath(slug) !== null;
   });
 
+  ipcMain.handle(IPC_CHANNELS.PLAN_SAVE, async (_, { slug, content }: { slug: string; content: string }) => {
+    return sessionLoader.savePlan(slug, content);
+  });
+
   // ===== CLI Models =====
 
   ipcMain.handle(IPC_CHANNELS.CLI_GET_MODELS, async (): Promise<{ id: string; name: string }[]> => {

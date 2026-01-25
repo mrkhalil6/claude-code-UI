@@ -327,4 +327,27 @@ export class SessionLoaderService {
       return null;
     }
   }
+
+  /**
+   * Save plan content for a given slug
+   */
+  async savePlan(slug: string, content: string): Promise<{ success: boolean; error?: string }> {
+    if (!slug) {
+      return { success: false, error: 'No slug provided' };
+    }
+
+    const filePath = join(getPlansPath(), `${slug}.md`);
+
+    try {
+      await writeFile(filePath, content, 'utf-8');
+      console.log(`Saved plan for slug ${slug}`);
+      return { success: true };
+    } catch (error) {
+      console.error(`Failed to save plan for slug ${slug}:`, error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to save plan'
+      };
+    }
+  }
 }
