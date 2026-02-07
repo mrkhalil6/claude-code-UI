@@ -337,12 +337,9 @@ export class BridgeManager extends EventEmitter {
 
     try {
       const channelKey = `${event.bridgeId}:${event.channelId}`;
-
-      // Always create a fresh CLI session per message.
-      // The CLI spawns a new process per sendMessage() anyway, so sessions
-      // don't persist reliably between messages. Use --resume via the
-      // CLI's own session ID to maintain conversation continuity.
       const resumeId = this.cliResumeIds.get(channelKey) || undefined;
+
+      console.log(`[BridgeManager] channelKey="${channelKey}", resumeId=${resumeId || '(none)'}, cliResumeIds size=${this.cliResumeIds.size}`);
 
       const sessionId = await this.cliService.startSession({
         cwd: mapping.cwd,
@@ -379,13 +376,36 @@ export class BridgeManager extends EventEmitter {
   private handleCliSystem(serviceEvent: CLIServiceEvent): void {
     const { sessionId, event } = serviceEvent;
     const mapping = this.sessionToChannel.get(sessionId);
-    if (!mapping) return; // Not a bridge session
+    if (!mapping) {
+      console.log(`[BridgeManager] handleCliSystem: session ${sessionId} not in sessionToChannel (not a bridge session)`);
+      return;
+    }
 
     const systemEvent = event as SystemInitEvent;
     if (systemEvent.session_id) {
       const channelKey = `${mapping.bridgeId}:${mapping.channelId}`;
       this.cliResumeIds.set(channelKey, systemEvent.session_id);
-      console.log(`[BridgeManager] Captured CLI session ID ${systemEvent.session_id} for channel ${mapping.channelId}`);
+      console.log(`[BridgeManager] Captured CLI session ID "${systemEvent.session_id}" for channelKey="${channelKey}"`);
+    } else {
+      console.log(`[BridgeManager] handleCliSystem: no session_id in system event`);
+    }
+  }
+
+  /** Also capture session_id from result events as a fallback */
+  private captureResumeIdFromEvent(serviceEvent: CLIServiceEvent): void {
+    const { sessionId, event } = serviceEvent;
+    const mapping = this.sessionToChannel.get(sessionId);
+    if (!mapping) return;
+
+    // All CLI events have session_id at the top level
+    const eventAny = event as unknown as Record<string, unknown>;
+    const cliSessionId = eventAny.session_id as string | undefined;
+    if (cliSessionId) {
+      const channelKey = `${mapping.bridgeId}:${mapping.channelId}`;
+      if (!this.cliResumeIds.has(channelKey)) {
+        this.cliResumeIds.set(channelKey, cliSessionId);
+        console.log(`[BridgeManager] Fallback: captured CLI session ID "${cliSessionId}" from ${eventAny.type} event`);
+      }
     }
   }
 
@@ -411,6 +431,8 @@ export class BridgeManager extends EventEmitter {
   }
 
   private handleCliAssistant(serviceEvent: CLIServiceEvent): void {
+    this.captureResumeIdFromEvent(serviceEvent);
+
     const { sessionId, event } = serviceEvent;
     const mapping = this.sessionToChannel.get(sessionId);
     if (!mapping) return;
@@ -433,6 +455,9 @@ export class BridgeManager extends EventEmitter {
   }
 
   private handleCliResult(serviceEvent: CLIServiceEvent): void {
+    // Ensure we've captured the resume ID before cleaning up
+    this.captureResumeIdFromEvent(serviceEvent);
+
     const { sessionId, event } = serviceEvent;
     const mapping = this.sessionToChannel.get(sessionId);
     if (!mapping) return;
