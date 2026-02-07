@@ -116,7 +116,26 @@ export const IPC_CHANNELS = {
   CLAUDE_PTY_DESTROY: 'claudePty:destroy',
   CLAUDE_PTY_DATA: 'claudePty:data',
   CLAUDE_PTY_EXIT: 'claudePty:exit',
-  CLAUDE_PTY_INTERACTION: 'claudePty:interaction'
+  CLAUDE_PTY_INTERACTION: 'claudePty:interaction',
+
+  // Bridges
+  BRIDGE_GET_ALL: 'bridge:getAll',
+  BRIDGE_GET: 'bridge:get',
+  BRIDGE_CREATE: 'bridge:create',
+  BRIDGE_UPDATE: 'bridge:update',
+  BRIDGE_DELETE: 'bridge:delete',
+  BRIDGE_CONNECT: 'bridge:connect',
+  BRIDGE_DISCONNECT: 'bridge:disconnect',
+  BRIDGE_GET_STATUS: 'bridge:getStatus',
+  BRIDGE_GET_GUILDS: 'bridge:getGuilds',
+  BRIDGE_TEST_TOKEN: 'bridge:testToken',
+  BRIDGE_ADD_MAPPING: 'bridge:addMapping',
+  BRIDGE_REMOVE_MAPPING: 'bridge:removeMapping',
+
+  // Bridge Events (Main -> Renderer)
+  BRIDGE_EVENT_STATUS: 'bridge:event:status',
+  BRIDGE_EVENT_MESSAGE: 'bridge:event:message',
+  BRIDGE_EVENT_ERROR: 'bridge:event:error'
 } as const;
 
 export type IpcChannel = typeof IPC_CHANNELS[keyof typeof IPC_CHANNELS];

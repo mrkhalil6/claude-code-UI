@@ -9,6 +9,7 @@ import { GitService } from './services/git.service';
 import { SkillsService } from './services/skills.service';
 import { HooksService } from './services/hooks.service';
 import { terminalService } from './services/terminal.service';
+import { BridgeManager } from './services/bridges/bridge-manager.service';
 
 class Application {
   private mainWindow: BrowserWindow | null = null;
@@ -19,6 +20,7 @@ class Application {
   private gitService: GitService;
   private skillsService: SkillsService;
   private hooksService: HooksService;
+  private bridgeManager: BridgeManager;
 
   constructor() {
     this.cliService = new ClaudeCliService();
@@ -28,6 +30,7 @@ class Application {
     this.gitService = new GitService();
     this.skillsService = new SkillsService();
     this.hooksService = new HooksService();
+    this.bridgeManager = new BridgeManager(this.cliService);
   }
 
   async initialize(): Promise<void> {
@@ -54,8 +57,12 @@ class Application {
       this.mcpService,
       this.gitService,
       this.skillsService,
-      this.hooksService
+      this.hooksService,
+      this.bridgeManager
     );
+
+    // Initialize bridges (auto-connect enabled ones)
+    await this.bridgeManager.initialize();
 
     // Create the main window
     this.mainWindow = createMainWindow();
@@ -92,6 +99,11 @@ class Application {
   }
 
   private cleanup(): void {
+    // Shutdown bridges
+    this.bridgeManager.shutdown().catch((e) =>
+      console.error('Error shutting down bridges:', e)
+    );
+
     // Kill all CLI processes
     this.cliService.killAllSessions();
 

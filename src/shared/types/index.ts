@@ -4,3 +4,4 @@ export * from './git.types';
 export * from './skill.types';
 export * from './hook.types';
 export * from './filesystem.types';
+export * from './bridge.types';

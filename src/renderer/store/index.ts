@@ -4,8 +4,9 @@ import { immer } from 'zustand/middleware/immer';
 import { createSessionSlice, SessionSlice } from './slices/session.slice';
 import { createChatSlice, ChatSlice } from './slices/chat.slice';
 import { createUISlice, UISlice } from './slices/ui.slice';
+import { createBridgeSlice, BridgeSlice } from './slices/bridge.slice';
 
-export type AppStore = SessionSlice & ChatSlice & UISlice;
+export type AppStore = SessionSlice & ChatSlice & UISlice & BridgeSlice;
 
 export const useStore = create<AppStore>()(
   devtools(
@@ -14,6 +15,7 @@ export const useStore = create<AppStore>()(
         ...createSessionSlice(...args),
         ...createChatSlice(...args),
         ...createUISlice(...args),
+        ...createBridgeSlice(...args),
       }))
     ),
     { name: 'claude-ui-store' }
@@ -155,4 +157,22 @@ export const useUIActions = () => useStore((state) => ({
   // Plan Panel actions
   openPlanPanel: state.openPlanPanel,
   closePlanPanel: state.closePlanPanel
+}));
+
+// Bridge hooks
+export const useBridges = () => useStore((state) => ({
+  bridges: state.bridges,
+  bridgeStatuses: state.bridgeStatuses,
+  bridgeMessages: state.bridgeMessages,
+  isBridgesLoading: state.isBridgesLoading,
+}));
+
+export const useBridgeActions = () => useStore((state) => ({
+  setBridges: state.setBridges,
+  addBridge: state.addBridge,
+  updateBridgeConfig: state.updateBridgeConfig,
+  removeBridge: state.removeBridge,
+  setBridgeStatus: state.setBridgeStatus,
+  addBridgeMessage: state.addBridgeMessage,
+  setIsBridgesLoading: state.setIsBridgesLoading,
 }));

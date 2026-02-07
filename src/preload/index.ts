@@ -20,7 +20,18 @@ import {
   HookWithId,
   HookPayload,
   PlanInfo,
-  ReadDirectoryResult
+  ReadDirectoryResult,
+  BridgeConfig,
+  BridgeStatusInfo,
+  BridgeStatusEvent,
+  BridgeMessageEvent,
+  BridgeErrorEvent,
+  CreateBridgePayload,
+  UpdateBridgePayload,
+  AddChannelMappingPayload,
+  RemoveChannelMappingPayload,
+  TestTokenResult,
+  DiscordGuild,
 } from '../shared/types';
 
 // MCP Server types
@@ -383,6 +394,64 @@ const api = {
       const handler = (_: IpcRendererEvent, data: { id: string; needsInteraction: boolean }) => callback(data);
       ipcRenderer.on(IPC_CHANNELS.CLAUDE_PTY_INTERACTION, handler);
       return () => ipcRenderer.removeListener(IPC_CHANNELS.CLAUDE_PTY_INTERACTION, handler);
+    }
+  },
+
+  // ===== Bridges =====
+  bridges: {
+    getAll: (): Promise<BridgeConfig[]> =>
+      ipcRenderer.invoke(IPC_CHANNELS.BRIDGE_GET_ALL),
+
+    get: (id: string): Promise<BridgeConfig | null> =>
+      ipcRenderer.invoke(IPC_CHANNELS.BRIDGE_GET, { id }),
+
+    create: (payload: CreateBridgePayload): Promise<BridgeConfig> =>
+      ipcRenderer.invoke(IPC_CHANNELS.BRIDGE_CREATE, payload),
+
+    update: (payload: UpdateBridgePayload): Promise<BridgeConfig> =>
+      ipcRenderer.invoke(IPC_CHANNELS.BRIDGE_UPDATE, payload),
+
+    delete: (id: string): Promise<boolean> =>
+      ipcRenderer.invoke(IPC_CHANNELS.BRIDGE_DELETE, { id }),
+
+    connect: (id: string): Promise<boolean> =>
+      ipcRenderer.invoke(IPC_CHANNELS.BRIDGE_CONNECT, { id }),
+
+    disconnect: (id: string): Promise<boolean> =>
+      ipcRenderer.invoke(IPC_CHANNELS.BRIDGE_DISCONNECT, { id }),
+
+    getStatus: (id: string): Promise<BridgeStatusInfo | null> =>
+      ipcRenderer.invoke(IPC_CHANNELS.BRIDGE_GET_STATUS, { id }),
+
+    getGuilds: (bridgeId: string): Promise<DiscordGuild[]> =>
+      ipcRenderer.invoke(IPC_CHANNELS.BRIDGE_GET_GUILDS, { bridgeId }),
+
+    testToken: (platform: string, token: string): Promise<TestTokenResult> =>
+      ipcRenderer.invoke(IPC_CHANNELS.BRIDGE_TEST_TOKEN, { platform, token }),
+
+    addMapping: (payload: AddChannelMappingPayload): Promise<BridgeConfig> =>
+      ipcRenderer.invoke(IPC_CHANNELS.BRIDGE_ADD_MAPPING, payload),
+
+    removeMapping: (payload: RemoveChannelMappingPayload): Promise<BridgeConfig> =>
+      ipcRenderer.invoke(IPC_CHANNELS.BRIDGE_REMOVE_MAPPING, payload),
+
+    // Event listeners
+    onStatus: (callback: (data: BridgeStatusEvent) => void): CleanupFn => {
+      const handler = (_: IpcRendererEvent, data: BridgeStatusEvent) => callback(data);
+      ipcRenderer.on(IPC_CHANNELS.BRIDGE_EVENT_STATUS, handler);
+      return () => ipcRenderer.removeListener(IPC_CHANNELS.BRIDGE_EVENT_STATUS, handler);
+    },
+
+    onMessage: (callback: (data: BridgeMessageEvent) => void): CleanupFn => {
+      const handler = (_: IpcRendererEvent, data: BridgeMessageEvent) => callback(data);
+      ipcRenderer.on(IPC_CHANNELS.BRIDGE_EVENT_MESSAGE, handler);
+      return () => ipcRenderer.removeListener(IPC_CHANNELS.BRIDGE_EVENT_MESSAGE, handler);
+    },
+
+    onError: (callback: (data: BridgeErrorEvent) => void): CleanupFn => {
+      const handler = (_: IpcRendererEvent, data: BridgeErrorEvent) => callback(data);
+      ipcRenderer.on(IPC_CHANNELS.BRIDGE_EVENT_ERROR, handler);
+      return () => ipcRenderer.removeListener(IPC_CHANNELS.BRIDGE_EVENT_ERROR, handler);
     }
   }
 };

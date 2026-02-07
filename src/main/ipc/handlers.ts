@@ -14,7 +14,16 @@ import { HooksService } from '../services/hooks.service';
 import { terminalService } from '../services/terminal.service';
 import { claudePtyService, ClaudePtyOptions } from '../services/claude-pty.service';
 import { filesystemService } from '../services/filesystem.service';
-import { StartSessionOptions, SkillPayload, HookPayload } from '../../shared/types';
+import { BridgeManager } from '../services/bridges/bridge-manager.service';
+import {
+  StartSessionOptions,
+  SkillPayload,
+  HookPayload,
+  CreateBridgePayload,
+  UpdateBridgePayload,
+  AddChannelMappingPayload,
+  RemoveChannelMappingPayload,
+} from '../../shared/types';
 
 export function registerIpcHandlers(
   cliService: ClaudeCliService,
@@ -23,7 +32,8 @@ export function registerIpcHandlers(
   mcpService: McpService,
   gitService: GitService,
   skillsService: SkillsService,
-  hooksService: HooksService
+  hooksService: HooksService,
+  bridgeManager: BridgeManager
 ): void {
   // ===== Session Management =====
 
@@ -532,4 +542,62 @@ export function registerIpcHandlers(
   ipcMain.handle(IPC_CHANNELS.CLAUDE_PTY_DESTROY, async (_, { id }: { id: string }) => {
     return claudePtyService.destroy(id);
   });
+
+  // ===== Bridges =====
+
+  ipcMain.handle(IPC_CHANNELS.BRIDGE_GET_ALL, async () => {
+    return bridgeManager.getAllBridges();
+  });
+
+  ipcMain.handle(IPC_CHANNELS.BRIDGE_GET, async (_, { id }: { id: string }) => {
+    return bridgeManager.getBridge(id) || null;
+  });
+
+  ipcMain.handle(IPC_CHANNELS.BRIDGE_CREATE, async (_, payload: CreateBridgePayload) => {
+    return bridgeManager.createBridge(payload);
+  });
+
+  ipcMain.handle(IPC_CHANNELS.BRIDGE_UPDATE, async (_, payload: UpdateBridgePayload) => {
+    return bridgeManager.updateBridge(payload);
+  });
+
+  ipcMain.handle(IPC_CHANNELS.BRIDGE_DELETE, async (_, { id }: { id: string }) => {
+    await bridgeManager.deleteBridge(id);
+    return true;
+  });
+
+  ipcMain.handle(IPC_CHANNELS.BRIDGE_CONNECT, async (_, { id }: { id: string }) => {
+    await bridgeManager.connectBridge(id);
+    return true;
+  });
+
+  ipcMain.handle(IPC_CHANNELS.BRIDGE_DISCONNECT, async (_, { id }: { id: string }) => {
+    await bridgeManager.disconnectBridge(id);
+    return true;
+  });
+
+  ipcMain.handle(IPC_CHANNELS.BRIDGE_GET_STATUS, async (_, { id }: { id: string }) => {
+    return bridgeManager.getStatus(id);
+  });
+
+  ipcMain.handle(IPC_CHANNELS.BRIDGE_GET_GUILDS, async (_, { bridgeId }: { bridgeId: string }) => {
+    return bridgeManager.getDiscordGuilds(bridgeId);
+  });
+
+  ipcMain.handle(IPC_CHANNELS.BRIDGE_TEST_TOKEN, async (_, { platform, token }: { platform: string; token: string }) => {
+    return bridgeManager.testToken(platform, token);
+  });
+
+  ipcMain.handle(IPC_CHANNELS.BRIDGE_ADD_MAPPING, async (_, payload: AddChannelMappingPayload) => {
+    return bridgeManager.addChannelMapping(payload);
+  });
+
+  ipcMain.handle(IPC_CHANNELS.BRIDGE_REMOVE_MAPPING, async (_, payload: RemoveChannelMappingPayload) => {
+    return bridgeManager.removeChannelMapping(payload);
+  });
+
+  // Forward bridge events to renderer
+  bridgeManager.on('bridge:status', forwardToRenderer(IPC_CHANNELS.BRIDGE_EVENT_STATUS));
+  bridgeManager.on('bridge:message', forwardToRenderer(IPC_CHANNELS.BRIDGE_EVENT_MESSAGE));
+  bridgeManager.on('bridge:error', forwardToRenderer(IPC_CHANNELS.BRIDGE_EVENT_ERROR));
 }
