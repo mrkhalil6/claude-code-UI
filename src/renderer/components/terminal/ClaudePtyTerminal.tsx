@@ -51,7 +51,7 @@ export function ClaudePtyTerminal({
   const [needsInteraction, setNeedsInteraction] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
 
-  const { claudePtyHeight, resolvedTheme } = useUI();
+  const { claudePtyHeight, resolvedTheme, customColors } = useUI();
   const { setClaudePtyHeight } = useUIActions();
 
   // Track the current session to detect changes
@@ -93,7 +93,7 @@ export function ClaudePtyTerminal({
       cursorBlink: true,
       fontSize: 14,
       fontFamily: 'Consolas, "Courier New", monospace',
-      theme: getTerminalTheme(resolvedTheme),
+      theme: getTerminalTheme(resolvedTheme, customColors[resolvedTheme]),
       scrollback: 10000,
       allowProposedApi: true,
     });
@@ -161,9 +161,9 @@ export function ClaudePtyTerminal({
   // Update theme when it changes
   useEffect(() => {
     if (xtermRef.current) {
-      xtermRef.current.options.theme = getTerminalTheme(resolvedTheme);
+      xtermRef.current.options.theme = getTerminalTheme(resolvedTheme, customColors[resolvedTheme]);
     }
-  }, [resolvedTheme]);
+  }, [resolvedTheme, customColors]);
 
   // Subscribe to PTY data
   useEffect(() => {

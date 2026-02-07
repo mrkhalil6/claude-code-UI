@@ -2,12 +2,14 @@ import React, { useState } from 'react';
 import { McpManager } from './McpManager';
 import { SkillsManager } from './SkillsManager';
 import { HooksManager } from './HooksManager';
+import { BridgeManager } from './BridgeManager';
+import { ColorCustomizer } from './ColorCustomizer';
 import { ThemeToggle } from '../common';
 import { useUI, useUIActions } from '../../store';
 import { useTheme } from '../../hooks/useTheme';
 import styles from './SettingsPanel.module.css';
 
-type SettingsTab = 'appearance' | 'mcp' | 'skills' | 'hooks' | 'about';
+type SettingsTab = 'appearance' | 'mcp' | 'skills' | 'hooks' | 'bridges' | 'about';
 
 export const SettingsPanel: React.FC = () => {
   const { showSettings } = useUI();
@@ -71,6 +73,17 @@ export const SettingsPanel: React.FC = () => {
             Hooks
           </button>
           <button
+            className={`${styles.tab} ${activeTab === 'bridges' ? styles.activeTab : ''}`}
+            onClick={() => setActiveTab('bridges')}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M4 11a9 9 0 0 1 9 9" />
+              <path d="M4 4a16 16 0 0 1 16 16" />
+              <circle cx="5" cy="19" r="1" />
+            </svg>
+            Bridges
+          </button>
+          <button
             className={`${styles.tab} ${activeTab === 'about' ? styles.activeTab : ''}`}
             onClick={() => setActiveTab('about')}
           >
@@ -85,22 +98,28 @@ export const SettingsPanel: React.FC = () => {
 
         <div className={styles.content}>
           {activeTab === 'appearance' && (
-            <section className={styles.section}>
-              <h3 className={styles.sectionTitle}>Theme</h3>
-              <div className={styles.settingRow}>
-                <div className={styles.settingInfo}>
-                  <span className={styles.settingLabel}>Color Theme</span>
-                  <span className={styles.settingDescription}>
-                    Choose light, dark, or match your system preference
-                  </span>
+            <>
+              <section className={styles.section}>
+                <h3 className={styles.sectionTitle}>Theme</h3>
+                <div className={styles.settingRow}>
+                  <div className={styles.settingInfo}>
+                    <span className={styles.settingLabel}>Color Theme</span>
+                    <span className={styles.settingDescription}>
+                      Choose light, dark, or match your system preference
+                    </span>
+                  </div>
+                  <ThemeToggle
+                    value={themeMode}
+                    onChange={setThemeMode}
+                    size="md"
+                  />
                 </div>
-                <ThemeToggle
-                  value={themeMode}
-                  onChange={setThemeMode}
-                  size="md"
-                />
-              </div>
-            </section>
+              </section>
+              <section className={styles.section}>
+                <h3 className={styles.sectionTitle}>Custom Colors</h3>
+                <ColorCustomizer />
+              </section>
+            </>
           )}
 
           {activeTab === 'mcp' && (
@@ -118,6 +137,12 @@ export const SettingsPanel: React.FC = () => {
           {activeTab === 'hooks' && (
             <section className={styles.section}>
               <HooksManager />
+            </section>
+          )}
+
+          {activeTab === 'bridges' && (
+            <section className={styles.section}>
+              <BridgeManager />
             </section>
           )}
 

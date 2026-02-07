@@ -1,0 +1,73 @@
+.container {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.swatch {
+  width: 28px;
+  height: 28px;
+  border-radius: var(--border-radius-sm);
+  border: 2px solid var(--border-primary);
+  cursor: pointer;
+  transition: border-color var(--transition-fast);
+  flex-shrink: 0;
+}
+
+.swatch:hover {
+  border-color: var(--border-secondary);
+}
+
+.swatch.customized {
+  border-color: var(--accent-primary);
+}
+
+.nativeInput {
+  position: absolute;
+  width: 0;
+  height: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.hexInput {
+  width: 72px;
+  padding: 4px 6px;
+  font-size: var(--font-size-xs);
+  font-family: var(--font-family-mono);
+  color: var(--text-primary);
+  background-color: var(--bg-input);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--border-radius-sm);
+  outline: none;
+  transition: border-color var(--transition-fast);
+}
+
+.hexInput:focus {
+  border-color: var(--border-focus);
+}
+
+.resetButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  background: none;
+  border: none;
+  border-radius: var(--border-radius-sm);
+  color: var(--text-muted);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity var(--transition-fast), color var(--transition-fast), background-color var(--transition-fast);
+}
+
+.resetButton.visible {
+  opacity: 1;
+}
+
+.resetButton:hover {
+  color: var(--text-error);
+  background-color: var(--bg-hover);
+}

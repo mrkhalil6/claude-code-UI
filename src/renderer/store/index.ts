@@ -4,8 +4,9 @@ import { immer } from 'zustand/middleware/immer';
 import { createSessionSlice, SessionSlice } from './slices/session.slice';
 import { createChatSlice, ChatSlice } from './slices/chat.slice';
 import { createUISlice, UISlice } from './slices/ui.slice';
+import { createBridgeSlice, BridgeSlice } from './slices/bridge.slice';
 
-export type AppStore = SessionSlice & ChatSlice & UISlice;
+export type AppStore = SessionSlice & ChatSlice & UISlice & BridgeSlice;
 
 export const useStore = create<AppStore>()(
   devtools(
@@ -14,6 +15,7 @@ export const useStore = create<AppStore>()(
         ...createSessionSlice(...args),
         ...createChatSlice(...args),
         ...createUISlice(...args),
+        ...createBridgeSlice(...args),
       }))
     ),
     { name: 'claude-ui-store' }
@@ -50,6 +52,8 @@ export const useUI = () => useStore((state) => ({
   isPlanMode: state.isPlanMode,
   sidebarWidth: state.sidebarWidth,
   isSidebarCollapsed: state.isSidebarCollapsed,
+  sidebarView: state.sidebarView,
+  chatInputValue: state.chatInputValue,
   showDiffPanel: state.showDiffPanel,
   activeDiffId: state.activeDiffId,
   showSettings: state.showSettings,
@@ -70,6 +74,8 @@ export const useUI = () => useStore((state) => ({
   themeMode: state.themeMode,
   resolvedTheme: state.resolvedTheme,
   availableSkills: state.availableSkills,
+  customColors: state.customColors,
+  toolCallsExpanded: state.toolCallsExpanded,
   // Plan Panel
   showPlanPanel: state.showPlanPanel,
   activePlanSlug: state.activePlanSlug
@@ -115,6 +121,9 @@ export const useUIActions = () => useStore((state) => ({
   setSidebarWidth: state.setSidebarWidth,
   setIsSidebarCollapsed: state.setIsSidebarCollapsed,
   toggleSidebar: state.toggleSidebar,
+  setSidebarView: state.setSidebarView,
+  setChatInputValue: state.setChatInputValue,
+  appendToChatInput: state.appendToChatInput,
   setShowDiffPanel: state.setShowDiffPanel,
   setActiveDiffId: state.setActiveDiffId,
   setShowSettings: state.setShowSettings,
@@ -138,7 +147,32 @@ export const useUIActions = () => useStore((state) => ({
   setResolvedTheme: state.setResolvedTheme,
   setAvailableSkills: state.setAvailableSkills,
   clearAvailableSkills: state.clearAvailableSkills,
+  // Tool Calls toggle
+  toggleToolCallsExpanded: state.toggleToolCallsExpanded,
+  // Custom Colors actions
+  setCustomColor: state.setCustomColor,
+  resetCustomColor: state.resetCustomColor,
+  resetAllCustomColors: state.resetAllCustomColors,
+  resetAllCustomColorsForAllThemes: state.resetAllCustomColorsForAllThemes,
   // Plan Panel actions
   openPlanPanel: state.openPlanPanel,
   closePlanPanel: state.closePlanPanel
+}));
+
+// Bridge hooks
+export const useBridges = () => useStore((state) => ({
+  bridges: state.bridges,
+  bridgeStatuses: state.bridgeStatuses,
+  bridgeMessages: state.bridgeMessages,
+  isBridgesLoading: state.isBridgesLoading,
+}));
+
+export const useBridgeActions = () => useStore((state) => ({
+  setBridges: state.setBridges,
+  addBridge: state.addBridge,
+  updateBridgeConfig: state.updateBridgeConfig,
+  removeBridge: state.removeBridge,
+  setBridgeStatus: state.setBridgeStatus,
+  addBridgeMessage: state.addBridgeMessage,
+  setIsBridgesLoading: state.setIsBridgesLoading,
 }));

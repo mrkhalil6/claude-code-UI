@@ -45,121 +45,139 @@
   --z-notification: 130;
 }
 
-/* Dark theme (default) - VS Code Dark+ inspired */
+/* Dark theme (default) - Deep slate with refined contrast */
 :root,
 [data-theme="dark"] {
-  /* Background colors */
-  --bg-primary: #1e1e1e;
-  --bg-secondary: #252526;
-  --bg-tertiary: #2d2d30;
-  --bg-input: #3c3c3c;
-  --bg-hover: #2a2d2e;
-  --bg-active: #37373d;
-  --bg-selection: #264f78;
-  --bg-sidebar: #252526;
-  --bg-header: #323233;
-  --bg-message-user: #2d2d30;
-  --bg-message-assistant: #1e1e1e;
+  /* Background colors - deep slate with subtle blue undertone */
+  --bg-primary: #0d1117;
+  --bg-secondary: #151b23;
+  --bg-tertiary: #212830;
+  --bg-input: #1a2029;
+  --bg-hover: #1c2533;
+  --bg-active: #2b3544;
+  --bg-selection: #1a406b;
+  --bg-sidebar: #0d1117;
+  --bg-header: #151b23;
+  --bg-message-user: #151b23;
+  --bg-message-assistant: #0d1117;
 
-  /* Text colors */
-  --text-primary: #cccccc;
-  --text-secondary: #9d9d9d;
-  --text-muted: #6e7681;
-  --text-link: #3794ff;
-  --text-error: #f14c4c;
-  --text-warning: #cca700;
-  --text-success: #89d185;
-  --text-inverse: #1e1e1e;
+  /* Text colors - high contrast, warm tones */
+  --text-primary: #e6edf3;
+  --text-secondary: #9aa5b4;
+  --text-muted: #6e7a88;
+  --text-link: #6dacff;
+  --text-error: #f47067;
+  --text-warning: #e0a526;
+  --text-success: #56d364;
+  --text-inverse: #0d1117;
 
-  /* Border colors */
-  --border-primary: #3c3c3c;
-  --border-secondary: #454545;
-  --border-focus: #007acc;
+  /* Border colors - visible but unobtrusive */
+  --border-primary: #262c36;
+  --border-secondary: #3a424d;
+  --border-focus: #6dacff;
 
-  /* Accent colors */
-  --accent-primary: #0078d4;
-  --accent-hover: #1e8ad4;
-  --accent-active: #006cbd;
-  --accent-secondary: #6b4fbb;
+  /* Accent colors - indigo-purple for distinction */
+  --accent-primary: #7c5cfc;
+  --accent-primary-rgb: 124, 92, 252;
+  --accent-hover: #9178fc;
+  --accent-active: #6848d8;
+  --accent-secondary: #d97cff;
+  --accent-secondary-rgb: 217, 124, 255;
 
-  /* Syntax highlighting (Monaco compatible) */
-  --syntax-keyword: #569cd6;
-  --syntax-string: #ce9178;
-  --syntax-number: #b5cea8;
-  --syntax-comment: #6a9955;
-  --syntax-function: #dcdcaa;
-  --syntax-variable: #9cdcfe;
-  --syntax-type: #4ec9b0;
+  /* RGB triplets for alpha usage */
+  --text-link-rgb: 109, 172, 255;
+  --text-warning-rgb: 224, 165, 38;
+  --text-success-rgb: 86, 211, 100;
+  --text-error-rgb: 244, 112, 103;
+  --text-secondary-rgb: 154, 165, 180;
+
+  /* Syntax highlighting - rich, readable palette */
+  --syntax-keyword: #d2a8ff;
+  --syntax-string: #a5d6ff;
+  --syntax-number: #79c0ff;
+  --syntax-comment: #6e7a88;
+  --syntax-function: #dcbdfb;
+  --syntax-variable: #79c0ff;
+  --syntax-type: #7ee787;
 
   /* Diff colors */
-  --diff-added-bg: rgba(35, 134, 54, 0.2);
-  --diff-added-gutter: rgba(35, 134, 54, 0.4);
-  --diff-removed-bg: rgba(248, 81, 73, 0.2);
-  --diff-removed-gutter: rgba(248, 81, 73, 0.4);
-  --diff-added-line: #2ea043;
-  --diff-removed-line: #f85149;
+  --diff-added-bg: rgba(86, 211, 100, 0.12);
+  --diff-added-gutter: rgba(86, 211, 100, 0.3);
+  --diff-removed-bg: rgba(244, 112, 103, 0.12);
+  --diff-removed-gutter: rgba(244, 112, 103, 0.3);
+  --diff-added-line: #56d364;
+  --diff-removed-line: #f47067;
 
-  /* Shadows */
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
-  --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.4);
-  --shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.5);
+  /* Shadows - deep for layered UI */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
+  --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.6);
 }
 
-/* Light theme - VS Code Light+ inspired */
+/* Light theme - warm, crisp, and easy on the eyes */
 [data-theme="light"] {
-  /* Background colors */
-  --bg-primary: #ffffff;
-  --bg-secondary: #f3f3f3;
-  --bg-tertiary: #e8e8e8;
+  /* Background colors - soft off-white with cool undertone */
+  --bg-primary: #f8f9fb;
+  --bg-secondary: #eef0f4;
+  --bg-tertiary: #e2e5eb;
   --bg-input: #ffffff;
-  --bg-hover: #e8e8e8;
-  --bg-active: #d4d4d4;
-  --bg-selection: #add6ff;
-  --bg-sidebar: #f3f3f3;
-  --bg-header: #f8f8f8;
-  --bg-message-user: #f0f0f0;
-  --bg-message-assistant: #ffffff;
+  --bg-hover: #e5e8ee;
+  --bg-active: #d8dce4;
+  --bg-selection: #c5d5f7;
+  --bg-sidebar: #f0f2f6;
+  --bg-header: #eef0f4;
+  --bg-message-user: #eaecf2;
+  --bg-message-assistant: #f8f9fb;
 
-  /* Text colors */
-  --text-primary: #1f1f1f;
-  --text-secondary: #616161;
-  --text-muted: #8b8b8b;
-  --text-link: #0066cc;
-  --text-error: #d32f2f;
-  --text-warning: #bf8700;
-  --text-success: #388e3c;
-  --text-inverse: #ffffff;
+  /* Text colors - strong contrast, warm tones */
+  --text-primary: #1a1d23;
+  --text-secondary: #4b5563;
+  --text-muted: #6b7280;
+  --text-link: #5046e5;
+  --text-error: #dc2626;
+  --text-warning: #d97706;
+  --text-success: #16a34a;
+  --text-inverse: #f8f9fb;
 
-  /* Border colors */
-  --border-primary: #d4d4d4;
-  --border-secondary: #c4c4c4;
-  --border-focus: #0066cc;
+  /* Border colors - clear definition */
+  --border-primary: #d0d5dd;
+  --border-secondary: #9aa3b0;
+  --border-focus: #5046e5;
 
-  /* Accent colors */
-  --accent-primary: #0066cc;
-  --accent-hover: #0052a3;
-  --accent-active: #003d7a;
-  --accent-secondary: #5c3d99;
+  /* Accent colors - deep indigo */
+  --accent-primary: #5046e5;
+  --accent-primary-rgb: 80, 70, 229;
+  --accent-hover: #4338ca;
+  --accent-active: #3730a3;
+  --accent-secondary: #7c3aed;
+  --accent-secondary-rgb: 124, 58, 237;
+
+  /* RGB triplets for alpha usage */
+  --text-link-rgb: 80, 70, 229;
+  --text-warning-rgb: 217, 119, 6;
+  --text-success-rgb: 22, 163, 74;
+  --text-error-rgb: 220, 38, 38;
+  --text-secondary-rgb: 75, 85, 99;
 
   /* Syntax highlighting (light theme) */
-  --syntax-keyword: #0000ff;
-  --syntax-string: #a31515;
-  --syntax-number: #098658;
-  --syntax-comment: #008000;
-  --syntax-function: #795e26;
-  --syntax-variable: #001080;
-  --syntax-type: #267f99;
+  --syntax-keyword: #7c3aed;
+  --syntax-string: #16a34a;
+  --syntax-number: #d97706;
+  --syntax-comment: #6b7280;
+  --syntax-function: #2563eb;
+  --syntax-variable: #0e7490;
+  --syntax-type: #059669;
 
   /* Diff colors (light theme) */
-  --diff-added-bg: rgba(35, 134, 54, 0.15);
-  --diff-added-gutter: rgba(35, 134, 54, 0.3);
-  --diff-removed-bg: rgba(248, 81, 73, 0.15);
-  --diff-removed-gutter: rgba(248, 81, 73, 0.3);
-  --diff-added-line: #22863a;
-  --diff-removed-line: #cb2431;
+  --diff-added-bg: rgba(22, 163, 74, 0.1);
+  --diff-added-gutter: rgba(22, 163, 74, 0.2);
+  --diff-removed-bg: rgba(220, 38, 38, 0.1);
+  --diff-removed-gutter: rgba(220, 38, 38, 0.2);
+  --diff-added-line: #16a34a;
+  --diff-removed-line: #dc2626;
 
-  /* Shadows (lighter for light theme) */
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.1);
-  --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.15);
-  --shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.2);
+  /* Shadows - soft and subtle */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.06);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.12);
 }

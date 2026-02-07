@@ -1,8 +1,8 @@
 .container {
   display: flex;
   flex-direction: column;
-  background-color: #0a0a0a;
-  border-top: 1px solid var(--border-color);
+  background-color: var(--bg-primary);
+  border-top: 1px solid var(--border-primary);
   position: relative;
 }
 
@@ -20,7 +20,7 @@
 
 .resizeHandle:hover,
 .resizeHandle.resizing {
-  background-color: var(--accent-color);
+  background-color: var(--accent-primary);
 }
 
 .header {
@@ -28,8 +28,8 @@
   align-items: center;
   justify-content: space-between;
   padding: 4px 12px;
-  background-color: #1a1a2e;
-  border-bottom: 1px solid #2d2d44;
+  background-color: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-primary);
   min-height: 32px;
 }
 
@@ -51,12 +51,12 @@
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background-color: #4ade80;
+  background-color: var(--text-success);
   animation: pulse 2s infinite;
 }
 
 .statusIndicator.needsInput {
-  background-color: #fbbf24;
+  background-color: var(--text-warning);
   animation: flash 0.8s infinite;
 }
 
@@ -75,20 +75,20 @@
   align-items: center;
   gap: 4px;
   padding: 2px 8px;
-  background-color: rgba(251, 191, 36, 0.2);
-  border: 1px solid rgba(251, 191, 36, 0.4);
+  background-color: rgba(var(--text-warning-rgb), 0.2);
+  border: 1px solid rgba(var(--text-warning-rgb), 0.4);
   border-radius: 4px;
   font-size: 11px;
-  color: #fbbf24;
+  color: var(--text-warning);
   animation: glow 1.5s ease-in-out infinite;
 }
 
 @keyframes glow {
   0%, 100% {
-    box-shadow: 0 0 2px rgba(251, 191, 36, 0.2);
+    box-shadow: 0 0 2px rgba(var(--text-warning-rgb), 0.2);
   }
   50% {
-    box-shadow: 0 0 8px rgba(251, 191, 36, 0.4);
+    box-shadow: 0 0 8px rgba(var(--text-warning-rgb), 0.4);
   }
 }
 
@@ -118,8 +118,8 @@
 }
 
 .actionButton.danger:hover {
-  background-color: rgba(239, 68, 68, 0.2);
-  color: #ef4444;
+  background-color: rgba(var(--text-error-rgb), 0.2);
+  color: var(--text-error);
 }
 
 .terminal {
@@ -142,23 +142,23 @@
 }
 
 .terminal :global(.xterm-viewport::-webkit-scrollbar-track) {
-  background: #0a0a0a;
+  background: var(--bg-primary);
 }
 
 .terminal :global(.xterm-viewport::-webkit-scrollbar-thumb) {
-  background: #333;
+  background: var(--bg-tertiary);
   border-radius: 5px;
 }
 
 .terminal :global(.xterm-viewport::-webkit-scrollbar-thumb:hover) {
-  background: #444;
+  background: var(--border-secondary);
 }
 
 /* Focus indicator */
 .container:focus-within {
-  border-color: var(--accent-color);
+  border-color: var(--accent-primary);
 }
 
 .container:focus-within .header {
-  background-color: #1f1f3a;
+  background-color: var(--bg-tertiary);
 }

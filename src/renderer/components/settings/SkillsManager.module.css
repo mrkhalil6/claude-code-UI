@@ -263,8 +263,8 @@
   font-size: var(--font-size-xs);
   font-weight: 500;
   font-family: var(--font-mono);
-  background-color: rgba(139, 92, 246, 0.2);
-  color: #a78bfa;
+  background-color: rgba(var(--accent-secondary-rgb), 0.15);
+  color: var(--accent-secondary);
 }
 
 .skillDescription {
@@ -305,9 +305,9 @@
 }
 
 .viewButton:hover {
-  background-color: rgba(59, 130, 246, 0.1);
-  border-color: #60a5fa;
-  color: #60a5fa;
+  background-color: rgba(var(--accent-primary-rgb), 0.1);
+  border-color: var(--text-link);
+  color: var(--text-link);
 }
 
 .editButton:hover {

@@ -51,6 +51,39 @@
   padding: 0 var(--spacing-sm);
 }
 
+.actionsLeft {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+.toolToggle {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
+  user-select: none;
+  transition: color var(--transition-fast);
+}
+
+.toolToggle:hover {
+  color: var(--text-secondary);
+}
+
+.toolToggleCheckbox {
+  width: 12px;
+  height: 12px;
+  margin: 0;
+  accent-color: var(--accent-primary);
+  cursor: pointer;
+}
+
+.toolToggleLabel {
+  white-space: nowrap;
+}
+
 .hint {
   font-size: var(--font-size-xs);
   color: var(--text-muted);
@@ -120,16 +153,16 @@
 }
 
 .localType {
-  background-color: rgba(59, 130, 246, 0.2);
-  color: #60a5fa;
+  background-color: rgba(var(--accent-primary-rgb), 0.15);
+  color: var(--text-link);
 }
 
 .cliType {
-  background-color: rgba(249, 115, 22, 0.2);
-  color: #fb923c;
+  background-color: rgba(var(--text-warning-rgb), 0.15);
+  color: var(--text-warning);
 }
 
 .skillType {
-  background-color: rgba(168, 85, 247, 0.2);
-  color: #c084fc;
+  background-color: rgba(var(--accent-secondary-rgb), 0.15);
+  color: var(--accent-secondary);
 }

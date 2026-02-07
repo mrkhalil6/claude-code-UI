@@ -24,7 +24,7 @@ export default defineConfig({
           build: {
             outDir: 'dist/main',
             rollupOptions: {
-              external: ['electron', 'chokidar', 'node-pty']
+              external: ['electron', 'chokidar', 'node-pty', 'discord.js', '@discordjs/ws', '@discordjs/rest', '@discordjs/voice', 'zlib-sync', 'bufferutil', 'utf-8-validate', 'erlpack']
             }
           },
           // Only watch src/main files, not external project files

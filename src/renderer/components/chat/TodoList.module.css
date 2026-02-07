@@ -61,19 +61,19 @@
   align-items: center;
   gap: var(--spacing-sm);
   padding: var(--spacing-sm) var(--spacing-md);
-  background-color: rgba(59, 130, 246, 0.1);
-  border: 1px solid rgba(59, 130, 246, 0.3);
+  background-color: rgba(var(--accent-primary-rgb), 0.1);
+  border: 1px solid rgba(var(--accent-primary-rgb), 0.3);
   border-radius: var(--border-radius-md);
   margin-bottom: var(--spacing-sm);
-  color: #60a5fa;
+  color: var(--text-link);
   font-weight: 500;
 }
 
 .spinner {
   width: 14px;
   height: 14px;
-  border: 2px solid rgba(96, 165, 250, 0.3);
-  border-top-color: #60a5fa;
+  border: 2px solid rgba(var(--text-link-rgb), 0.3);
+  border-top-color: var(--text-link);
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
@@ -126,15 +126,15 @@
 }
 
 .item.in_progress .checkbox {
-  border-color: #60a5fa;
+  border-color: var(--text-link);
   background-color: transparent;
 }
 
 .checkboxSpinner {
   width: 10px;
   height: 10px;
-  border: 1.5px solid rgba(96, 165, 250, 0.3);
-  border-top-color: #60a5fa;
+  border: 1.5px solid rgba(var(--text-link-rgb), 0.3);
+  border-top-color: var(--text-link);
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
