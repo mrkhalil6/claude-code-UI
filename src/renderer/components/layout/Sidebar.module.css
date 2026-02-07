@@ -1,11 +1,21 @@
 .sidebar {
-  display: flex;
-  flex-direction: column;
   background-color: var(--bg-sidebar);
   border-right: 1px solid var(--border-primary);
   height: 100%;
   min-width: var(--sidebar-min-width);
   max-width: var(--sidebar-max-width);
+}
+
+.sidebarContainer {
+  display: flex;
+  height: 100%;
+}
+
+.sidebarMain {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
 }
 
 .header {

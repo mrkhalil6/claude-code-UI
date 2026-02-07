@@ -19,7 +19,8 @@ import {
   SkillPayload,
   HookWithId,
   HookPayload,
-  PlanInfo
+  PlanInfo,
+  ReadDirectoryResult
 } from '../shared/types';
 
 // MCP Server types
@@ -158,7 +159,10 @@ const api = {
       ipcRenderer.invoke(IPC_CHANNELS.FS_SELECT_DIRECTORY),
 
     getHomeDir: (): Promise<string> =>
-      ipcRenderer.invoke(IPC_CHANNELS.FS_GET_HOME_DIR)
+      ipcRenderer.invoke(IPC_CHANNELS.FS_GET_HOME_DIR),
+
+    readDirectory: (path: string): Promise<ReadDirectoryResult> =>
+      ipcRenderer.invoke(IPC_CHANNELS.FS_READ_DIRECTORY, { path })
   },
 
   // ===== App =====

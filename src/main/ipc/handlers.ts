@@ -13,6 +13,7 @@ import { SkillsService } from '../services/skills.service';
 import { HooksService } from '../services/hooks.service';
 import { terminalService } from '../services/terminal.service';
 import { claudePtyService, ClaudePtyOptions } from '../services/claude-pty.service';
+import { filesystemService } from '../services/filesystem.service';
 import { StartSessionOptions, SkillPayload, HookPayload } from '../../shared/types';
 
 export function registerIpcHandlers(
@@ -131,6 +132,10 @@ export function registerIpcHandlers(
 
   ipcMain.handle(IPC_CHANNELS.FS_GET_HOME_DIR, () => {
     return homedir();
+  });
+
+  ipcMain.handle(IPC_CHANNELS.FS_READ_DIRECTORY, async (_, { path }: { path: string }) => {
+    return filesystemService.readDirectory(path);
   });
 
   // ===== App =====

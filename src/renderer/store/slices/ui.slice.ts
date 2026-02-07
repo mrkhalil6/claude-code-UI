@@ -15,12 +15,15 @@ export interface UsageInfo {
 
 export type ThemeMode = 'light' | 'dark' | 'system';
 export type ResolvedTheme = 'light' | 'dark';
+export type SidebarView = 'projects' | 'files';
 
 export interface UISlice {
   // State
   isPlanMode: boolean;
   sidebarWidth: number;
   isSidebarCollapsed: boolean;
+  sidebarView: SidebarView;
+  chatInputValue: string;
   showDiffPanel: boolean;
   activeDiffId: string | null;
   showSettings: boolean;
@@ -51,6 +54,9 @@ export interface UISlice {
   setSidebarWidth: (width: number) => void;
   setIsSidebarCollapsed: (collapsed: boolean) => void;
   toggleSidebar: () => void;
+  setSidebarView: (view: SidebarView) => void;
+  setChatInputValue: (value: string) => void;
+  appendToChatInput: (text: string) => void;
   setShowDiffPanel: (show: boolean) => void;
   setActiveDiffId: (id: string | null) => void;
   setShowSettings: (show: boolean) => void;
@@ -106,6 +112,8 @@ export const createUISlice: StateCreator<UISlice, [], [], UISlice> = (set) => ({
   isPlanMode: false,
   sidebarWidth: 280,
   isSidebarCollapsed: false,
+  sidebarView: 'projects',
+  chatInputValue: '',
   showDiffPanel: false,
   activeDiffId: null,
   showSettings: false,
@@ -140,6 +148,16 @@ export const createUISlice: StateCreator<UISlice, [], [], UISlice> = (set) => ({
   setIsSidebarCollapsed: (collapsed) => set({ isSidebarCollapsed: collapsed }),
 
   toggleSidebar: () => set((state) => ({ isSidebarCollapsed: !state.isSidebarCollapsed })),
+
+  setSidebarView: (view) => set({ sidebarView: view }),
+
+  setChatInputValue: (value) => set({ chatInputValue: value }),
+
+  appendToChatInput: (text) => set((state) => ({
+    chatInputValue: state.chatInputValue
+      ? `${state.chatInputValue} ${text}`
+      : text
+  })),
 
   setShowDiffPanel: (show) => set({ showDiffPanel: show }),
 

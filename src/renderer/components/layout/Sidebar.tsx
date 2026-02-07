@@ -1,7 +1,9 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { SessionList } from '../sidebar/SessionList';
+import { ActivityBar } from '../sidebar/ActivityBar';
+import { DirectoryTree } from '../sidebar/DirectoryTree';
 import { Button } from '../common';
-import { useUI, useSession, useSessionActions, useChatActions } from '../../store';
+import { useUI, useSession, useSessionActions, useChatActions, useUIActions } from '../../store';
 import styles from './Sidebar.module.css';
 
 export interface SelectedSession {
@@ -14,10 +16,11 @@ export interface SelectedSession {
 const SESSION_CHANGE_DEBOUNCE_MS = 500;
 
 export const Sidebar: React.FC = () => {
-  const { sidebarWidth, isSidebarCollapsed } = useUI();
-  const { projects, isLoadingSessions } = useSession();
+  const { sidebarWidth, isSidebarCollapsed, sidebarView } = useUI();
+  const { projects, isLoadingSessions, currentCwd } = useSession();
   const { setProjects, setIsLoadingSessions, setActiveSessionId, setCliSessionId, setCurrentCwd } = useSessionActions();
   const { clearMessages, clearStreaming } = useChatActions();
+  const { setSidebarView, appendToChatInput } = useUIActions();
   const [isSelectMode, setIsSelectMode] = useState(false);
   const [selectedSessions, setSelectedSessions] = useState<SelectedSession[]>([]);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -131,74 +134,97 @@ export const Sidebar: React.FC = () => {
     }
   };
 
+  const handleFileClick = (filePath: string) => {
+    appendToChatInput(filePath);
+  };
+
   if (isSidebarCollapsed) {
     return null;
   }
+
+  // Get the cwd for the directory tree - use home directory as fallback
+  const directoryPath = currentCwd || '';
 
   return (
     <aside
       className={styles.sidebar}
       style={{ width: sidebarWidth }}
     >
-      <div className={styles.header}>
-        <h2 className={styles.title}>Chat History</h2>
-        <div className={styles.headerActions}>
-          {isSelectMode ? (
+      <div className={styles.sidebarContainer}>
+        <ActivityBar activeView={sidebarView} onViewChange={setSidebarView} />
+        <div className={styles.sidebarMain}>
+          {sidebarView === 'projects' ? (
             <>
-              <Button
-                variant="danger"
-                size="sm"
-                onClick={handleBulkDelete}
-                disabled={selectedSessions.length === 0 || isDeleting}
-              >
-                {isDeleting ? 'Deleting...' : `Delete (${selectedSessions.length})`}
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={toggleSelectMode}
-              >
-                Cancel
-              </Button>
+              <div className={styles.header}>
+                <h2 className={styles.title}>Chat History</h2>
+                <div className={styles.headerActions}>
+                  {isSelectMode ? (
+                    <>
+                      <Button
+                        variant="danger"
+                        size="sm"
+                        onClick={handleBulkDelete}
+                        disabled={selectedSessions.length === 0 || isDeleting}
+                      >
+                        {isDeleting ? 'Deleting...' : `Delete (${selectedSessions.length})`}
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={toggleSelectMode}
+                      >
+                        Cancel
+                      </Button>
+                    </>
+                  ) : (
+                    <>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={toggleSelectMode}
+                        title="Select multiple chats"
+                      >
+                        Select
+                      </Button>
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        onClick={handleNewChat}
+                      >
+                        + New
+                      </Button>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              <div className={styles.content}>
+                {isLoadingSessions ? (
+                  <div className={styles.loading}>Loading sessions...</div>
+                ) : projects.length === 0 ? (
+                  <div className={styles.empty}>
+                    <p>No chat history yet.</p>
+                    <p className={styles.emptyHint}>Start a new chat to get going!</p>
+                  </div>
+                ) : (
+                  <SessionList
+                    projects={projects}
+                    isSelectMode={isSelectMode}
+                    selectedSessions={selectedSessions}
+                    onToggleSelection={toggleSessionSelection}
+                  />
+                )}
+              </div>
             </>
+          ) : directoryPath ? (
+            <DirectoryTree cwd={directoryPath} onFileClick={handleFileClick} />
           ) : (
-            <>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={toggleSelectMode}
-                title="Select multiple chats"
-              >
-                Select
-              </Button>
-              <Button
-                variant="primary"
-                size="sm"
-                onClick={handleNewChat}
-              >
-                + New
-              </Button>
-            </>
+            <div className={styles.empty}>
+              <p>No directory selected.</p>
+              <p className={styles.emptyHint}>Start a chat to set a working directory.</p>
+            </div>
           )}
         </div>
-      </div>
-
-      <div className={styles.content}>
-        {isLoadingSessions ? (
-          <div className={styles.loading}>Loading sessions...</div>
-        ) : projects.length === 0 ? (
-          <div className={styles.empty}>
-            <p>No chat history yet.</p>
-            <p className={styles.emptyHint}>Start a new chat to get going!</p>
-          </div>
-        ) : (
-          <SessionList
-            projects={projects}
-            isSelectMode={isSelectMode}
-            selectedSessions={selectedSessions}
-            onToggleSelection={toggleSessionSelection}
-          />
-        )}
       </div>
     </aside>
   );

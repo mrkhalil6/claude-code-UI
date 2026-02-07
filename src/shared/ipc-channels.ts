@@ -40,6 +40,7 @@ export const IPC_CHANNELS = {
   FS_READ_FILE: 'fs:readFile',
   FS_SELECT_DIRECTORY: 'fs:selectDirectory',
   FS_GET_HOME_DIR: 'fs:getHomeDir',
+  FS_READ_DIRECTORY: 'fs:readDirectory',
 
   // App
   APP_GET_VERSION: 'app:getVersion',

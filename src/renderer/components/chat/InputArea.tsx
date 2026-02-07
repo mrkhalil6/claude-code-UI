@@ -1,7 +1,7 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useRef, useEffect, useCallback, useState } from 'react';
 import { Button } from '../common';
 import { filterCommands, parseSlashCommand, SlashCommand, SLASH_COMMANDS } from '../../../shared/slash-commands';
-import { useUI } from '../../store';
+import { useUI, useUIActions } from '../../store';
 import styles from './InputArea.module.css';
 
 interface InputAreaProps {
@@ -21,13 +21,13 @@ export const InputArea: React.FC<InputAreaProps> = ({
   isStreaming = false,
   placeholder = 'Type a message... (/ for commands)'
 }) => {
-  const [value, setValue] = useState('');
+  const { chatInputValue: value, availableSkills } = useUI();
+  const { setChatInputValue: setValue } = useUIActions();
   const [suggestions, setSuggestions] = useState<SlashCommand[]>([]);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const suggestionsRef = useRef<HTMLDivElement>(null);
-  const { availableSkills } = useUI();
 
   // Auto-resize textarea
   useEffect(() => {
@@ -71,7 +71,7 @@ export const InputArea: React.FC<InputAreaProps> = ({
     setValue(command.name + ' ');
     setShowSuggestions(false);
     textareaRef.current?.focus();
-  }, []);
+  }, [setValue]);
 
   const handleSubmit = useCallback(() => {
     if (value.trim() && !disabled) {
@@ -87,7 +87,7 @@ export const InputArea: React.FC<InputAreaProps> = ({
       onSend(value);
       setValue('');
     }
-  }, [value, disabled, onSend, onSlashCommand, availableSkills]);
+  }, [value, disabled, onSend, onSlashCommand, availableSkills, setValue]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     // Handle suggestions navigation
