@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { McpManager } from './McpManager';
 import { SkillsManager } from './SkillsManager';
 import { HooksManager } from './HooksManager';
+import { ColorCustomizer } from './ColorCustomizer';
 import { ThemeToggle } from '../common';
 import { useUI, useUIActions } from '../../store';
 import { useTheme } from '../../hooks/useTheme';
@@ -85,22 +86,28 @@ export const SettingsPanel: React.FC = () => {
 
         <div className={styles.content}>
           {activeTab === 'appearance' && (
-            <section className={styles.section}>
-              <h3 className={styles.sectionTitle}>Theme</h3>
-              <div className={styles.settingRow}>
-                <div className={styles.settingInfo}>
-                  <span className={styles.settingLabel}>Color Theme</span>
-                  <span className={styles.settingDescription}>
-                    Choose light, dark, or match your system preference
-                  </span>
+            <>
+              <section className={styles.section}>
+                <h3 className={styles.sectionTitle}>Theme</h3>
+                <div className={styles.settingRow}>
+                  <div className={styles.settingInfo}>
+                    <span className={styles.settingLabel}>Color Theme</span>
+                    <span className={styles.settingDescription}>
+                      Choose light, dark, or match your system preference
+                    </span>
+                  </div>
+                  <ThemeToggle
+                    value={themeMode}
+                    onChange={setThemeMode}
+                    size="md"
+                  />
                 </div>
-                <ThemeToggle
-                  value={themeMode}
-                  onChange={setThemeMode}
-                  size="md"
-                />
-              </div>
-            </section>
+              </section>
+              <section className={styles.section}>
+                <h3 className={styles.sectionTitle}>Custom Colors</h3>
+                <ColorCustomizer />
+              </section>
+            </>
           )}
 
           {activeTab === 'mcp' && (

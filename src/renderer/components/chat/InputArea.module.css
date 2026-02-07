@@ -51,6 +51,39 @@
   padding: 0 var(--spacing-sm);
 }
 
+.actionsLeft {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+.toolToggle {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
+  user-select: none;
+  transition: color var(--transition-fast);
+}
+
+.toolToggle:hover {
+  color: var(--text-secondary);
+}
+
+.toolToggleCheckbox {
+  width: 12px;
+  height: 12px;
+  margin: 0;
+  accent-color: var(--accent-primary);
+  cursor: pointer;
+}
+
+.toolToggleLabel {
+  white-space: nowrap;
+}
+
 .hint {
   font-size: var(--font-size-xs);
   color: var(--text-muted);

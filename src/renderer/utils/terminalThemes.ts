@@ -1,5 +1,6 @@
 import type { ITheme } from '@xterm/xterm';
 import type { ResolvedTheme } from '../store/slices/ui.slice';
+import type { ColorOverrides } from '../store/slices/ui.slice';
 
 export const darkTerminalTheme: ITheme = {
   background: '#0d1117',
@@ -49,6 +50,30 @@ export const lightTerminalTheme: ITheme = {
   brightWhite: '#9aa3b0'
 };
 
-export const getTerminalTheme = (resolvedTheme: ResolvedTheme): ITheme => {
-  return resolvedTheme === 'light' ? lightTerminalTheme : darkTerminalTheme;
+/** Map from colorRegistry terminal variable names to xterm ITheme keys */
+const terminalVarToXterm: Record<string, keyof ITheme> = {
+  'terminal-background': 'background',
+  'terminal-foreground': 'foreground',
+  'terminal-cursor': 'cursor',
+  'terminal-selection': 'selectionBackground',
+  'terminal-black': 'black',
+  'terminal-red': 'red',
+  'terminal-green': 'green',
+  'terminal-yellow': 'yellow',
+  'terminal-blue': 'blue',
+  'terminal-magenta': 'magenta',
+  'terminal-cyan': 'cyan',
+  'terminal-white': 'white',
+};
+
+export const getTerminalTheme = (resolvedTheme: ResolvedTheme, customOverrides?: ColorOverrides): ITheme => {
+  const base = resolvedTheme === 'light' ? { ...lightTerminalTheme } : { ...darkTerminalTheme };
+  if (!customOverrides) return base;
+
+  for (const [varName, xtermKey] of Object.entries(terminalVarToXterm)) {
+    if (customOverrides[varName]) {
+      (base as Record<string, string>)[xtermKey] = customOverrides[varName];
+    }
+  }
+  return base;
 };

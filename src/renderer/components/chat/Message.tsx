@@ -2,6 +2,7 @@ import React from 'react';
 import clsx from 'clsx';
 import { MarkdownPreview } from '../markdown/MarkdownPreview';
 import { ChatMessage, ToolUseDisplay } from '../../store/slices/chat.slice';
+import { useUI } from '../../store';
 import styles from './Message.module.css';
 
 interface MessageProps {
@@ -10,6 +11,7 @@ interface MessageProps {
 
 export const Message: React.FC<MessageProps> = ({ message }) => {
   const isUser = message.type === 'user';
+  const { toolCallsExpanded } = useUI();
 
   const renderToolBlock = (tool: ToolUseDisplay) => (
     <div key={tool.id} className={clsx(styles.tool, styles[`tool${tool.status.charAt(0).toUpperCase() + tool.status.slice(1)}`])}>
@@ -22,13 +24,13 @@ export const Message: React.FC<MessageProps> = ({ message }) => {
           {tool.status}
         </span>
       </div>
-      {tool.input && Object.keys(tool.input).length > 0 && (
+      {toolCallsExpanded && tool.input && Object.keys(tool.input).length > 0 && (
         <details className={styles.toolDetails} open>
           <summary>Input</summary>
           <pre>{JSON.stringify(tool.input, null, 2)}</pre>
         </details>
       )}
-      {tool.result && (
+      {toolCallsExpanded && tool.result && (
         <details className={styles.toolDetails} open>
           <summary>Result</summary>
           <pre>{tool.result}</pre>

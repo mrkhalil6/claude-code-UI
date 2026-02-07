@@ -72,6 +72,8 @@ export const useUI = () => useStore((state) => ({
   themeMode: state.themeMode,
   resolvedTheme: state.resolvedTheme,
   availableSkills: state.availableSkills,
+  customColors: state.customColors,
+  toolCallsExpanded: state.toolCallsExpanded,
   // Plan Panel
   showPlanPanel: state.showPlanPanel,
   activePlanSlug: state.activePlanSlug
@@ -143,6 +145,13 @@ export const useUIActions = () => useStore((state) => ({
   setResolvedTheme: state.setResolvedTheme,
   setAvailableSkills: state.setAvailableSkills,
   clearAvailableSkills: state.clearAvailableSkills,
+  // Tool Calls toggle
+  toggleToolCallsExpanded: state.toggleToolCallsExpanded,
+  // Custom Colors actions
+  setCustomColor: state.setCustomColor,
+  resetCustomColor: state.resetCustomColor,
+  resetAllCustomColors: state.resetAllCustomColors,
+  resetAllCustomColorsForAllThemes: state.resetAllCustomColorsForAllThemes,
   // Plan Panel actions
   openPlanPanel: state.openPlanPanel,
   closePlanPanel: state.closePlanPanel

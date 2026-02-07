@@ -15,6 +15,33 @@
         color: #e6edf3;
       }
     </style>
+    <script>
+      /* Apply custom theme colors before React mounts to prevent flash */
+      (function() {
+        try {
+          var theme = localStorage.getItem('theme-mode') || 'dark';
+          if (theme === 'system') {
+            theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+          }
+          var raw = localStorage.getItem('custom-theme-colors');
+          if (raw) {
+            var data = JSON.parse(raw);
+            var overrides = data[theme];
+            if (overrides) {
+              var el = document.documentElement;
+              if (overrides['bg-primary']) {
+                el.style.setProperty('--bg-primary', overrides['bg-primary']);
+                document.body.style.backgroundColor = overrides['bg-primary'];
+              }
+              if (overrides['text-primary']) {
+                el.style.setProperty('--text-primary', overrides['text-primary']);
+                document.body.style.color = overrides['text-primary'];
+              }
+            }
+          }
+        } catch(e) {}
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

@@ -21,8 +21,8 @@ export const InputArea: React.FC<InputAreaProps> = ({
   isStreaming = false,
   placeholder = 'Type a message... (/ for commands)'
 }) => {
-  const { chatInputValue: value, availableSkills } = useUI();
-  const { setChatInputValue: setValue } = useUIActions();
+  const { chatInputValue: value, availableSkills, toolCallsExpanded } = useUI();
+  const { setChatInputValue: setValue, toggleToolCallsExpanded } = useUIActions();
   const [suggestions, setSuggestions] = useState<SlashCommand[]>([]);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -176,12 +176,26 @@ export const InputArea: React.FC<InputAreaProps> = ({
         />
 
         <div className={styles.actions}>
-          <span className={styles.hint}>
-            {isStreaming
-              ? 'Claude is responding... Press Stop to interrupt'
-              : <>Press <kbd>Enter</kbd> to send, <kbd>Shift+Enter</kbd> for new line, <kbd>/</kbd> for commands</>
-            }
-          </span>
+          <div className={styles.actionsLeft}>
+            <span className={styles.hint}>
+              {isStreaming
+                ? 'Claude is responding... Press Stop to interrupt'
+                : <>Press <kbd>Enter</kbd> to send, <kbd>Shift+Enter</kbd> for new line, <kbd>/</kbd> for commands</>
+              }
+            </span>
+            <label className={styles.toolToggle} title={toolCallsExpanded ? 'Collapse all tool calls' : 'Expand all tool calls'}>
+              <input
+                type="checkbox"
+                checked={toolCallsExpanded}
+                onChange={toggleToolCallsExpanded}
+                className={styles.toolToggleCheckbox}
+              />
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />
+              </svg>
+              <span className={styles.toolToggleLabel}>Tools</span>
+            </label>
+          </div>
           {isStreaming && onInterrupt ? (
             <Button
               variant="danger"

@@ -18,7 +18,7 @@ export function TerminalPanel({ cwd }: TerminalPanelProps) {
   const resizeHandleRef = useRef<HTMLDivElement>(null);
   const [isResizing, setIsResizing] = useState(false);
 
-  const { showTerminal, setShowTerminal, terminalHeight, setTerminalHeight, resolvedTheme } = useStore();
+  const { showTerminal, setShowTerminal, terminalHeight, setTerminalHeight, resolvedTheme, customColors } = useStore();
 
   // Initialize terminal
   useEffect(() => {
@@ -28,7 +28,7 @@ export function TerminalPanel({ cwd }: TerminalPanelProps) {
       cursorBlink: true,
       fontSize: 14,
       fontFamily: 'Consolas, "Courier New", monospace',
-      theme: getTerminalTheme(resolvedTheme)
+      theme: getTerminalTheme(resolvedTheme, customColors[resolvedTheme])
     });
 
     const fitAddon = new FitAddon();
@@ -79,12 +79,12 @@ export function TerminalPanel({ cwd }: TerminalPanelProps) {
     };
   }, [showTerminal, cwd, resolvedTheme]);
 
-  // Update terminal theme when resolved theme changes
+  // Update terminal theme when resolved theme or custom colors change
   useEffect(() => {
     if (xtermRef.current) {
-      xtermRef.current.options.theme = getTerminalTheme(resolvedTheme);
+      xtermRef.current.options.theme = getTerminalTheme(resolvedTheme, customColors[resolvedTheme]);
     }
-  }, [resolvedTheme]);
+  }, [resolvedTheme, customColors]);
 
   // Subscribe to terminal data from main process
   useEffect(() => {

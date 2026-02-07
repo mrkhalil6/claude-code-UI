@@ -17,6 +17,12 @@ export type ThemeMode = 'light' | 'dark' | 'system';
 export type ResolvedTheme = 'light' | 'dark';
 export type SidebarView = 'projects' | 'files';
 
+export type ColorOverrides = Record<string, string>;
+export interface CustomThemeData {
+  dark: ColorOverrides;
+  light: ColorOverrides;
+}
+
 export interface UISlice {
   // State
   isPlanMode: boolean;
@@ -44,6 +50,8 @@ export interface UISlice {
   themeMode: ThemeMode;
   resolvedTheme: ResolvedTheme;
   availableSkills: SlashCommand[];
+  customColors: CustomThemeData;
+  toolCallsExpanded: boolean;
   // Plan Panel
   showPlanPanel: boolean;
   activePlanSlug: string | null;
@@ -80,6 +88,13 @@ export interface UISlice {
   setResolvedTheme: (theme: ResolvedTheme) => void;
   setAvailableSkills: (skills: SlashCommand[]) => void;
   clearAvailableSkills: () => void;
+  // Tool Calls toggle
+  toggleToolCallsExpanded: () => void;
+  // Custom Colors Actions
+  setCustomColor: (variable: string, color: string) => void;
+  resetCustomColor: (variable: string) => void;
+  resetAllCustomColors: () => void;
+  resetAllCustomColorsForAllThemes: () => void;
   // Plan Panel Actions
   openPlanPanel: (slug: string) => void;
   closePlanPanel: () => void;
@@ -95,6 +110,29 @@ const initialUsage: UsageInfo = {
   cacheCreationTokens: 0,
   totalCost: 0,
   claudeCodeVersion: ''
+};
+
+const CUSTOM_COLORS_KEY = 'custom-theme-colors';
+
+const getInitialCustomColors = (): CustomThemeData => {
+  if (typeof window !== 'undefined') {
+    try {
+      const stored = localStorage.getItem(CUSTOM_COLORS_KEY);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (parsed && typeof parsed.dark === 'object' && typeof parsed.light === 'object') {
+          return parsed;
+        }
+      }
+    } catch { /* ignore invalid JSON */ }
+  }
+  return { dark: {}, light: {} };
+};
+
+const persistCustomColors = (data: CustomThemeData) => {
+  if (typeof window !== 'undefined') {
+    localStorage.setItem(CUSTOM_COLORS_KEY, JSON.stringify(data));
+  }
 };
 
 const getInitialThemeMode = (): ThemeMode => {
@@ -134,6 +172,8 @@ export const createUISlice: StateCreator<UISlice, [], [], UISlice> = (set) => ({
   themeMode: getInitialThemeMode(),
   resolvedTheme: 'dark',
   availableSkills: [],
+  customColors: getInitialCustomColors(),
+  toolCallsExpanded: true,
   // Plan Panel initial state
   showPlanPanel: false,
   activePlanSlug: null,
@@ -239,6 +279,42 @@ export const createUISlice: StateCreator<UISlice, [], [], UISlice> = (set) => ({
   setAvailableSkills: (skills) => set({ availableSkills: skills }),
 
   clearAvailableSkills: () => set({ availableSkills: [] }),
+
+  // Tool Calls toggle
+  toggleToolCallsExpanded: () => set((state) => ({ toolCallsExpanded: !state.toolCallsExpanded })),
+
+  // Custom Colors Actions
+  setCustomColor: (variable, color) => set((state) => {
+    const theme = state.resolvedTheme;
+    const newCustomColors = {
+      ...state.customColors,
+      [theme]: { ...state.customColors[theme], [variable]: color }
+    };
+    persistCustomColors(newCustomColors);
+    return { customColors: newCustomColors };
+  }),
+
+  resetCustomColor: (variable) => set((state) => {
+    const theme = state.resolvedTheme;
+    const themeColors = { ...state.customColors[theme] };
+    delete themeColors[variable];
+    const newCustomColors = { ...state.customColors, [theme]: themeColors };
+    persistCustomColors(newCustomColors);
+    return { customColors: newCustomColors };
+  }),
+
+  resetAllCustomColors: () => set((state) => {
+    const theme = state.resolvedTheme;
+    const newCustomColors = { ...state.customColors, [theme]: {} };
+    persistCustomColors(newCustomColors);
+    return { customColors: newCustomColors };
+  }),
+
+  resetAllCustomColorsForAllThemes: () => {
+    const newCustomColors: CustomThemeData = { dark: {}, light: {} };
+    persistCustomColors(newCustomColors);
+    set({ customColors: newCustomColors });
+  },
 
   // Plan Panel Actions
   openPlanPanel: (slug) => set({ showPlanPanel: true, activePlanSlug: slug }),

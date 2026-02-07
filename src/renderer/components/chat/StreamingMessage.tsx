@@ -1,6 +1,7 @@
 import React from 'react';
 import { MarkdownPreview } from '../markdown/MarkdownPreview';
 import { ToolUseDisplay, ContentBlock } from '../../store/slices/chat.slice';
+import { useUI } from '../../store';
 import styles from './StreamingMessage.module.css';
 
 interface StreamingMessageProps {
@@ -14,6 +15,7 @@ export const StreamingMessage: React.FC<StreamingMessageProps> = ({
   thinking,
   streamingBlocks = []
 }) => {
+  const { toolCallsExpanded } = useUI();
   const getToolStatusIcon = (status: ToolUseDisplay['status']) => {
     switch (status) {
       case 'pending':
@@ -49,13 +51,13 @@ export const StreamingMessage: React.FC<StreamingMessageProps> = ({
         <span className={styles.toolName}>{tool.name}</span>
         <span className={styles.toolStatus}>{tool.status}</span>
       </div>
-      {tool.input && Object.keys(tool.input).length > 0 && (
+      {toolCallsExpanded && tool.input && Object.keys(tool.input).length > 0 && (
         <details className={styles.toolInput} open>
           <summary>Input</summary>
           <pre>{JSON.stringify(tool.input, null, 2)}</pre>
         </details>
       )}
-      {tool.result && (
+      {toolCallsExpanded && tool.result && (
         <details className={styles.toolResult} open>
           <summary>Result</summary>
           <pre>{tool.result}</pre>
