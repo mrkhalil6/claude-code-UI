@@ -1,8 +1,8 @@
 .container {
   display: flex;
   flex-direction: column;
-  background-color: #1e1e1e;
-  border-top: 1px solid var(--border-color);
+  background-color: var(--bg-primary);
+  border-top: 1px solid var(--border-primary);
   position: relative;
 }
 
@@ -20,7 +20,7 @@
 
 .resizeHandle:hover,
 .resizeHandle.resizing {
-  background-color: var(--accent-color);
+  background-color: var(--accent-primary);
 }
 
 .header {
@@ -28,8 +28,8 @@
   align-items: center;
   justify-content: space-between;
   padding: 4px 12px;
-  background-color: #252526;
-  border-bottom: 1px solid #3c3c3c;
+  background-color: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-primary);
   min-height: 32px;
 }
 
@@ -86,14 +86,14 @@
 }
 
 .terminal :global(.xterm-viewport::-webkit-scrollbar-track) {
-  background: #1e1e1e;
+  background: var(--bg-primary);
 }
 
 .terminal :global(.xterm-viewport::-webkit-scrollbar-thumb) {
-  background: #424242;
+  background: var(--bg-tertiary);
   border-radius: 5px;
 }
 
 .terminal :global(.xterm-viewport::-webkit-scrollbar-thumb:hover) {
-  background: #555555;
+  background: var(--border-secondary);
 }

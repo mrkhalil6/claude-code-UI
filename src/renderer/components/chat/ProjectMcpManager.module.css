@@ -114,13 +114,13 @@
 }
 
 .sseBadge {
-  background-color: rgba(59, 130, 246, 0.2);
-  color: #60a5fa;
+  background-color: rgba(var(--accent-primary-rgb), 0.15);
+  color: var(--text-link);
 }
 
 .httpBadge {
-  background-color: rgba(249, 115, 22, 0.2);
-  color: #fb923c;
+  background-color: rgba(var(--text-warning-rgb), 0.15);
+  color: var(--text-warning);
 }
 
 .stdioBadge {

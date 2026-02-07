@@ -51,7 +51,7 @@
   justify-content: space-between;
   padding: 16px 20px;
   background: var(--bg-secondary);
-  border-bottom: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--border-primary);
   flex-shrink: 0;
 }
 
@@ -115,7 +115,7 @@
 .sidebar {
   width: 280px;
   flex-shrink: 0;
-  border-right: 1px solid var(--border-color);
+  border-right: 1px solid var(--border-primary);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -141,7 +141,7 @@
   justify-content: space-between;
   padding: 10px 16px;
   background: var(--bg-secondary);
-  border-bottom: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--border-primary);
 }
 
 .diffPath {
@@ -160,28 +160,28 @@
 }
 
 .diffStatus[data-status="modified"] {
-  color: #e2b714;
-  background: rgba(226, 183, 20, 0.15);
+  color: var(--text-warning);
+  background: rgba(var(--text-warning-rgb), 0.15);
 }
 
 .diffStatus[data-status="added"] {
-  color: #3fb950;
-  background: rgba(63, 185, 80, 0.15);
+  color: var(--text-success);
+  background: rgba(var(--text-success-rgb), 0.15);
 }
 
 .diffStatus[data-status="deleted"] {
-  color: #f85149;
-  background: rgba(248, 81, 73, 0.15);
+  color: var(--text-error);
+  background: rgba(var(--text-error-rgb), 0.15);
 }
 
 .diffStatus[data-status="renamed"] {
-  color: #a371f7;
-  background: rgba(163, 113, 247, 0.15);
+  color: var(--accent-secondary);
+  background: rgba(var(--accent-secondary-rgb), 0.15);
 }
 
 .diffStatus[data-status="untracked"] {
-  color: #8b949e;
-  background: rgba(139, 148, 158, 0.15);
+  color: var(--text-secondary);
+  background: rgba(var(--text-secondary-rgb), 0.15);
 }
 
 .diffEditor {
@@ -234,7 +234,7 @@
 .inlineLineLabel {
   font-size: 10px;
   font-family: var(--font-mono);
-  color: var(--text-tertiary);
+  color: var(--text-muted);
   padding: 0 4px;
   min-width: 24px;
   text-align: center;
@@ -255,22 +255,22 @@
 }
 
 .inlineAcceptBtn {
-  background: rgba(63, 185, 80, 0.2);
-  color: #3fb950;
+  background: rgba(var(--text-success-rgb), 0.2);
+  color: var(--text-success);
 }
 
 .inlineAcceptBtn:hover {
-  background: #3fb950;
+  background: var(--text-success);
   color: white;
 }
 
 .inlineRejectBtn {
-  background: rgba(248, 81, 73, 0.2);
-  color: #f85149;
+  background: rgba(var(--text-error-rgb), 0.2);
+  color: var(--text-error);
 }
 
 .inlineRejectBtn:hover {
-  background: #f85149;
+  background: var(--text-error);
   color: white;
 }
 
@@ -287,7 +287,7 @@
 .spinner {
   width: 32px;
   height: 32px;
-  border: 3px solid var(--border-color);
+  border: 3px solid var(--border-primary);
   border-top-color: var(--accent-primary);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
@@ -306,7 +306,7 @@
   justify-content: center;
   height: 100%;
   gap: 12px;
-  color: var(--text-tertiary);
+  color: var(--text-muted);
   text-align: center;
   padding: 32px;
 }
@@ -319,7 +319,7 @@
 
 .errorHint {
   font-size: 13px;
-  color: var(--text-tertiary);
+  color: var(--text-muted);
   font-family: var(--font-mono);
 }
 
@@ -330,7 +330,7 @@
   justify-content: center;
   height: 100%;
   gap: 12px;
-  color: var(--text-tertiary);
+  color: var(--text-muted);
   text-align: center;
 }
 
@@ -341,7 +341,7 @@
 .placeholderPath {
   font-family: var(--font-mono);
   font-size: 12px !important;
-  color: var(--text-tertiary);
+  color: var(--text-muted);
   opacity: 0.7;
 }
 
@@ -355,11 +355,11 @@
 }
 
 .ahead {
-  color: #3fb950;
+  color: var(--text-success);
 }
 
 .behind {
-  color: #f85149;
+  color: var(--text-error);
 }
 
 /* Header buttons */
@@ -369,7 +369,7 @@
   gap: 4px;
   padding: 6px 12px;
   background: var(--bg-tertiary);
-  border: 1px solid var(--border-color);
+  border: 1px solid var(--border-primary);
   border-radius: 6px;
   color: var(--text-primary);
   font-size: 12px;
@@ -398,19 +398,19 @@
 }
 
 .actionMessage.success {
-  color: #3fb950;
-  background: rgba(63, 185, 80, 0.15);
+  color: var(--text-success);
+  background: rgba(var(--text-success-rgb), 0.15);
 }
 
 .actionMessage.error {
-  color: #f85149;
-  background: rgba(248, 81, 73, 0.15);
+  color: var(--text-error);
+  background: rgba(var(--text-error-rgb), 0.15);
 }
 
 /* Commit area */
 .commitArea {
   padding: 12px;
-  border-top: 1px solid var(--border-color);
+  border-top: 1px solid var(--border-primary);
   background: var(--bg-tertiary);
   display: flex;
   flex-direction: column;
@@ -422,7 +422,7 @@
   min-height: 80px;
   padding: 10px;
   background: var(--bg-primary);
-  border: 1px solid var(--border-color);
+  border: 1px solid var(--border-primary);
   border-radius: 6px;
   color: var(--text-primary);
   font-family: inherit;
@@ -437,7 +437,7 @@
 }
 
 .commitInput::placeholder {
-  color: var(--text-tertiary);
+  color: var(--text-muted);
 }
 
 .commitButton {
@@ -525,7 +525,7 @@
 .actionBtnDanger {
   padding: 6px 14px;
   background: transparent;
-  border: 1px solid var(--border-color);
+  border: 1px solid var(--border-primary);
   border-radius: 6px;
   color: var(--text-secondary);
   font-size: 12px;
@@ -535,15 +535,15 @@
 }
 
 .actionBtnDanger:hover {
-  border-color: #f85149;
-  color: #f85149;
-  background: rgba(248, 81, 73, 0.1);
+  border-color: var(--text-error);
+  color: var(--text-error);
+  background: rgba(var(--text-error-rgb), 0.1);
 }
 
 /* Conflict status */
 .diffStatus[data-status="conflicted"] {
-  color: #f85149;
-  background: rgba(248, 81, 73, 0.15);
+  color: var(--text-error);
+  background: rgba(var(--text-error-rgb), 0.15);
 }
 
 /* Conflict warning in header */
@@ -552,8 +552,8 @@
   align-items: center;
   gap: 6px;
   padding: 4px 10px;
-  background: rgba(248, 81, 73, 0.15);
-  color: #f85149;
+  background: rgba(var(--text-error-rgb), 0.15);
+  color: var(--text-error);
   font-size: 12px;
   font-weight: 600;
   border-radius: 4px;
@@ -576,9 +576,9 @@
   gap: 4px;
   padding: 6px 12px;
   background: transparent;
-  border: 1px solid #f85149;
+  border: 1px solid var(--text-error);
   border-radius: 6px;
-  color: #f85149;
+  color: var(--text-error);
   font-size: 12px;
   font-weight: 500;
   cursor: pointer;
@@ -586,7 +586,7 @@
 }
 
 .headerButtonDanger:hover {
-  background: rgba(248, 81, 73, 0.15);
+  background: rgba(var(--text-error-rgb), 0.15);
 }
 
 /* Conflict banner */
@@ -595,9 +595,9 @@
   align-items: center;
   gap: 10px;
   padding: 10px 16px;
-  background: rgba(248, 81, 73, 0.1);
-  border-bottom: 1px solid rgba(248, 81, 73, 0.3);
-  color: #f85149;
+  background: rgba(var(--text-error-rgb), 0.1);
+  border-bottom: 1px solid rgba(var(--text-error-rgb), 0.3);
+  color: var(--text-error);
   font-size: 13px;
 }
 
@@ -612,7 +612,7 @@
   gap: 10px;
   margin-left: 16px;
   padding-left: 16px;
-  border-left: 1px solid var(--border-color);
+  border-left: 1px solid var(--border-primary);
 }
 
 .changeCount {
@@ -636,22 +636,22 @@
 }
 
 .acceptAllBtn {
-  background: rgba(63, 185, 80, 0.15);
-  color: #3fb950;
+  background: rgba(var(--text-success-rgb), 0.15);
+  color: var(--text-success);
 }
 
 .acceptAllBtn:hover {
-  background: #3fb950;
+  background: var(--text-success);
   color: white;
 }
 
 .rejectAllBtn {
-  background: rgba(248, 81, 73, 0.15);
-  color: #f85149;
+  background: rgba(var(--text-error-rgb), 0.15);
+  color: var(--text-error);
 }
 
 .rejectAllBtn:hover {
-  background: #f85149;
+  background: var(--text-error);
   color: white;
 }
 
@@ -662,7 +662,7 @@
   gap: 8px;
   padding: 8px 16px;
   background: var(--bg-tertiary);
-  border-bottom: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--border-primary);
   max-height: 80px;
   overflow-y: auto;
 }
@@ -671,7 +671,7 @@
   display: flex;
   align-items: center;
   background: var(--bg-secondary);
-  border: 1px solid var(--border-color);
+  border: 1px solid var(--border-primary);
   border-radius: 6px;
   overflow: hidden;
 }
@@ -682,7 +682,7 @@
   padding: 4px 8px;
   background: transparent;
   border: none;
-  border-right: 1px solid var(--border-color);
+  border-right: 1px solid var(--border-primary);
   color: var(--text-secondary);
   font-size: 11px;
   font-family: var(--font-mono);
@@ -713,22 +713,22 @@
 }
 
 .changeChipAccept {
-  background: rgba(63, 185, 80, 0.1);
-  color: #3fb950;
+  background: rgba(var(--text-success-rgb), 0.1);
+  color: var(--text-success);
 }
 
 .changeChipAccept:hover {
-  background: #3fb950;
+  background: var(--text-success);
   color: white;
 }
 
 .changeChipReject {
-  background: rgba(248, 81, 73, 0.1);
-  color: #f85149;
+  background: rgba(var(--text-error-rgb), 0.1);
+  color: var(--text-error);
 }
 
 .changeChipReject:hover {
-  background: #f85149;
+  background: var(--text-error);
   color: white;
 }
 
@@ -747,7 +747,7 @@
   max-height: 300px;
   overflow-y: auto;
   background: var(--bg-secondary);
-  border: 1px solid var(--border-color);
+  border: 1px solid var(--border-primary);
   border-radius: 8px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
   z-index: 100;
@@ -759,7 +759,7 @@
   font-size: 12px;
   font-weight: 600;
   color: var(--text-secondary);
-  border-bottom: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--border-primary);
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
@@ -769,7 +769,7 @@
   align-items: center;
   justify-content: space-between;
   padding: 8px 12px;
-  border-bottom: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--border-primary);
   transition: background 0.15s ease;
 }
 
@@ -793,7 +793,7 @@
 .stashIndex {
   font-size: 11px;
   font-family: var(--font-mono);
-  color: var(--text-tertiary);
+  color: var(--text-muted);
 }
 
 .stashMessage {
@@ -813,10 +813,10 @@
 
 .stashApplyBtn {
   padding: 4px 10px;
-  background: rgba(63, 185, 80, 0.15);
+  background: rgba(var(--text-success-rgb), 0.15);
   border: none;
   border-radius: 4px;
-  color: #3fb950;
+  color: var(--text-success);
   font-size: 11px;
   font-weight: 600;
   cursor: pointer;
@@ -824,7 +824,7 @@
 }
 
 .stashApplyBtn:hover {
-  background: #3fb950;
+  background: var(--text-success);
   color: white;
 }
 
@@ -838,13 +838,13 @@
   background: transparent;
   border: none;
   border-radius: 4px;
-  color: var(--text-tertiary);
+  color: var(--text-muted);
   font-size: 16px;
   cursor: pointer;
   transition: all 0.15s ease;
 }
 
 .stashDropBtn:hover {
-  background: rgba(248, 81, 73, 0.15);
-  color: #f85149;
+  background: rgba(var(--text-error-rgb), 0.15);
+  color: var(--text-error);
 }

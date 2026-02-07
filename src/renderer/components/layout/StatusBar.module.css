@@ -167,12 +167,12 @@
 }
 
 .modelOptionActive {
-  background-color: rgba(59, 130, 246, 0.1);
-  color: #60a5fa;
+  background-color: rgba(var(--accent-primary-rgb), 0.1);
+  color: var(--text-link);
 }
 
 .modelOptionActive:hover {
-  background-color: rgba(59, 130, 246, 0.15);
+  background-color: rgba(var(--accent-primary-rgb), 0.15);
 }
 
 .modelOptionName {
@@ -213,7 +213,7 @@
 }
 
 .contextFill.contextWarning {
-  background-color: #fbbf24;
+  background-color: var(--text-warning);
 }
 
 .contextText {
@@ -333,7 +333,7 @@
 
 .todo_in_progress {
   color: var(--text-primary);
-  background-color: rgba(59, 130, 246, 0.1);
+  background-color: rgba(var(--accent-primary-rgb), 0.1);
 }
 
 .todo_pending {
@@ -359,14 +359,14 @@
 }
 
 .todo_in_progress .todoCheckbox {
-  border-color: #60a5fa;
+  border-color: var(--text-link);
 }
 
 .todoCheckboxSpinner {
   width: 10px;
   height: 10px;
-  border: 1.5px solid rgba(96, 165, 250, 0.3);
-  border-top-color: #60a5fa;
+  border: 1.5px solid rgba(var(--text-link-rgb), 0.3);
+  border-top-color: var(--text-link);
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }

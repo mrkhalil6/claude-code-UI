@@ -45,7 +45,7 @@
 }
 
 .noProject {
-  color: var(--text-warning, #f59e0b);
+  color: var(--text-warning);
   font-size: var(--font-size-xs);
 }
 
@@ -299,13 +299,13 @@
 }
 
 .sseBadge {
-  background-color: rgba(59, 130, 246, 0.2);
-  color: #60a5fa;
+  background-color: rgba(var(--accent-primary-rgb), 0.15);
+  color: var(--text-link);
 }
 
 .httpBadge {
-  background-color: rgba(249, 115, 22, 0.2);
-  color: #fb923c;
+  background-color: rgba(var(--text-warning-rgb), 0.15);
+  color: var(--text-warning);
 }
 
 .stdioBadge {
@@ -376,8 +376,8 @@
 }
 
 .statusNeedsAuth {
-  background-color: rgba(249, 115, 22, 0.2);
-  color: #fb923c;
+  background-color: rgba(var(--text-warning-rgb), 0.15);
+  color: var(--text-warning);
 }
 
 .statusError {
@@ -391,8 +391,8 @@
 }
 
 .statusLoading {
-  background-color: rgba(59, 130, 246, 0.2);
-  color: #60a5fa;
+  background-color: rgba(var(--accent-primary-rgb), 0.15);
+  color: var(--text-link);
 }
 
 /* Action buttons */
@@ -423,15 +423,15 @@
 }
 
 .authButton {
-  background-color: rgba(249, 115, 22, 0.1);
-  border-color: rgba(249, 115, 22, 0.3);
-  color: #fb923c;
+  background-color: rgba(var(--text-warning-rgb), 0.1);
+  border-color: rgba(var(--text-warning-rgb), 0.3);
+  color: var(--text-warning);
 }
 
 .authButton:hover:not(:disabled) {
-  background-color: rgba(249, 115, 22, 0.2);
-  border-color: #fb923c;
-  color: #fb923c;
+  background-color: rgba(var(--text-warning-rgb), 0.2);
+  border-color: var(--text-warning);
+  color: var(--text-warning);
 }
 
 /* Spinning animation for loading */

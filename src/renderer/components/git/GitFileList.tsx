@@ -14,12 +14,12 @@ interface GitFileListProps {
 }
 
 const STATUS_ICONS: Record<GitFileStatusType, { icon: string; color: string; label: string }> = {
-  modified: { icon: 'M', color: '#e2b714', label: 'Modified' },
-  added: { icon: 'A', color: '#3fb950', label: 'Added' },
-  deleted: { icon: 'D', color: '#f85149', label: 'Deleted' },
-  renamed: { icon: 'R', color: '#a371f7', label: 'Renamed' },
-  untracked: { icon: '?', color: '#8b949e', label: 'Untracked' },
-  conflicted: { icon: '!', color: '#f85149', label: 'Conflict' }
+  modified: { icon: 'M', color: 'var(--text-warning)', label: 'Modified' },
+  added: { icon: 'A', color: 'var(--text-success)', label: 'Added' },
+  deleted: { icon: 'D', color: 'var(--text-error)', label: 'Deleted' },
+  renamed: { icon: 'R', color: 'var(--accent-secondary)', label: 'Renamed' },
+  untracked: { icon: '?', color: 'var(--text-secondary)', label: 'Untracked' },
+  conflicted: { icon: '!', color: 'var(--text-error)', label: 'Conflict' }
 };
 
 export const GitFileList: React.FC<GitFileListProps> = ({
